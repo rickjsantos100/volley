@@ -1,0 +1,56 @@
+{
+  "HomePage": {
+    "appLabel": "Gest\u00e3o de Jogos de Voleibol",
+    "title": "Ol\u00e1 mundo.",
+    "intro": "A primeira p\u00e1gina est\u00e1 ativa. A seguir: jogos, jogadores, listas de espera e a satisfa\u00e7\u00e3o de ver o calend\u00e1rio a ganhar forma.",
+    "loginLink": "Entrar",
+    "dashboardLink": "Abrir painel"
+  },
+  "LanguageToggle": {
+    "label": "Idioma",
+    "portuguese": "Portugu\u00eas",
+    "english": "English"
+  },
+  "AuthPage": {
+    "eyebrow": "Conta",
+    "title": "Entrar ou criar conta",
+    "intro": "Usa o teu email e palavra-passe para aceder \u00e0 tua conta.",
+    "loginTitle": "Entrar",
+    "loginIntro": "J\u00e1 tens conta? Introduz os teus dados para continuar.",
+    "signupTitle": "Criar conta",
+    "signupIntro": "Novos jogadores come\u00e7am como utilizadores normais. Admins podem ser promovidos depois no Supabase.",
+    "firstNameLabel": "Primeiro nome",
+    "firstNamePlaceholder": "Primeiro nome",
+    "lastNameLabel": "\u00daltimo nome",
+    "lastNamePlaceholder": "\u00daltimo nome",
+    "emailLabel": "Email",
+    "emailPlaceholder": "tu@exemplo.com",
+    "passwordLabel": "Palavra-passe",
+    "passwordPlaceholder": "Pelo menos 8 caracteres",
+    "passwordHint": "Usa pelo menos 8 caracteres.",
+    "loginButton": "Entrar",
+    "signupButton": "Criar conta",
+    "errors": {
+      "invalid-email": "Introduz um email v\u00e1lido.",
+      "invalid-password": "A palavra-passe deve ter pelo menos 8 caracteres.",
+      "login-failed": "N\u00e3o foi poss\u00edvel entrar com esses dados.",
+      "missing-name": "Introduz o primeiro e o \u00faltimo nome para criares conta.",
+      "email-confirmation-enabled": "A cria\u00e7\u00e3o de conta ainda est\u00e1 a pedir confirma\u00e7\u00e3o por email. Desativa as confirma\u00e7\u00f5es por email nas defini\u00e7\u00f5es de Auth do Supabase.",
+      "signup-failed": "N\u00e3o foi poss\u00edvel criar uma conta com esses dados."
+    }
+  },
+  "DashboardPage": {
+    "eyebrow": "Painel tempor\u00e1rio",
+    "title": "J\u00e1 tens sess\u00e3o iniciada.",
+    "intro": "Esta \u00e9 uma p\u00e1gina tempor\u00e1ria enquanto os ecr\u00e3s dos jogos s\u00e3o constru\u00eddos.",
+    "nameLabel": "Nome",
+    "missingName": "Por definir",
+    "emailLabel": "Email",
+    "roleLabel": "Perfil",
+    "logoutButton": "Sair",
+    "roles": {
+      "user": "Utilizador",
+      "admin": "Admin"
+    }
+  }
+}

@@ -1,0 +1,56 @@
+{
+  "HomePage": {
+    "appLabel": "Volleyball Game Management",
+    "title": "Hello world.",
+    "intro": "The first page is live. Next up: games, players, waitlists, and the satisfying click of a schedule coming together.",
+    "loginLink": "Log in",
+    "dashboardLink": "Open dashboard"
+  },
+  "LanguageToggle": {
+    "label": "Language",
+    "portuguese": "Portugu\u00eas",
+    "english": "English"
+  },
+  "AuthPage": {
+    "eyebrow": "Account",
+    "title": "Log in or sign up",
+    "intro": "Use your email and password to access your account.",
+    "loginTitle": "Log in",
+    "loginIntro": "Already have an account? Enter your details to continue.",
+    "signupTitle": "Create account",
+    "signupIntro": "New players start as regular users. Admins can be promoted later in Supabase.",
+    "firstNameLabel": "First name",
+    "firstNamePlaceholder": "First name",
+    "lastNameLabel": "Last name",
+    "lastNamePlaceholder": "Last name",
+    "emailLabel": "Email",
+    "emailPlaceholder": "you@example.com",
+    "passwordLabel": "Password",
+    "passwordPlaceholder": "At least 8 characters",
+    "passwordHint": "Use at least 8 characters.",
+    "loginButton": "Log in",
+    "signupButton": "Sign up",
+    "errors": {
+      "invalid-email": "Enter a valid email address.",
+      "invalid-password": "Password must have at least 8 characters.",
+      "login-failed": "We could not log you in with those details.",
+      "missing-name": "Enter both first and last name to sign up.",
+      "email-confirmation-enabled": "Signup is still requiring email confirmation. Disable email confirmations in Supabase Auth settings.",
+      "signup-failed": "We could not create an account with those details."
+    }
+  },
+  "DashboardPage": {
+    "eyebrow": "Temporary dashboard",
+    "title": "You are logged in.",
+    "intro": "This is a placeholder page while the game screens are being built.",
+    "nameLabel": "Name",
+    "missingName": "Not set",
+    "emailLabel": "Email",
+    "roleLabel": "Role",
+    "logoutButton": "Log out",
+    "roles": {
+      "user": "User",
+      "admin": "Admin"
+    }
+  }
+}

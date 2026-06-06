@@ -37,3 +37,6 @@ Thumbs.db
 # Local agent state
 .agents/
 .codex/
+.playwright-mcp/
+
+confidential-file.txt
