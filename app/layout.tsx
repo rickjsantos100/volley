@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale } from "next-intl/server";
+import { GlobalAccountMenu } from "@/components/global-account-menu";
+import { GlobalDashboardLink } from "@/components/global-dashboard-link";
+import { GlobalLanguageToggle } from "@/components/global-language-toggle";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -18,7 +21,12 @@ export default async function RootLayout({
   return (
     <html lang={locale}>
       <body>
-        <NextIntlClientProvider>{children}</NextIntlClientProvider>
+        <NextIntlClientProvider>
+          <GlobalAccountMenu />
+          <GlobalDashboardLink />
+          <GlobalLanguageToggle />
+          {children}
+        </NextIntlClientProvider>
       </body>
     </html>
   );

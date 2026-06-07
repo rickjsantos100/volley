@@ -1,15 +1,22 @@
 {
   "HomePage": {
     "appLabel": "Volleyball Game Management",
-    "title": "Hello world.",
-    "intro": "The first page is live. Next up: games, players, waitlists, and the satisfying click of a schedule coming together.",
+    "title": "Voley Lisboa",
+    "intro": "Log in or create your player account to manage games in Lisbon.",
     "loginLink": "Log in",
     "dashboardLink": "Open dashboard"
   },
   "LanguageToggle": {
     "label": "Language",
     "portuguese": "Portugu\u00eas",
-    "english": "English"
+    "english": "English",
+    "switchToPortuguese": "Switch language to Portuguese",
+    "switchToEnglish": "Switch language to English"
+  },
+  "AccountMenu": {
+    "openMenu": "Open account menu for {name}",
+    "profile": "Profile",
+    "signOut": "Sign out"
   },
   "AuthPage": {
     "eyebrow": "Account",
@@ -26,10 +33,17 @@
     "emailLabel": "Email",
     "emailPlaceholder": "you@example.com",
     "passwordLabel": "Password",
-    "passwordPlaceholder": "At least 8 characters",
+    "loginPasswordPlaceholder": "Password",
+    "signupPasswordPlaceholder": "At least 8 characters",
     "passwordHint": "Use at least 8 characters.",
     "loginButton": "Log in",
     "signupButton": "Sign up",
+    "validation": {
+      "firstNameRequired": "Enter your first name.",
+      "lastNameRequired": "Enter your last name.",
+      "emailInvalid": "Enter a valid email address.",
+      "passwordShort": "Password must have at least 8 characters."
+    },
     "errors": {
       "invalid-email": "Enter a valid email address.",
       "invalid-password": "Password must have at least 8 characters.",
@@ -40,17 +54,70 @@
     }
   },
   "DashboardPage": {
-    "eyebrow": "Temporary dashboard",
-    "title": "You are logged in.",
-    "intro": "This is a placeholder page while the game screens are being built.",
-    "nameLabel": "Name",
-    "missingName": "Not set",
-    "emailLabel": "Email",
-    "roleLabel": "Role",
+    "eyebrow": "Dashboard",
+    "title": "Hi, {name}.",
+    "intro": "Here are the upcoming games currently scheduled for Voley Lisboa.",
+    "fallbackUser": "player",
+    "upcomingTitle": "Upcoming games",
+    "emptyGamesTitle": "No upcoming games yet.",
+    "emptyGamesIntro": "New games will appear here when they are scheduled.",
+    "gamesLoadError": "We could not load upcoming games. Please try again.",
+    "durationLabel": "Duration",
+    "durationValue": "{minutes} min",
+    "slotsLabel": "Slots",
+    "slotsValue": "{occupied}/{capacity} slots",
+    "fullLabel": "Full",
+    "repeatLabel": "Repeats",
     "logoutButton": "Log out",
     "roles": {
       "user": "User",
       "admin": "Admin"
+    }
+  },
+  "GameDetailPage": {
+    "backToGames": "Back",
+    "durationLabel": "Duration",
+    "durationValue": "{minutes} min",
+    "slotsLabel": "Slots",
+    "slotsValue": "{occupied}/{capacity} slots",
+    "fullLabel": "Full",
+    "joinGameButton": "Join game",
+    "joinWaitlistButton": "Join waitlist",
+    "alreadyWaitlistedButton": "You're on the waitlist",
+    "leaveGameButton": "Leave game",
+    "leaveGameConfirmMessage": "Are you sure you want to leave this game?",
+    "joinedGameMessage": "You're in. See you on court.",
+    "joinedWaitlistMessage": "You're on the waitlist.",
+    "leftGameMessage": "You left this game.",
+    "joinErrorMessage": "We could not add you to this game. Please try again.",
+    "leaveErrorMessage": "We could not remove you from this game. Please try again.",
+    "waitlistErrorMessage": "We could not add you to the waitlist. Please try again.",
+    "listLoadError": "We could not load the roster. Please try again.",
+    "participantsTitle": "Participants",
+    "emptyParticipants": "No players have joined yet.",
+    "paidLabel": "Paid",
+    "unpaidLabel": "Unpaid",
+    "waitlistTitle": "Waitlist",
+    "emptyWaitlist": "The waitlist is empty."
+  },
+  "ProfilePage": {
+    "eyebrow": "Profile",
+    "title": "Your profile",
+    "intro": "Update the name shown on your account.",
+    "firstNameLabel": "First name",
+    "firstNamePlaceholder": "First name",
+    "lastNameLabel": "Last name",
+    "lastNamePlaceholder": "Last name",
+    "saveButton": "Save changes",
+    "backToDashboard": "Back to dashboard",
+    "successMessage": "Profile updated.",
+    "validation": {
+      "firstNameRequired": "Enter your first name.",
+      "lastNameRequired": "Enter your last name."
+    },
+    "errors": {
+      "notAuthenticated": "Log in again to update your profile.",
+      "updateFailed": "We could not update your profile. Please try again."
     }
   }
 }

@@ -36,16 +36,20 @@ function getPassword(formData: FormData) {
   return password;
 }
 
+function redirectWithError(error: string): never {
+  redirect(`/?error=${error}`);
+}
+
 export async function signIn(formData: FormData) {
   const email = getEmail(formData);
   const password = getPassword(formData);
 
   if (!email) {
-    redirect("/login?error=invalid-email");
+    redirectWithError("invalid-email");
   }
 
   if (!password || password.length < MIN_PASSWORD_LENGTH) {
-    redirect("/login?error=invalid-password");
+    redirectWithError("invalid-password");
   }
 
   const supabase = await createClient();
@@ -55,7 +59,7 @@ export async function signIn(formData: FormData) {
   });
 
   if (error) {
-    redirect("/login?error=login-failed");
+    redirectWithError("login-failed");
   }
 
   revalidatePath("/", "layout");
@@ -69,15 +73,15 @@ export async function signUp(formData: FormData) {
   const password = getPassword(formData);
 
   if (!email) {
-    redirect("/login?error=invalid-email");
+    redirectWithError("invalid-email");
   }
 
   if (!firstName || !lastName) {
-    redirect("/login?error=missing-name");
+    redirectWithError("missing-name");
   }
 
   if (!password || password.length < MIN_PASSWORD_LENGTH) {
-    redirect("/login?error=invalid-password");
+    redirectWithError("invalid-password");
   }
 
   const displayName = `${firstName} ${lastName}`;
@@ -96,7 +100,7 @@ export async function signUp(formData: FormData) {
   });
 
   if (error) {
-    redirect("/login?error=signup-failed");
+    redirectWithError("signup-failed");
   }
 
   revalidatePath("/", "layout");
@@ -105,5 +109,5 @@ export async function signUp(formData: FormData) {
     redirect("/dashboard");
   }
 
-  redirect("/login?error=email-confirmation-enabled");
+  redirectWithError("email-confirmation-enabled");
 }

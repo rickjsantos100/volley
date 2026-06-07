@@ -19,6 +19,8 @@ export function LanguageToggle() {
   const activeLocale = useLocale() as Locale;
   const router = useRouter();
   const t = useTranslations("LanguageToggle");
+  const nextLocale = activeLocale === "pt" ? "en" : "pt";
+  const flag = activeLocale === "pt" ? "🇵🇹" : "🇬🇧";
 
   useEffect(() => {
     const storedLocale = window.localStorage.getItem("locale");
@@ -33,37 +35,22 @@ export function LanguageToggle() {
   }, [activeLocale, router]);
 
   function handleLocaleChange(locale: Locale) {
-    if (locale === activeLocale) {
-      return;
-    }
-
     setLocalePreference(locale);
     router.refresh();
   }
 
   return (
-    <div
-      aria-label={t("label")}
-      className="inline-flex rounded-full border border-[#00754A] bg-white p-1 text-sm font-semibold"
+    <button
+      type="button"
+      aria-label={t(
+        nextLocale === "pt" ? "switchToPortuguese" : "switchToEnglish",
+      )}
+      onClick={() => handleLocaleChange(nextLocale)}
+      className="flex size-10 items-center justify-center rounded-full border border-[rgba(0,0,0,0.16)] bg-white text-xl shadow-[0_0_0.5px_0_rgba(0,0,0,0.14),0_1px_1px_0_rgba(0,0,0,0.18)] transition hover:border-[#00754A] active:scale-95"
     >
-      <button
-        type="button"
-        aria-pressed={activeLocale === "pt"}
-        onClick={() => handleLocaleChange("pt")}
-        className="rounded-full px-4 py-2 text-[#00754A] transition data-[active=true]:bg-[#00754A] data-[active=true]:text-white"
-        data-active={activeLocale === "pt"}
-      >
-        {t("portuguese")}
-      </button>
-      <button
-        type="button"
-        aria-pressed={activeLocale === "en"}
-        onClick={() => handleLocaleChange("en")}
-        className="rounded-full px-4 py-2 text-[#00754A] transition data-[active=true]:bg-[#00754A] data-[active=true]:text-white"
-        data-active={activeLocale === "en"}
-      >
-        {t("english")}
-      </button>
-    </div>
+      <span aria-hidden="true" className="mt-[2px]">
+        {flag}
+      </span>
+    </button>
   );
 }

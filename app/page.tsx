@@ -1,38 +1,56 @@
 import { getTranslations } from "next-intl/server";
-import Link from "next/link";
-import { LanguageToggle } from "@/components/language-toggle";
+import { redirect } from "next/navigation";
+import { AuthPanel } from "@/components/auth-panel";
+import { createClient } from "@/lib/supabase/server";
 
-export default async function Home() {
-  const t = await getTranslations("HomePage");
+type HomeProps = {
+  searchParams: Promise<{
+    error?: string;
+  }>;
+};
+
+function getErrorKey(error: string | undefined) {
+  if (
+    error === "invalid-email" ||
+    error === "invalid-password" ||
+    error === "login-failed" ||
+    error === "missing-name" ||
+    error === "email-confirmation-enabled" ||
+    error === "signup-failed"
+  ) {
+    return error;
+  }
+
+  return null;
+}
+
+export default async function Home({ searchParams }: HomeProps) {
+  const [{ error }, t, supabase] = await Promise.all([
+    searchParams,
+    getTranslations("HomePage"),
+    createClient(),
+  ]);
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (user) {
+    redirect("/dashboard");
+  }
+
+  const errorKey = getErrorKey(error);
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[#f2f0eb] px-6 py-16 text-[rgba(0,0,0,0.87)]">
-      <section className="w-full max-w-2xl rounded-xl bg-white px-8 py-10 shadow-[0_0_0.5px_0_rgba(0,0,0,0.14),0_1px_1px_0_rgba(0,0,0,0.24)] sm:px-10">
-        <div className="mb-8 flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
-          <p className="text-sm font-semibold tracking-[0.1em] text-[#00754A] uppercase">
-            {t("appLabel")}
-          </p>
-          <LanguageToggle />
+    <main className="flex min-h-screen items-center justify-center bg-[#f2f0eb] px-4 py-10 text-[rgba(0,0,0,0.87)] sm:px-6">
+      <section className="relative flex min-h-[720px] w-full max-w-[430px] flex-col px-4 py-8 sm:px-6">
+        <div className="pt-20 text-center">
+          <h1 className="text-2xl font-semibold tracking-[-0.01em] text-[#006241]">
+            {t("title")}
+          </h1>
         </div>
-        <h1 className="text-3xl font-semibold tracking-[-0.01em] text-[#006241] sm:text-4xl">
-          {t("title")}
-        </h1>
-        <p className="mt-4 max-w-xl text-base leading-7 text-[#33433d]">
-          {t("intro")}
-        </p>
-        <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-          <Link
-            href="/login"
-            className="rounded-full border border-[#00754A] bg-[#00754A] px-5 py-3 text-center text-sm font-semibold text-white transition active:scale-95"
-          >
-            {t("loginLink")}
-          </Link>
-          <Link
-            href="/dashboard"
-            className="rounded-full border border-[#00754A] bg-white px-5 py-3 text-center text-sm font-semibold text-[#00754A] transition active:scale-95"
-          >
-            {t("dashboardLink")}
-          </Link>
+
+        <div className="mt-24">
+          <AuthPanel errorKey={errorKey} redirectTo="/" />
         </div>
       </section>
     </main>
