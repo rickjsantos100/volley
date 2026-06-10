@@ -46,7 +46,7 @@ export function LanguageToggle() {
         nextLocale === "pt" ? "switchToPortuguese" : "switchToEnglish",
       )}
       onClick={() => handleLocaleChange(nextLocale)}
-      className="flex size-10 items-center justify-center rounded-full border border-[rgba(0,0,0,0.16)] bg-white text-xl shadow-[0_0_0.5px_0_rgba(0,0,0,0.14),0_1px_1px_0_rgba(0,0,0,0.18)] transition hover:border-[#00754A] active:scale-95"
+      className="ripple ripple-dark flex size-10 items-center justify-center rounded-full border border-[rgba(0,0,0,0.16)] bg-white text-xl shadow-[0_0_0.5px_0_rgba(0,0,0,0.14),0_1px_1px_0_rgba(0,0,0,0.18)] transition hover:border-[#00754A] active:scale-95"
     >
       <span aria-hidden="true" className="mt-[2px]">
         {flag}

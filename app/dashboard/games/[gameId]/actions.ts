@@ -4,11 +4,49 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
-function getRedirectPath(gameId: string, status: string) {
-  return `/dashboard/games/${gameId}?status=${status}`;
+export type GameActionStatus =
+  | "joined-game"
+  | "joined-waitlist"
+  | "left-game"
+  | "cancelled-game"
+  | "join-error"
+  | "waitlist-error"
+  | "leave-error"
+  | "cancel-error"
+  | "delete-error"
+  | "not-authorized";
+
+export type GameActionState = {
+  status?: GameActionStatus;
+};
+
+async function getUserRole() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { role: null, supabase, user };
+  }
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .maybeSingle<{ role: "user" | "admin" }>();
+
+  return { role: profile?.role ?? null, supabase, user };
 }
 
-export async function joinGame(gameId: string) {
+export async function joinGame(
+  gameId: string,
+  previousState: GameActionState,
+  formData: FormData,
+): Promise<GameActionState> {
+  void previousState;
+  void formData;
+
   const supabase = await createClient();
   const {
     data: { user },
@@ -27,13 +65,20 @@ export async function joinGame(gameId: string) {
   revalidatePath(`/dashboard/games/${gameId}`);
 
   if (error) {
-    redirect(getRedirectPath(gameId, "join-error"));
+    return { status: "join-error" };
   }
 
-  redirect(getRedirectPath(gameId, "joined-game"));
+  return { status: "joined-game" };
 }
 
-export async function joinWaitlist(gameId: string) {
+export async function joinWaitlist(
+  gameId: string,
+  previousState: GameActionState,
+  formData: FormData,
+): Promise<GameActionState> {
+  void previousState;
+  void formData;
+
   const supabase = await createClient();
   const {
     data: { user },
@@ -52,13 +97,20 @@ export async function joinWaitlist(gameId: string) {
   revalidatePath(`/dashboard/games/${gameId}`);
 
   if (error) {
-    redirect(getRedirectPath(gameId, "waitlist-error"));
+    return { status: "waitlist-error" };
   }
 
-  redirect(getRedirectPath(gameId, "joined-waitlist"));
+  return { status: "joined-waitlist" };
 }
 
-export async function leaveGame(gameId: string) {
+export async function leaveGame(
+  gameId: string,
+  previousState: GameActionState,
+  formData: FormData,
+): Promise<GameActionState> {
+  void previousState;
+  void formData;
+
   const supabase = await createClient();
   const {
     data: { user },
@@ -78,8 +130,71 @@ export async function leaveGame(gameId: string) {
   revalidatePath(`/dashboard/games/${gameId}`);
 
   if (error) {
-    redirect(getRedirectPath(gameId, "leave-error"));
+    return { status: "leave-error" };
   }
 
-  redirect(getRedirectPath(gameId, "left-game"));
+  return { status: "left-game" };
+}
+
+export async function cancelGame(
+  gameId: string,
+  previousState: GameActionState,
+  formData: FormData,
+): Promise<GameActionState> {
+  void previousState;
+  void formData;
+
+  const { role, supabase, user } = await getUserRole();
+
+  if (!user) {
+    redirect("/");
+  }
+
+  if (role !== "admin") {
+    return { status: "not-authorized" };
+  }
+
+  const { error } = await supabase
+    .from("game_events")
+    .update({ status: "cancelled" })
+    .eq("id", gameId);
+
+  revalidatePath("/dashboard");
+  revalidatePath(`/dashboard/games/${gameId}`);
+
+  if (error) {
+    return { status: "cancel-error" };
+  }
+
+  return { status: "cancelled-game" };
+}
+
+export async function deleteGame(
+  gameId: string,
+  previousState: GameActionState,
+  formData: FormData,
+): Promise<GameActionState> {
+  void previousState;
+  void formData;
+
+  const { role, supabase, user } = await getUserRole();
+
+  if (!user) {
+    redirect("/");
+  }
+
+  if (role !== "admin") {
+    return { status: "not-authorized" };
+  }
+
+  const { error } = await supabase.from("game_events").delete().eq("id", gameId);
+
+  revalidatePath("/dashboard");
+  revalidatePath(`/dashboard/games/${gameId}`);
+
+  if (error) {
+    return { status: "delete-error" };
+  }
+
+  redirect("/dashboard");
 }

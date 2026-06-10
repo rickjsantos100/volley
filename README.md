@@ -2,7 +2,7 @@
 
 A web app for managing volleyball game events at a rental venue.
 
-Players will be able to view upcoming games, join available spots, join waitlists when games are full, and see their own payment status. Admins will manage games, participants, waitlists, and payments.
+Players will be able to view upcoming games, join available spots, join waitlists when games are full, and see their own payment status. Admins will manage games, participants, waitlists, payments, cancellations, and waitlist ordering.
 
 ## Status
 

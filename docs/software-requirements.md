@@ -14,12 +14,15 @@ Required capabilities:
 
 - Create new game events.
 - Edit existing game events.
-- Delete or cancel game events.
+- Cancel game events while keeping them visible to users.
+- Delete game events when they should be removed from the schedule.
 - Add users to a game event.
 - Remove users from a game event.
 - View all game details, including participants and capacity.
 - View and update each participant's payment status.
 - View and manage the waitlist for each game.
+- Remove users from a waitlist.
+- Reorder users in a waitlist.
 
 ### User
 
@@ -27,7 +30,7 @@ Users participate in scheduled games.
 
 Required capabilities:
 
-- View upcoming game events.
+- View upcoming scheduled and cancelled game events.
 - View game details, including date, duration, capacity, and joined users.
 - Join a game when capacity is available.
 - Join a waitlist when a game is full.
@@ -40,7 +43,7 @@ Each game event must include:
 
 - Title or name for the game.
 - Date and start time.
-- Duration.
+- End time, with duration derived from the start and end times.
 - Maximum number of participants.
 - Current participant list.
 - Waitlist.
@@ -62,11 +65,14 @@ The application must show upcoming volleyball games in chronological order.
 Each listed game should show:
 
 - Date and start time.
-- Duration.
+- Duration derived from the configured start and end times.
 - Number of joined participants.
 - Maximum participant capacity.
 - Whether the game is full.
 - Whether the game repeats.
+- Whether the game is cancelled.
+
+Cancelled games must remain visible in the upcoming games list when their start time is still in the future. They must be visually disabled, show a clear cancelled badge, and not allow users to join the game or waitlist.
 
 ### Game Details
 
@@ -96,8 +102,11 @@ Admins must also be able to see:
 - A user should not be able to join the same waitlist more than once.
 - A user should not be able to join cancelled or completed games.
 - Admins can add or remove users from a game.
+- Admins can remove users from a waitlist.
+- Admins can reorder active waitlist users.
 - When a participant leaves or is removed and a spot becomes available, the first waiting user on the waitlist should automatically move to the participant list.
 - Automatic waitlist promotion should preserve waitlist order.
+- Automatic waitlist promotion should use the current admin-managed waitlist order.
 
 ### Payment Status
 
@@ -112,14 +121,16 @@ Admins must also be able to see:
 
 Admins must be able to:
 
-- Create a game with date, duration, capacity, and repeat settings.
-- Edit a game's date, duration, capacity, and repeat settings.
-- Delete or cancel a game.
+- Create a game with date, start time, end time, capacity, and repeat settings.
+- Edit a game's date, start time, end time, capacity, and repeat settings.
+- Cancel a game without hiding it from users.
+- Delete a game from the schedule.
 - Add users to a game participant list.
 - Remove users from a game participant list.
 - Mark participants as paid or unpaid.
 - View the waitlist for a game.
 - Remove users from the waitlist.
+- Reorder users on the waitlist.
 
 ## 5. Initial Data Model
 
@@ -136,7 +147,7 @@ Admins must be able to:
 - `id`
 - `title`
 - `starts_at`
-- `duration_minutes`
+- `duration_minutes`, derived from the configured start and end times
 - `max_participants`
 - `is_repeatable`
 - `repeat_frequency`
@@ -207,6 +218,9 @@ Admins must be able to:
 - An admin can create a game.
 - An admin can edit a game.
 - An admin can cancel or delete a game.
+- A cancelled upcoming game remains visible to users.
+- A cancelled game is visually disabled and shows a cancelled badge.
+- A user cannot join or waitlist for a cancelled game.
 - An admin can add a user to a game.
 - An admin can remove a user from a game.
 - An admin can see whether participants have paid.
@@ -214,12 +228,13 @@ Admins must be able to:
 - A normal user cannot see another user's payment status.
 - An admin can mark a participant as paid or unpaid.
 - An admin can see the waitlist for a full game.
+- An admin can remove a user from the waitlist.
+- An admin can reorder users in the waitlist.
 - Upcoming games are ordered by date and time.
 
 ## 9. Open Questions
 
 - Should users be able to create their own accounts, or should admins invite them?
-- Should cancelled games remain visible to users?
 - Should repeatable events create all future game records immediately or generate them on demand?
 - Should users receive notifications when they join, leave, or are added to a game?
 - Should payment collection happen inside the application in a future version, or should the app only track externally confirmed payments?

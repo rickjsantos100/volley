@@ -47,7 +47,7 @@ export function AccountMenu({ initials, label }: AccountMenuProps) {
         aria-expanded={isOpen}
         aria-label={t("openMenu", { name: label })}
         onClick={() => setIsOpen((currentValue) => !currentValue)}
-        className="flex size-11 items-center justify-center rounded-full border border-[#00754A] bg-[#00754A] text-sm font-semibold text-white shadow-[0_0_0.5px_0_rgba(0,0,0,0.14),0_1px_1px_0_rgba(0,0,0,0.18)] transition active:scale-95"
+        className="ripple flex size-11 items-center justify-center rounded-full border border-[#00754A] bg-[#00754A] text-sm font-semibold text-white shadow-[0_0_0.5px_0_rgba(0,0,0,0.14),0_1px_1px_0_rgba(0,0,0,0.18)] transition active:scale-95"
       >
         {initials}
       </button>
@@ -60,12 +60,12 @@ export function AccountMenu({ initials, label }: AccountMenuProps) {
           <Link
             href="/profile"
             onClick={() => setIsOpen(false)}
-            className="block rounded-lg px-3 py-2 text-sm font-medium text-[rgba(0,0,0,0.87)] transition hover:bg-white"
+            className="ripple ripple-dark block rounded-lg px-3 py-2 text-sm font-medium text-[rgba(0,0,0,0.87)] transition hover:bg-white"
           >
             {t("profile")}
           </Link>
           <form action={logOut}>
-            <button className="w-full rounded-lg px-3 py-2 text-left text-sm font-medium text-[#c82014] transition hover:bg-white">
+            <button className="ripple ripple-dark w-full rounded-lg px-3 py-2 text-left text-sm font-medium text-[#c82014] transition hover:bg-white">
               {t("signOut")}
             </button>
           </form>

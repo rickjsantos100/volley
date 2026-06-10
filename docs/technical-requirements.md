@@ -176,7 +176,7 @@ Authorization should be enforced server-side using Supabase Row Level Security.
 
 Required access rules include:
 
-- Authenticated users can view upcoming games.
+- Authenticated users can view upcoming scheduled and cancelled games.
 - Authenticated users can join available games.
 - Authenticated users can remove themselves from participant lists.
 - Authenticated users can join and leave waitlists.
@@ -184,7 +184,13 @@ Required access rules include:
 - Users cannot see other users' payment status.
 - Admins can see and update all participant payment statuses.
 - Admins can create, edit, cancel, and delete game events.
-- Admins can manage participants and waitlists.
+- Admins can remove users from participant lists.
+- Admins can remove users from waitlists.
+- Admins can reorder active waitlist entries.
+
+Cancelled game events must remain queryable by authenticated users while their start time is still in the future. A cancelled game must not allow participant or waitlist inserts, and the UI must render it as disabled with a cancelled badge.
+
+Deleting a game event should remove it from user-facing schedule queries. Existing foreign-key behavior should intentionally decide whether related participant and waitlist rows cascade or are retained elsewhere before deletion is enabled in the UI.
 
 Admin authorization should not depend on user-editable `raw_user_meta_data`.
 
@@ -206,7 +212,31 @@ The function should run participant removal and waitlist promotion in a single t
 
 The waitlist promotion implementation should use row locking or another transaction-safe mechanism so two concurrent removals cannot promote the same waitlist entry.
 
-## 10. Deployment Requirements
+Waitlist ordering should be represented by an explicit, admin-editable ordering value rather than relying only on join timestamps. Automatic promotion must use that ordering value, with a deterministic tie-breaker such as the entry id.
+
+Admin waitlist reorder operations should be handled server-side in a transaction so duplicate or skipped positions cannot be persisted for a single game.
+
+## 10. Admin Game Management Requirements
+
+Admin game management should be implemented through server actions backed by Supabase RLS.
+
+The initial admin game-management slice should include:
+
+- An admin-only create game form.
+- Admin-only cancel and delete controls for each game detail page.
+- Dashboard and game detail rendering for cancelled upcoming games.
+- Disabled join, leave, and waitlist controls for cancelled games.
+- Server-side authorization checks before create, cancel, or delete mutations.
+
+Database support for this slice should include:
+
+- RLS policies allowing only admins to insert, update, and delete `game_events`.
+- A `cancelled` status value on `game_events` used for soft cancellation.
+- User-facing select policies that include upcoming `scheduled` and `cancelled` games.
+- Insert guards that reject participant and waitlist inserts unless the game status is `scheduled`.
+- Tests that prove regular users cannot create, cancel, delete, join, or waitlist cancelled games.
+
+## 11. Deployment Requirements
 
 The application should be deployed on Vercel.
 
@@ -231,7 +261,7 @@ For CI/CD, use encrypted repository secrets for:
 
 The project should run Supabase CLI commands from CI rather than applying production schema changes manually from local machines once the project is in active use.
 
-## 11. Source Control Requirements
+## 12. Source Control Requirements
 
 The following should be committed to source control:
 
@@ -251,7 +281,7 @@ The following should not be committed:
 - `.env.local`.
 - Production credentials.
 
-## 12. Testing Requirements
+## 13. Testing Requirements
 
 Database behavior should be tested locally before migrations are pushed to hosted Supabase.
 
@@ -263,6 +293,10 @@ Required test coverage should include:
 - Users being unable to see other participants' payment status.
 - Users joining and leaving participant lists.
 - Users joining and leaving waitlists.
+- Admin-only game creation, cancellation, and deletion.
+- Cancelled games remaining visible but non-joinable.
+- Regular users being unable to create, cancel, or delete games.
+- Admin waitlist removals and reorder operations.
 - Automatic waitlist promotion order.
 - Concurrent waitlist promotion edge cases where feasible.
 

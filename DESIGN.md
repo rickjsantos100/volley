@@ -6,14 +6,14 @@ The site should feel warm, confident, organized, and easy to use. The canvas alt
 
 Typography carries most of the product voice. Use an open, readable sans-serif with a friendly but disciplined feel. The preferred implementation font is **Inter**, with `"Helvetica Neue", Helvetica, Arial, sans-serif` as fallback. If a slightly rounder tone is desired, **Manrope** is also acceptable.
 
-Surfaces should use rounded geometry. Buttons are full-pill controls. Cards use a 12px rounded rectangle. Interactive controls should give subtle active feedback, especially the `scale(0.95)` press on primary buttons.
+Surfaces should use rounded geometry. Buttons are full-pill controls. Cards use a 12px rounded rectangle. Interactive controls should give subtle active feedback, especially the `scale(0.95)` press and ripple feedback on buttons and button-like links.
 
 **Key Characteristics:**
 - Four-tier green system: Brand / Accent / House / Uplift, each mapped to a distinct surface role.
 - Gold reserved for special status or celebratory moments only.
 - Warm-neutral canvas (`#f2f0eb` / `#edebe9`) instead of cold white.
 - Open-source sans-serif typography with tight, subtle tracking.
-- Full-pill buttons (`50px` radius) with `scale(0.95)` active press.
+- Full-pill buttons (`50px` radius) with `scale(0.95)` active press and ripple feedback.
 - 12px card radius + whisper-soft shadows keep content cards restrained.
 - Rem-based spacing scale anchored at 1.6rem (~16px) = `--space-3`, stepping to 6.4rem (~64px).
 
@@ -121,6 +121,7 @@ Do not mix multiple decorative typefaces in ordinary app surfaces.
 - Padding: `7px 16px`
 - Font: 16px, weight 600, letter-spacing `-0.01em`
 - Active state: `transform: scale(0.95)`
+- Feedback: subtle ripple on press
 - Transition: `all 0.2s ease`
 
 **Primary Outlined**
@@ -300,6 +301,7 @@ Section padding should be generous but not wasteful. Content blocks are separate
 - Keep tracking subtly tight where it remains readable.
 - Use 50px full-pill radius on primary buttons.
 - Apply `transform: scale(0.95)` as the universal button active state.
+- Apply subtle ripple feedback to buttons and links styled as buttons.
 - Reserve Gold for special status or celebratory moments only.
 - Layer 2-3 low-alpha shadows instead of one heavy drop shadow.
 - Let the cream canvas breathe between content cards; use whitespace, not dividers.

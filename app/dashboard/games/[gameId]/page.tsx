@@ -1,16 +1,31 @@
-import Link from "next/link";
+import { Suspense } from "react";
 import { notFound, redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
-import { LeaveGameForm } from "@/components/leave-game-form";
+import { AdminGameControls } from "@/components/admin-game-controls";
+import { GameParticipationActions } from "@/components/game-participation-actions";
+import { Alert } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
+import { InitialsAvatar } from "@/components/ui/initials-avatar";
+import { StatTile } from "@/components/ui/stat-tile";
 import { formatGameDateTitle } from "@/lib/format-game-date-title";
+import { formatDuration } from "@/lib/format-duration";
 import { createClient } from "@/lib/supabase/server";
-import { joinGame, joinWaitlist, leaveGame } from "./actions";
+import type { GameActionStatus } from "./actions";
+import {
+  cancelGame,
+  deleteGame,
+  joinGame,
+  joinWaitlist,
+  leaveGame,
+} from "./actions";
 
 type GameEvent = {
   id: string;
   starts_at: string;
   duration_minutes: number;
   max_participants: number;
+  status: "scheduled" | "cancelled" | "completed";
 };
 
 type ProfileRoleRow = {
@@ -43,7 +58,6 @@ type WaitlistDetail = {
 
 type GameDetailPageProps = {
   params: Promise<{ gameId: string }>;
-  searchParams: Promise<{ status?: string }>;
 };
 
 function getDisplayName(player: {
@@ -59,85 +73,9 @@ function getDisplayName(player: {
   return player.display_name || fullName || player.email || "Player";
 }
 
-function getInitials(name: string) {
-  return name
-    .split(" ")
-    .filter(Boolean)
-    .map((part) => part.charAt(0))
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
-}
-
-function StatusMessage({
-  status,
-}: {
-  status: string | undefined;
-}) {
-  const successStatuses = new Set([
-    "joined-game",
-    "joined-waitlist",
-    "left-game",
-  ]);
-
-  if (!status) {
-    return null;
-  }
-
-  return (
-    <p
-      className={
-        successStatuses.has(status)
-          ? "rounded-xl bg-[#d4e9e2] px-4 py-3 text-sm font-medium text-[#006241]"
-          : "rounded-xl bg-[hsl(4_82%_43%_/_5%)] px-4 py-3 text-sm font-medium text-[#c82014]"
-      }
-    >
-      <StatusText status={status} />
-    </p>
-  );
-}
-
-async function StatusText({ status }: { status: string }) {
-  const t = await getTranslations("GameDetailPage");
-
-  if (status === "joined-game") {
-    return t("joinedGameMessage");
-  }
-
-  if (status === "joined-waitlist") {
-    return t("joinedWaitlistMessage");
-  }
-
-  if (status === "left-game") {
-    return t("leftGameMessage");
-  }
-
-  if (status === "leave-error") {
-    return t("leaveErrorMessage");
-  }
-
-  if (status === "waitlist-error") {
-    return t("waitlistErrorMessage");
-  }
-
-  return t("joinErrorMessage");
-}
-
-function PlayerAvatar({ name }: { name: string }) {
-  return (
-    <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-[#00754A] text-sm font-semibold text-white">
-      {getInitials(name)}
-    </span>
-  );
-}
-
-export default async function GameDetailPage({
-  params,
-  searchParams,
-}: GameDetailPageProps) {
-  const [{ gameId }, { status }, t, supabase] = await Promise.all([
+export default async function GameDetailPage({ params }: GameDetailPageProps) {
+  const [{ gameId }, t, supabase] = await Promise.all([
     params,
-    searchParams,
     getTranslations("GameDetailPage"),
     createClient(),
   ]);
@@ -152,12 +90,11 @@ export default async function GameDetailPage({
   const [
     { data: game, error: gameError },
     { data: profile },
-    { data: participantRows, error: participantsError },
-    { data: waitlistRows, error: waitlistError },
+    { count: participantCount },
   ] = await Promise.all([
     supabase
       .from("game_events")
-      .select("id, starts_at, duration_minutes, max_participants")
+      .select("id, starts_at, duration_minutes, max_participants, status")
       .eq("id", gameId)
       .maybeSingle<GameEvent>(),
     supabase
@@ -166,51 +103,39 @@ export default async function GameDetailPage({
       .eq("id", user.id)
       .maybeSingle<ProfileRoleRow>(),
     supabase
-      .from("game_participant_details")
-      .select(
-        "id, game_event_id, user_id, joined_at, payment_status, display_name, first_name, last_name, email",
-      )
+      .from("game_participants")
+      .select("game_event_id", { count: "exact", head: true })
       .eq("game_event_id", gameId)
-      .order("joined_at", { ascending: true }),
-    supabase
-      .from("game_waitlist_details")
-      .select(
-        "id, game_event_id, user_id, joined_waitlist_at, position, display_name, first_name, last_name, email",
-      )
-      .eq("game_event_id", gameId)
-      .order("position", { ascending: true }),
   ]);
 
   if (gameError || !game) {
     notFound();
   }
 
-  const participants = (participantRows ?? []) as ParticipantDetail[];
-  const waitlist = (waitlistRows ?? []) as WaitlistDetail[];
   const isAdmin = profile?.role === "admin";
-  const occupiedSlots = participants.length;
+  const occupiedSlots = participantCount ?? 0;
   const isFull = occupiedSlots >= game.max_participants;
-  const isParticipant = participants.some(
-    (participant) => participant.user_id === user.id,
-  );
-  const isWaitlisted = waitlist.some((entry) => entry.user_id === user.id);
-  const hasListError = Boolean(participantsError || waitlistError);
+  const isCancelled = game.status === "cancelled";
 
-  const joinGameAction = joinGame.bind(null, game.id);
-  const joinWaitlistAction = joinWaitlist.bind(null, game.id);
-  const leaveGameAction = leaveGame.bind(null, game.id);
+  const cancelGameAction = cancelGame.bind(null, game.id);
+  const deleteGameAction = deleteGame.bind(null, game.id);
+  const statusLabels: Record<GameActionStatus, string> = {
+    "joined-game": t("joinedGameMessage"),
+    "joined-waitlist": t("joinedWaitlistMessage"),
+    "left-game": t("leftGameMessage"),
+    "cancelled-game": t("cancelledGameMessage"),
+    "join-error": t("joinErrorMessage"),
+    "waitlist-error": t("waitlistErrorMessage"),
+    "leave-error": t("leaveErrorMessage"),
+    "cancel-error": t("cancelErrorMessage"),
+    "delete-error": t("deleteErrorMessage"),
+    "not-authorized": t("notAuthorizedMessage"),
+  };
 
   return (
     <main className="min-h-screen bg-[#f2f0eb] px-4 py-20 text-[rgba(0,0,0,0.87)] sm:px-6 lg:px-10">
       <section className="mx-auto grid w-full max-w-5xl gap-5">
-        <Link
-          href="/dashboard"
-          className="w-fit rounded-full border border-[#00754A] px-5 py-2 text-sm font-semibold text-[#00754A] transition hover:bg-white active:scale-95"
-        >
-          {t("backToGames")}
-        </Link>
-
-        <article className="rounded-xl bg-white px-5 py-5 shadow-[0_0_0.5px_0_rgba(0,0,0,0.14),0_1px_1px_0_rgba(0,0,0,0.24)]">
+        <Card>
           <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <h1 className="text-2xl font-semibold tracking-[-0.01em] text-[#006241]">
@@ -218,76 +143,140 @@ export default async function GameDetailPage({
               </h1>
             </div>
 
-            {isFull ? (
-              <span className="w-fit rounded-full bg-[#1E3932] px-3 py-1 text-xs font-semibold text-white">
-                {t("fullLabel")}
-              </span>
+            {isCancelled ? (
+              <Badge variant="danger">{t("cancelledLabel")}</Badge>
+            ) : isFull ? (
+              <Badge>{t("fullLabel")}</Badge>
             ) : null}
           </div>
 
           <dl className="mt-5 grid gap-3 sm:grid-cols-2">
-            <div className="rounded-xl bg-[#f9f9f9] px-4 py-3">
-              <dt className="text-xs font-semibold tracking-[0.1em] text-[rgba(0,0,0,0.58)] uppercase">
-                {t("durationLabel")}
-              </dt>
-              <dd className="mt-1 text-base font-semibold text-[#33433d]">
-                {t("durationValue", { minutes: game.duration_minutes })}
-              </dd>
-            </div>
-            <div className="rounded-xl bg-[#f9f9f9] px-4 py-3">
-              <dt className="text-xs font-semibold tracking-[0.1em] text-[rgba(0,0,0,0.58)] uppercase">
-                {t("slotsLabel")}
-              </dt>
-              <dd className="mt-1 text-base font-semibold text-[#33433d]">
-                {t("slotsValue", {
-                  occupied: occupiedSlots,
-                  capacity: game.max_participants,
-                })}
-              </dd>
-            </div>
-          </dl>
-        </article>
-
-        <StatusMessage status={status} />
-
-        <div className="rounded-xl bg-white px-5 py-5 shadow-[0_0_0.5px_0_rgba(0,0,0,0.14),0_1px_1px_0_rgba(0,0,0,0.24)]">
-          {isParticipant ? (
-            <LeaveGameForm
-              action={leaveGameAction}
-              confirmMessage={t("leaveGameConfirmMessage")}
-              label={t("leaveGameButton")}
+            <StatTile
+              label={t("durationLabel")}
+              value={formatDuration(game.duration_minutes)}
             />
-          ) : isWaitlisted ? (
-            <button
-              type="button"
-              disabled
-              className="w-full rounded-full border border-[#00754A] bg-[#d4e9e2] px-5 py-3 text-sm font-semibold text-[#006241] sm:w-auto"
-            >
-              {t("alreadyWaitlistedButton")}
-            </button>
-          ) : isFull ? (
-            <form action={joinWaitlistAction}>
-              <button className="w-full rounded-full border border-[#00754A] bg-[#00754A] px-5 py-3 text-sm font-semibold text-white transition active:scale-95 sm:w-auto">
-                {t("joinWaitlistButton")}
-              </button>
-            </form>
-          ) : (
-            <form action={joinGameAction}>
-              <button className="w-full rounded-full border border-[#00754A] bg-[#00754A] px-5 py-3 text-sm font-semibold text-white transition active:scale-95 sm:w-auto">
-                {t("joinGameButton")}
-              </button>
-            </form>
-          )}
-        </div>
+            <StatTile
+              label={t("slotsLabel")}
+              value={t("slotsValue", {
+                occupied: occupiedSlots,
+                capacity: game.max_participants,
+              })}
+            />
+          </dl>
+        </Card>
 
-        {hasListError ? (
-          <p className="rounded-xl bg-[hsl(4_82%_43%_/_5%)] px-4 py-3 text-sm font-medium text-[#c82014]">
-            {t("listLoadError")}
-          </p>
+        {isAdmin ? (
+          <AdminGameControls
+            cancelAction={cancelGameAction}
+            cancelConfirmMessage={t("cancelGameConfirmMessage")}
+            cancelLabel={t("cancelGameButton")}
+            deleteAction={deleteGameAction}
+            deleteConfirmMessage={t("deleteGameConfirmMessage")}
+            deleteLabel={t("deleteGameButton")}
+            isCancelled={isCancelled}
+            statusLabels={statusLabels}
+          />
         ) : null}
 
+        <Suspense fallback={<GameDetailContentSkeleton />}>
+          <GameDetailContent
+            game={game}
+            isAdmin={isAdmin}
+            isCancelled={isCancelled}
+            userId={user.id}
+          />
+        </Suspense>
+      </section>
+    </main>
+  );
+}
+
+async function GameDetailContent({
+  game,
+  isAdmin,
+  isCancelled,
+  userId,
+}: {
+  game: GameEvent;
+  isAdmin: boolean;
+  isCancelled: boolean;
+  userId: string;
+}) {
+  const [t, supabase] = await Promise.all([
+    getTranslations("GameDetailPage"),
+    createClient(),
+  ]);
+  const [
+    { data: participantRows, error: participantsError },
+    { data: waitlistRows, error: waitlistError },
+  ] = await Promise.all([
+    supabase
+      .from("game_participant_details")
+      .select(
+        "id, game_event_id, user_id, joined_at, payment_status, display_name, first_name, last_name, email",
+      )
+      .eq("game_event_id", game.id)
+      .order("joined_at", { ascending: true }),
+    supabase
+      .from("game_waitlist_details")
+      .select(
+        "id, game_event_id, user_id, joined_waitlist_at, position, display_name, first_name, last_name, email",
+      )
+      .eq("game_event_id", game.id)
+      .order("position", { ascending: true }),
+  ]);
+
+  const participants = (participantRows ?? []) as ParticipantDetail[];
+  const waitlist = (waitlistRows ?? []) as WaitlistDetail[];
+  const occupiedSlots = participants.length;
+  const isFull = occupiedSlots >= game.max_participants;
+  const isParticipant = participants.some(
+    (participant) => participant.user_id === userId,
+  );
+  const isWaitlisted = waitlist.some((entry) => entry.user_id === userId);
+  const hasListError = Boolean(participantsError || waitlistError);
+  const joinGameAction = joinGame.bind(null, game.id);
+  const joinWaitlistAction = joinWaitlist.bind(null, game.id);
+  const leaveGameAction = leaveGame.bind(null, game.id);
+  const statusLabels: Record<GameActionStatus, string> = {
+    "joined-game": t("joinedGameMessage"),
+    "joined-waitlist": t("joinedWaitlistMessage"),
+    "left-game": t("leftGameMessage"),
+    "cancelled-game": t("cancelledGameMessage"),
+    "join-error": t("joinErrorMessage"),
+    "waitlist-error": t("waitlistErrorMessage"),
+    "leave-error": t("leaveErrorMessage"),
+    "cancel-error": t("cancelErrorMessage"),
+    "delete-error": t("deleteErrorMessage"),
+    "not-authorized": t("notAuthorizedMessage"),
+  };
+
+  return (
+    <>
+      {isCancelled ? (
+        <Alert>{t("cancelledGameNotice")}</Alert>
+      ) : (
+        <GameParticipationActions
+          alreadyWaitlistedLabel={t("alreadyWaitlistedButton")}
+          confirmLeaveMessage={t("leaveGameConfirmMessage")}
+          isFull={isFull}
+          isParticipant={isParticipant}
+          isWaitlisted={isWaitlisted}
+          joinGameAction={joinGameAction}
+          joinGameLabel={t("joinGameButton")}
+          joinWaitlistAction={joinWaitlistAction}
+          joinWaitlistLabel={t("joinWaitlistButton")}
+          leaveGameAction={leaveGameAction}
+          leaveGameLabel={t("leaveGameButton")}
+          statusLabels={statusLabels}
+        />
+      )}
+
+      {hasListError ? <Alert>{t("listLoadError")}</Alert> : null}
+
+      {!hasListError ? (
         <div className="grid gap-5 lg:grid-cols-2">
-          <section className="rounded-xl bg-white px-5 py-5 shadow-[0_0_0.5px_0_rgba(0,0,0,0.14),0_1px_1px_0_rgba(0,0,0,0.24)]">
+          <Card>
             <h2 className="text-xl font-semibold tracking-[-0.01em] text-[#006241]">
               {t("participantsTitle")}
             </h2>
@@ -307,33 +296,33 @@ export default async function GameDetailPage({
                       className="flex items-center justify-between gap-3 rounded-xl bg-[#f9f9f9] px-4 py-3"
                     >
                       <div className="flex min-w-0 items-center gap-3">
-                        <PlayerAvatar name={name} />
+                        <InitialsAvatar name={name} />
                         <p className="truncate text-sm font-semibold text-[#33433d]">
                           {name}
                         </p>
                       </div>
 
                       {isAdmin ? (
-                        <span
-                          className={
+                        <Badge
+                          variant={
                             participant.payment_status === "paid"
-                              ? "shrink-0 rounded-full bg-[#d4e9e2] px-3 py-1 text-xs font-semibold text-[#006241]"
-                              : "shrink-0 rounded-full bg-[#faf6ee] px-3 py-1 text-xs font-semibold text-[#33433d]"
+                              ? "success"
+                              : "soft"
                           }
                         >
                           {participant.payment_status === "paid"
                             ? t("paidLabel")
                             : t("unpaidLabel")}
-                        </span>
+                        </Badge>
                       ) : null}
                     </li>
                   );
                 })}
               </ul>
             )}
-          </section>
+          </Card>
 
-          <section className="rounded-xl bg-white px-5 py-5 shadow-[0_0_0.5px_0_rgba(0,0,0,0.14),0_1px_1px_0_rgba(0,0,0,0.24)]">
+          <Card>
             <h2 className="text-xl font-semibold tracking-[-0.01em] text-[#006241]">
               {t("waitlistTitle")}
             </h2>
@@ -355,7 +344,7 @@ export default async function GameDetailPage({
                       <span className="text-sm font-semibold text-[rgba(0,0,0,0.58)]">
                         {entry.position}
                       </span>
-                      <PlayerAvatar name={name} />
+                      <InitialsAvatar name={name} />
                       <p className="min-w-0 truncate text-sm font-semibold text-[#33433d]">
                         {name}
                       </p>
@@ -364,9 +353,54 @@ export default async function GameDetailPage({
                 })}
               </ul>
             )}
-          </section>
+          </Card>
         </div>
-      </section>
-    </main>
+      ) : null}
+    </>
+  );
+}
+
+function SkeletonLine({ className }: { className: string }) {
+  return (
+    <div
+      className={`animate-pulse rounded-full bg-[rgba(0,0,0,0.08)] ${className}`}
+    />
+  );
+}
+
+function GameDetailContentSkeleton() {
+  return (
+    <>
+      <Card>
+        <div className="flex flex-col gap-3 sm:flex-row">
+          <SkeletonLine className="h-10 w-full sm:w-36" />
+          <SkeletonLine className="h-10 w-full sm:w-36" />
+        </div>
+      </Card>
+
+      <div className="grid gap-5 lg:grid-cols-2">
+        <GameListSkeleton />
+        <GameListSkeleton />
+      </div>
+    </>
+  );
+}
+
+function GameListSkeleton() {
+  return (
+    <Card>
+      <SkeletonLine className="h-7 w-40" />
+      <div className="mt-4 grid gap-3">
+        {[0, 1, 2].map((index) => (
+          <div
+            className="flex items-center gap-3 rounded-xl bg-[#f9f9f9] px-4 py-3"
+            key={index}
+          >
+            <SkeletonLine className="h-9 w-9 shrink-0" />
+            <SkeletonLine className="h-4 w-36" />
+          </div>
+        ))}
+      </div>
+    </Card>
   );
 }

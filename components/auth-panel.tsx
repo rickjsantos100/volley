@@ -2,15 +2,15 @@
 
 import type { ReactNode } from "react";
 import type { FormEvent } from "react";
-import { useState } from "react";
+import { useActionState, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useFormStatus } from "react-dom";
+import type { AuthActionState } from "@/app/auth/actions";
 import { signIn, signUp } from "@/app/auth/actions";
-
-type AuthPanelProps = {
-  errorKey?: string | null;
-  redirectTo?: "/";
-};
+import { Alert } from "@/components/ui/alert";
+import { Button, SubmitButton } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Field } from "@/components/ui/field";
 
 type LoginField = "email" | "password";
 
@@ -50,45 +50,7 @@ const emptySignupTouched: SignupTouched = {
   password: false,
 };
 
-function getInputClass(hasError: boolean) {
-  const errorClass =
-    "border-[#c82014] focus:border-[#c82014] focus:ring-2 focus:ring-[hsl(4_82%_43%_/_18%)]";
-  const defaultClass =
-    "border-[rgba(0,0,0,0.16)] focus:border-[#00754A] focus:ring-2 focus:ring-[#d4e9e2]";
-
-  return `w-full rounded-xl border bg-white px-4 py-3 text-base outline-none transition disabled:cursor-not-allowed disabled:bg-[#f9f9f9] ${
-    hasError ? errorClass : defaultClass
-  }`;
-}
-
-function SubmitButton({
-  children,
-  formAction,
-  disabled = false,
-}: {
-  children: ReactNode;
-  formAction: (formData: FormData) => void | Promise<void>;
-  disabled?: boolean;
-}) {
-  const { pending } = useFormStatus();
-  const isDisabled = pending || disabled;
-
-  return (
-    <button
-      formAction={formAction}
-      disabled={isDisabled}
-      className="flex w-full items-center justify-center gap-2 rounded-full border border-[#00754A] bg-[#00754A] px-5 py-3 text-sm font-semibold text-white transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-70 disabled:active:scale-100"
-    >
-      {pending ? (
-        <span
-          aria-hidden="true"
-          className="size-4 animate-spin rounded-full border-2 border-white/40 border-t-white"
-        />
-      ) : null}
-      <span>{children}</span>
-    </button>
-  );
-}
+const initialAuthActionState: AuthActionState = {};
 
 function PendingFieldset({ children }: { children: ReactNode }) {
   const { pending } = useFormStatus();
@@ -100,7 +62,7 @@ function PendingFieldset({ children }: { children: ReactNode }) {
   );
 }
 
-export function AuthPanel({ errorKey, redirectTo = "/" }: AuthPanelProps) {
+export function AuthPanel() {
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [loginValues, setLoginValues] =
     useState<LoginValues>(emptyLoginValues);
@@ -133,6 +95,50 @@ export function AuthPanel({ errorKey, redirectTo = "/" }: AuthPanelProps) {
   };
   const isLoginValid = Object.values(loginErrors).every((error) => !error);
   const isSignupValid = Object.values(signupErrors).every((error) => !error);
+
+  async function handleLoginAction(
+    previousState: AuthActionState,
+    formData: FormData,
+  ) {
+    const nextState = await signIn(previousState, formData);
+
+    if (nextState.error) {
+      setLoginValues((currentValues) => ({
+        ...currentValues,
+        password: "",
+      }));
+    }
+
+    return nextState;
+  }
+
+  async function handleSignupAction(
+    previousState: AuthActionState,
+    formData: FormData,
+  ) {
+    const nextState = await signUp(previousState, formData);
+
+    if (nextState.error) {
+      setMode("signup");
+      setSignupValues((currentValues) => ({
+        ...currentValues,
+        password: "",
+      }));
+    }
+
+    return nextState;
+  }
+
+  const [loginState, loginAction] = useActionState(
+    handleLoginAction,
+    initialAuthActionState,
+  );
+  const [signupState, signupAction] = useActionState(
+    handleSignupAction,
+    initialAuthActionState,
+  );
+  const activeError =
+    mode === "login" ? loginState.error : signupState.error;
 
   function updateLoginField(field: LoginField, value: string) {
     setLoginValues((currentValues) => ({
@@ -205,115 +211,73 @@ export function AuthPanel({ errorKey, redirectTo = "/" }: AuthPanelProps) {
   }
 
   return (
-    <div className="rounded-xl border border-[rgba(0,0,0,0.14)] bg-white p-5 shadow-[0_0_0.5px_0_rgba(0,0,0,0.14),0_1px_1px_0_rgba(0,0,0,0.12)]">
+    <Card className="p-5" variant="muted">
       <div className="grid grid-cols-2 rounded-full border border-[rgba(0,0,0,0.16)] bg-[#f9f9f9] p-1">
-        <button
+        <Button
           type="button"
           onClick={() => setMode("login")}
           data-active={mode === "login"}
-          className="rounded-full px-4 py-3 text-sm font-semibold text-[#33433d] transition active:scale-95 data-[active=true]:bg-[#00754A] data-[active=true]:text-white"
+          variant="ghost"
+          className="border-transparent px-4 py-3 text-[#33433d] data-[active=true]:bg-[#00754A] data-[active=true]:text-white"
         >
           {t("loginButton")}
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
           onClick={() => setMode("signup")}
           data-active={mode === "signup"}
-          className="rounded-full px-4 py-3 text-sm font-semibold text-[#33433d] transition active:scale-95 data-[active=true]:bg-[#00754A] data-[active=true]:text-white"
+          variant="ghost"
+          className="border-transparent px-4 py-3 text-[#33433d] data-[active=true]:bg-[#00754A] data-[active=true]:text-white"
         >
           {t("signupButton")}
-        </button>
+        </Button>
       </div>
 
-      {errorKey ? (
-        <p className="mt-5 rounded-xl bg-[hsl(4_82%_43%_/_5%)] px-4 py-3 text-sm font-medium text-[#c82014]">
-          {t(`errors.${errorKey}`)}
-        </p>
+      {activeError ? (
+        <Alert className="mt-5">{t(`errors.${activeError}`)}</Alert>
       ) : null}
 
       {mode === "login" ? (
         <form
           key="login-form"
+          action={loginAction}
           className="mt-7 space-y-5"
           noValidate
           onSubmit={handleLoginSubmit}
         >
           <PendingFieldset>
-            <input type="hidden" name="redirectTo" value={redirectTo} />
-            <div className="space-y-2">
-              <label
-                htmlFor="home-login-email"
-                className="block text-sm font-semibold text-[#33433d]"
-              >
-                {t("emailLabel")}
-              </label>
-              <input
-                id="home-login-email"
-                name="email"
-                type="email"
-                required
-                value={loginValues.email}
-                autoComplete="email"
-                placeholder={t("emailPlaceholder")}
-                aria-invalid={Boolean(getLoginError("email"))}
-                aria-describedby={
-                  getLoginError("email") ? "home-login-email-error" : undefined
-                }
-                onBlur={() => markLoginFieldTouched("email")}
-                onChange={(event) =>
-                  updateLoginField("email", event.target.value)
-                }
-                className={getInputClass(Boolean(getLoginError("email")))}
-              />
-              {getLoginError("email") ? (
-                <p
-                  id="home-login-email-error"
-                  className="text-sm font-medium text-[#c82014]"
-                >
-                  {getLoginError("email")}
-                </p>
-              ) : null}
-            </div>
+            <Field
+              autoComplete="email"
+              error={getLoginError("email")}
+              id="home-login-email"
+              label={t("emailLabel")}
+              name="email"
+              onBlur={() => markLoginFieldTouched("email")}
+              onChange={(event) => updateLoginField("email", event.target.value)}
+              placeholder={t("emailPlaceholder")}
+              required
+              type="email"
+              value={loginValues.email}
+            />
 
-            <div className="space-y-2">
-              <label
-                htmlFor="home-login-password"
-                className="block text-sm font-semibold text-[#33433d]"
-              >
-                {t("passwordLabel")}
-              </label>
-              <input
-                id="home-login-password"
-                name="password"
-                type="password"
-                required
-                minLength={8}
-                value={loginValues.password}
-                autoComplete="current-password"
-                placeholder={t("loginPasswordPlaceholder")}
-                aria-invalid={Boolean(getLoginError("password"))}
-                aria-describedby={
-                  getLoginError("password")
-                    ? "home-login-password-error"
-                    : undefined
-                }
-                onBlur={() => markLoginFieldTouched("password")}
-                onChange={(event) =>
-                  updateLoginField("password", event.target.value)
-                }
-                className={getInputClass(Boolean(getLoginError("password")))}
-              />
-              {getLoginError("password") ? (
-                <p
-                  id="home-login-password-error"
-                  className="text-sm font-medium text-[#c82014]"
-                >
-                  {getLoginError("password")}
-                </p>
-              ) : null}
-            </div>
+            <Field
+              autoComplete="current-password"
+              error={getLoginError("password")}
+              id="home-login-password"
+              label={t("passwordLabel")}
+              minLength={8}
+              name="password"
+              onBlur={() => markLoginFieldTouched("password")}
+              onChange={(event) =>
+                updateLoginField("password", event.target.value)
+              }
+              placeholder={t("loginPasswordPlaceholder")}
+              required
+              type="password"
+              value={loginValues.password}
+            />
 
-            <SubmitButton formAction={signIn} disabled={!isLoginValid}>
+            <SubmitButton disabled={!isLoginValid} fullWidth>
               {t("loginButton")}
             </SubmitButton>
           </PendingFieldset>
@@ -321,174 +285,100 @@ export function AuthPanel({ errorKey, redirectTo = "/" }: AuthPanelProps) {
       ) : (
         <form
           key="signup-form"
+          action={signupAction}
           className="mt-7 space-y-5"
           noValidate
           onSubmit={handleSignupSubmit}
         >
           <PendingFieldset>
-            <input type="hidden" name="redirectTo" value={redirectTo} />
             <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <label
-                  htmlFor="home-first-name"
-                  className="block text-sm font-semibold text-[#33433d]"
-                >
-                  {t("firstNameLabel")}
-                </label>
-                <input
-                  id="home-first-name"
-                  name="firstName"
-                  type="text"
-                  required
-                  value={signupValues.firstName}
-                  autoComplete="given-name"
-                  placeholder={t("firstNamePlaceholder")}
-                  aria-invalid={Boolean(getSignupError("firstName"))}
-                  aria-describedby={
-                    getSignupError("firstName")
-                      ? "home-first-name-error"
-                      : undefined
-                  }
-                  onBlur={() => markSignupFieldTouched("firstName")}
-                  onChange={(event) =>
-                    updateSignupField("firstName", event.target.value)
-                  }
-                  className={getInputClass(Boolean(getSignupError("firstName")))}
-                />
-                {getSignupError("firstName") ? (
-                  <p
-                    id="home-first-name-error"
-                    className="text-sm font-medium text-[#c82014]"
-                  >
-                    {getSignupError("firstName")}
-                  </p>
-                ) : null}
-              </div>
-
-              <div className="space-y-2">
-                <label
-                  htmlFor="home-last-name"
-                  className="block text-sm font-semibold text-[#33433d]"
-                >
-                  {t("lastNameLabel")}
-                </label>
-                <input
-                  id="home-last-name"
-                  name="lastName"
-                  type="text"
-                  required
-                  value={signupValues.lastName}
-                  autoComplete="family-name"
-                  placeholder={t("lastNamePlaceholder")}
-                  aria-invalid={Boolean(getSignupError("lastName"))}
-                  aria-describedby={
-                    getSignupError("lastName")
-                      ? "home-last-name-error"
-                      : undefined
-                  }
-                  onBlur={() => markSignupFieldTouched("lastName")}
-                  onChange={(event) =>
-                    updateSignupField("lastName", event.target.value)
-                  }
-                  className={getInputClass(Boolean(getSignupError("lastName")))}
-                />
-                {getSignupError("lastName") ? (
-                  <p
-                    id="home-last-name-error"
-                    className="text-sm font-medium text-[#c82014]"
-                  >
-                    {getSignupError("lastName")}
-                  </p>
-                ) : null}
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <label
-                htmlFor="home-signup-email"
-                className="block text-sm font-semibold text-[#33433d]"
-              >
-                {t("emailLabel")}
-              </label>
-              <input
-                id="home-signup-email"
-                name="email"
-                type="email"
-                required
-                value={signupValues.email}
-                autoComplete="email"
-                placeholder={t("emailPlaceholder")}
-                aria-invalid={Boolean(getSignupError("email"))}
-                aria-describedby={
-                  getSignupError("email") ? "home-signup-email-error" : undefined
-                }
-                onBlur={() => markSignupFieldTouched("email")}
+              <Field
+                autoComplete="given-name"
+                error={getSignupError("firstName")}
+                id="home-first-name"
+                label={t("firstNameLabel")}
+                name="firstName"
+                onBlur={() => markSignupFieldTouched("firstName")}
                 onChange={(event) =>
-                  updateSignupField("email", event.target.value)
+                  updateSignupField("firstName", event.target.value)
                 }
-                className={getInputClass(Boolean(getSignupError("email")))}
+                placeholder={t("firstNamePlaceholder")}
+                required
+                type="text"
+                value={signupValues.firstName}
               />
-              {getSignupError("email") ? (
-                <p
-                  id="home-signup-email-error"
-                  className="text-sm font-medium text-[#c82014]"
-                >
-                  {getSignupError("email")}
-                </p>
-              ) : null}
+
+              <Field
+                autoComplete="family-name"
+                error={getSignupError("lastName")}
+                id="home-last-name"
+                label={t("lastNameLabel")}
+                name="lastName"
+                onBlur={() => markSignupFieldTouched("lastName")}
+                onChange={(event) =>
+                  updateSignupField("lastName", event.target.value)
+                }
+                placeholder={t("lastNamePlaceholder")}
+                required
+                type="text"
+                value={signupValues.lastName}
+              />
             </div>
 
-            <div className="space-y-2">
-              <label
-                htmlFor="home-signup-password"
-                className="block text-sm font-semibold text-[#33433d]"
-              >
-                {t("passwordLabel")}
-              </label>
-              <input
-                id="home-signup-password"
-                name="password"
-                type="password"
-                required
-                minLength={8}
-                value={signupValues.password}
-                autoComplete="new-password"
-                placeholder={t("signupPasswordPlaceholder")}
-                aria-invalid={Boolean(getSignupError("password"))}
+            <Field
+              autoComplete="email"
+              error={getSignupError("email")}
+              id="home-signup-email"
+              label={t("emailLabel")}
+              name="email"
+              onBlur={() => markSignupFieldTouched("email")}
+              onChange={(event) =>
+                updateSignupField("email", event.target.value)
+              }
+              placeholder={t("emailPlaceholder")}
+              required
+              type="email"
+              value={signupValues.email}
+            />
+
+            <div>
+              <Field
                 aria-describedby={
                   getSignupError("password")
                     ? "home-signup-password-error"
                     : "home-signup-password-hint"
                 }
+                autoComplete="new-password"
+                error={getSignupError("password")}
+                id="home-signup-password"
+                label={t("passwordLabel")}
+                minLength={8}
+                name="password"
                 onBlur={() => markSignupFieldTouched("password")}
                 onChange={(event) =>
                   updateSignupField("password", event.target.value)
                 }
-                className={getInputClass(Boolean(getSignupError("password")))}
+                placeholder={t("signupPasswordPlaceholder")}
+                required
+                type="password"
+                value={signupValues.password}
               />
-              {getSignupError("password") ? (
-                <p
-                  id="home-signup-password-error"
-                  className="text-sm font-medium text-[#c82014]"
-                >
-                  {getSignupError("password")}
-                </p>
-              ) : (
+              {!getSignupError("password") ? (
                 <p
                   id="home-signup-password-hint"
-                  className="text-sm leading-6 text-[#33433d]"
+                  className="mt-2 text-sm leading-6 text-[#33433d]"
                 >
                   {t("passwordHint")}
                 </p>
-              )}
+              ) : null}
             </div>
 
-            <SubmitButton formAction={signUp} disabled={!isSignupValid}>
+            <SubmitButton disabled={!isSignupValid}>
               {t("signupButton")}
             </SubmitButton>
           </PendingFieldset>
         </form>
       )}
-    </div>
+    </Card>
   );
 }

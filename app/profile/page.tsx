@@ -48,7 +48,7 @@ export default async function ProfilePage() {
 
         <Link
           href="/dashboard"
-          className="mt-4 block rounded-full border border-[#00754A] bg-white px-5 py-3 text-center text-sm font-semibold text-[#00754A] transition active:scale-95"
+          className="ripple ripple-dark mt-4 block rounded-full border border-[#00754A] bg-white px-5 py-3 text-center text-sm font-semibold text-[#00754A] transition active:scale-95"
         >
           {t("backToDashboard")}
         </Link>
