@@ -189,7 +189,7 @@ export function AdminGameControls({
         title={deleteScopeTitle}
       >
         <div className="mt-5 grid gap-4">
-          <p className="text-sm leading-6 text-[#33433d]">{deleteScopeIntro}</p>
+          <p className="text-sm leading-6 text-[#26375f]">{deleteScopeIntro}</p>
 
           <div className="flex flex-wrap gap-3">
             <form action={deleteFormAction}>
@@ -218,7 +218,7 @@ export function AdminGameControls({
       >
         {pendingConfirmation ? (
           <div className="mt-5 grid gap-4">
-            <p className="text-sm leading-6 text-[#33433d]">
+            <p className="text-sm leading-6 text-[#26375f]">
               {pendingConfirmation.message}
             </p>
             <form

@@ -1,46 +1,46 @@
-# Warm Green Design System
+# Volleyball Blue/Yellow Design System
 
 ## 1. Visual Theme & Atmosphere
 
-The site should feel warm, confident, organized, and easy to use. The canvas alternates between a neutral-warm cream (`#f2f0eb`) and a ceramic off-white (`#edebe9`), while a layered green palette anchors primary actions, navigation, and feature bands. Gold (`#cba258`) should be used sparingly for special status, premium, or celebratory moments, not as a general accent.
+The site should feel energetic, confident, organized, and easy to use. The canvas alternates between a soft volleyball-yellow wash (`#fff8d8`) and a pale yellow surface (`#fff3b0`), while a layered blue palette anchors identity, navigation, outlines, and high-contrast panels. Bright ball yellow (`#ffd21a`) should carry primary actions and selected states, balanced by navy text for contrast.
 
 Typography carries most of the product voice. Use an open, readable sans-serif with a friendly but disciplined feel. The preferred implementation font is **Inter**, with `"Helvetica Neue", Helvetica, Arial, sans-serif` as fallback. If a slightly rounder tone is desired, **Manrope** is also acceptable.
 
 Surfaces should use rounded geometry. Buttons are full-pill controls. Cards use a 12px rounded rectangle. Interactive controls should give subtle active feedback, especially the `scale(0.95)` press and ripple feedback on buttons and button-like links.
 
 **Key Characteristics:**
-- Four-tier green system: Brand / Accent / House / Uplift, each mapped to a distinct surface role.
-- Gold reserved for special status or celebratory moments only.
-- Warm-neutral canvas (`#f2f0eb` / `#edebe9`) instead of cold white.
+- Volleyball palette: deep blue / navy / royal blue / ball yellow, each mapped to a distinct surface role.
+- Yellow reserved for primary action, active state, and volleyball identity moments.
+- Warm yellow canvas (`#fff8d8` / `#fff3b0`) instead of cold white.
 - Open-source sans-serif typography with tight, subtle tracking.
 - Full-pill buttons (`50px` radius) with `scale(0.95)` active press and ripple feedback.
 - 12px card radius + whisper-soft shadows keep content cards restrained.
 - Rem-based spacing scale anchored at 1.6rem (~16px) = `--space-3`, stepping to 6.4rem (~64px).
 
-**Color-block page rhythm:** Cream hero -> White content sections -> Dark-green (`#1E3932`) feature band with white text -> Cream utility zone -> Dark-green (`#1E3932`) footer.
+**Color-block page rhythm:** Pale yellow hero -> White content sections -> Navy (`#061b6b`) feature band with white text -> Yellow utility zone -> Navy (`#061b6b`) footer.
 
 ## 2. Color Palette & Roles
 
 ### Primary
 
-- **Brand Green** (`#006241`): Main brand green. Use for important headings, key brand moments, and primary identity.
-- **Green Accent** (`#00754A`): Brighter action green. Use for primary filled CTAs.
-- **House Green** (`#1E3932`): Deep near-black green. Use for footer surfaces, feature-band backgrounds, and high-contrast panels.
-- **Green Uplift** (`#2b5148`): Secondary mid-dark green used sparingly for decorative accents.
-- **Green Light** (`#d4e9e2`): Pale mint wash used for form-valid-state tints and light green utility surfaces.
+- **Brand Blue** (`#0737a8`): Main identity blue. Use for important headings, key brand moments, and primary identity.
+- **Ball Yellow** (`#ffd21a`): Bright volleyball yellow. Use for primary filled CTAs and selected states with navy text.
+- **Navy Blue** (`#061b6b`): Deep blue. Use for footer surfaces, feature-band backgrounds, and high-contrast panels.
+- **Royal Blue** (`#0b46c7`): Secondary vivid blue used sparingly for decorative accents and hover states.
+- **Pale Yellow** (`#fff3b0`): Soft yellow wash used for valid states, selected-state tints, and quiet utility surfaces.
 
 ### Secondary & Accent
 
-- **Gold** (`#cba258`): Reserved for special status, achievement, premium, or celebratory moments. Do not use as a general-purpose accent.
-- **Gold Light** (`#dfc49d`): Softer gold for background washes around special-status sections.
-- **Gold Lightest** (`#faf6ee`): Cream-gold page-surface wash for soft premium/celebratory sections.
+- **Golden Yellow** (`#f2b800`): Shaded ball yellow for special status, achievement, or premium moments.
+- **Yellow Light** (`#ffe98a`): Softer yellow for hover states and background washes.
+- **Yellow Lightest** (`#fff8d8`): Primary page-surface wash.
 
 ### Surface & Background
 
 - **White** (`#ffffff`): Primary card and modal surface.
 - **Neutral Cool** (`#f9f9f9`): Subtle cool-gray surface for dropdowns, form-card wraps, and quiet utility containers.
-- **Neutral Warm** (`#f2f0eb`): Warm cream primary page canvas.
-- **Ceramic** (`#edebe9`): Slightly warmer/darker cream for zone separators and soft page-section washes.
+- **Volleyball Canvas** (`#fff8d8`): Warm yellow primary page canvas.
+- **Pale Yellow** (`#fff3b0`): Slightly stronger yellow for zone separators and soft page-section washes.
 - **Black** (`#000000`): Deep ink for very high-contrast controls only.
 
 ### Neutrals & Text
@@ -49,13 +49,13 @@ Surfaces should use rounded geometry. Buttons are full-pill controls. Cards use 
 - **Text Black Soft** (`rgba(0, 0, 0, 0.58)`): Secondary/metadata text on light surfaces.
 - **Text White** (`rgba(255, 255, 255, 1)`): Primary heading/body text on dark green surfaces.
 - **Text White Soft** (`rgba(255, 255, 255, 0.70)`): Secondary text on dark-green surfaces.
-- **Muted Green Text** (`#33433d`): Muted slate-green for softer text blocks where black feels too severe.
+- **Muted Blue Text** (`#26375f`): Muted slate-blue for softer text blocks where black feels too severe.
 
 ### Semantic & Accent
 
 - **Red** (`#c82014`): Error and destructive state.
 - **Yellow** (`#fbbc05`): Warning state.
-- **Green Light** (`#d4e9e2` at 33% opacity = `hsl(160 32% 87% / 33%)`): Valid-field tint background.
+- **Pale Yellow** (`#fff3b0`): Valid-field tint background.
 - **Red Tint** (`hsl(4 82% 43% / 5%)`): Invalid-field tint on forms.
 
 ### Black / White Alpha Ladders
@@ -114,9 +114,9 @@ Do not mix multiple decorative typefaces in ordinary app surfaces.
 ### Buttons
 
 **Primary Filled**
-- Background: `#00754A` (Green Accent)
-- Text: `#ffffff`
-- Border: `1px solid #00754A`
+- Background: `#ffd21a` (Ball Yellow)
+- Text: `#061b6b`
+- Border: `1px solid #ffd21a`
 - Radius: `50px`
 - Padding: `7px 16px`
 - Font: 16px, weight 600, letter-spacing `-0.01em`
@@ -126,8 +126,8 @@ Do not mix multiple decorative typefaces in ordinary app surfaces.
 
 **Primary Outlined**
 - Background: transparent
-- Text: `#00754A`
-- Border: `1px solid #00754A`
+- Text: `#0737a8`
+- Border: `1px solid #0737a8`
 - Same radius/padding/active/transition as Primary Filled.
 
 **Black Filled**
@@ -149,7 +149,7 @@ Do not mix multiple decorative typefaces in ordinary app surfaces.
 
 **Inverted on Dark**
 - Background: `#ffffff`
-- Text: `#00754A`
+- Text: `#0737a8`
 - Border: `1px solid #ffffff`
 - Use when the surface behind the button is House Green.
 
@@ -168,7 +168,7 @@ Do not mix multiple decorative typefaces in ordinary app surfaces.
 - Use for repeated content, dashboard summaries, game cards, and framed tools.
 
 **Status Card**
-- Background: usually `#ffffff` or `#1E3932` depending on importance.
+- Background: usually `#ffffff` or `#061b6b` depending on importance.
 - Radius and shadow follow default card spec.
 - Use for stateful items such as game status, payment status, waitlist position, or admin summaries.
 
@@ -221,7 +221,7 @@ Do not mix multiple decorative typefaces in ordinary app surfaces.
 
 ### Feature Band
 
-Full-width `#1E3932` (House Green) band with:
+Full-width `#061b6b` (Navy Blue) band with:
 - Left: white headline + subhead + CTA row.
 - Right: relevant product, app, or domain imagery when useful.
 - Split ratio ~40/60 or 50/50 depending on section.
@@ -267,7 +267,7 @@ Rem-based semantic scale:
 
 ### Whitespace Philosophy
 
-Section padding should be generous but not wasteful. Content blocks are separated by whitespace rather than dividers. The cream canvas (`#f2f0eb`) provides visual breathing room between white cards and green feature bands.
+Section padding should be generous but not wasteful. Content blocks are separated by whitespace rather than dividers. The volleyball-yellow canvas (`#fff8d8`) provides visual breathing room between white cards and navy feature bands.
 
 ### Border Radius Scale
 
@@ -296,20 +296,20 @@ Section padding should be generous but not wasteful. Content blocks are separate
 ## 7. Do's and Don'ts
 
 ### Do
-- Use Neutral Warm (`#f2f0eb`) or Ceramic (`#edebe9`) as page canvas instead of pure white.
-- Map the green tiers to their intended surface role: Brand Green for headings, Green Accent for CTAs, House Green for deep bands, Uplift for decorative accents.
+- Use Volleyball Canvas (`#fff8d8`) or Pale Yellow (`#fff3b0`) as page canvas instead of pure white.
+- Map the volleyball palette to its intended surface role: Brand Blue for headings, Ball Yellow for CTAs, Navy Blue for deep bands, Royal Blue for decorative accents.
 - Keep tracking subtly tight where it remains readable.
 - Use 50px full-pill radius on primary buttons.
 - Apply `transform: scale(0.95)` as the universal button active state.
 - Apply subtle ripple feedback to buttons and links styled as buttons.
-- Reserve Gold for special status or celebratory moments only.
+- Reserve Golden Yellow for special status or celebratory moments only.
 - Layer 2-3 low-alpha shadows instead of one heavy drop shadow.
 - Let the cream canvas breathe between content cards; use whitespace, not dividers.
 
 ### Don't
 - Don't use pure white as the page canvas by default.
-- Don't flatten the green system into a single color.
-- Don't use Gold as a general-purpose accent.
+- Don't flatten the blue/yellow system into a single color.
+- Don't use Golden Yellow as a general-purpose accent.
 - Don't square primary action buttons.
 - Don't introduce gradient fills as a default surface treatment.
 - Don't use pure black for body text.

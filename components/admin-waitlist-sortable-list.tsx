@@ -199,7 +199,7 @@ function SortableWaitlistItem({
       >
         <div className="flex min-w-0 flex-1 items-center gap-3">
           <InitialsAvatar name={item.name} />
-          <p className="min-w-0 truncate text-sm font-semibold text-[#33433d]">
+          <p className="min-w-0 truncate text-sm font-semibold text-[#26375f]">
             {item.name}
           </p>
         </div>

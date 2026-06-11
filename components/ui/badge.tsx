@@ -5,9 +5,9 @@ type BadgeVariant = "danger" | "dark" | "soft" | "success";
 
 const variants: Record<BadgeVariant, string> = {
   danger: "bg-[#c82014] text-white",
-  dark: "bg-[#1E3932] text-white",
-  soft: "bg-[#faf6ee] text-[#33433d]",
-  success: "bg-[#d4e9e2] text-[#006241]",
+  dark: "bg-[#061b6b] text-white",
+  soft: "bg-[#fff3b0] text-[#26375f]",
+  success: "bg-[#fff3b0] text-[#0737a8]",
 };
 
 export function Badge({

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { AccountMenu } from "@/components/account-menu";
 import { LanguageToggle } from "@/components/language-toggle";
 import { createClient } from "@/lib/supabase/server";
@@ -56,7 +57,7 @@ export async function GlobalHeader() {
     : { data: null };
 
   return (
-    <header className="fixed inset-x-0 top-0 z-50 bg-[#f2f0eb]/95 shadow-[0_1px_3px_rgba(0,0,0,0.1),0_2px_2px_rgba(0,0,0,0.06),0_0_2px_rgba(0,0,0,0.07)] backdrop-blur">
+    <header className="fixed inset-x-0 top-0 z-50 bg-[#fff8d8]/95 shadow-[0_1px_3px_rgba(0,0,0,0.1),0_2px_2px_rgba(0,0,0,0.06),0_0_2px_rgba(0,0,0,0.07)] backdrop-blur">
       <div className="relative mx-auto grid h-16 w-full grid-cols-[1fr_auto_1fr] items-center gap-3 px-4 sm:h-[72px] sm:px-6 lg:h-20 lg:px-10">
         <div className="justify-self-start">
           {user ? (
@@ -69,9 +70,17 @@ export async function GlobalHeader() {
 
         <Link
           href="/dashboard"
-          className="justify-self-center text-lg font-semibold tracking-[-0.01em] text-[#006241] transition hover:text-[#00754A] active:scale-95 sm:text-xl"
+          className="flex items-center gap-2 justify-self-center text-lg font-semibold tracking-[-0.01em] text-[#0737a8] transition hover:text-[#0b46c7] active:scale-95 sm:gap-3 sm:text-xl"
         >
-          Voley Lisboa
+          <span>Voley Lisboa</span>
+          <Image
+            alt=""
+            aria-hidden="true"
+            className="size-8 shrink-0 rounded-full object-contain sm:size-9"
+            height={36}
+            src="/ball.png"
+            width={36}
+          />
         </Link>
 
         <div className="justify-self-end">
@@ -80,7 +89,7 @@ export async function GlobalHeader() {
       </div>
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-x-0 top-full h-8 bg-gradient-to-b from-[#f2f0eb]/95 to-[#f2f0eb]/0"
+        className="pointer-events-none absolute inset-x-0 top-full h-8 bg-gradient-to-b from-[#fff8d8]/95 to-[#fff8d8]/0"
       />
     </header>
   );

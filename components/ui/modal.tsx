@@ -86,7 +86,7 @@ export function Modal({
         className="w-full max-w-md rounded-xl bg-white px-5 py-6 shadow-[0_10px_30px_rgba(0,0,0,0.24)]"
       >
         <div>
-          <h2 className="text-2xl font-semibold tracking-[-0.01em] text-[#006241]">
+          <h2 className="text-2xl font-semibold tracking-[-0.01em] text-[#0737a8]">
             {title}
           </h2>
         </div>

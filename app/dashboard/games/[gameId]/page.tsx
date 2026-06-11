@@ -161,12 +161,12 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
   };
 
   return (
-    <main className="min-h-screen bg-[#f2f0eb] px-4 py-20 text-[rgba(0,0,0,0.87)] sm:px-6 lg:px-10">
+    <main className="min-h-screen bg-[#fff8d8] px-4 py-20 text-[rgba(0,0,0,0.87)] sm:px-6 lg:px-10">
       <section className="mx-auto grid w-full max-w-5xl gap-5">
         <Card>
           <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <h1 className="text-2xl font-semibold tracking-[-0.01em] text-[#006241]">
+              <h1 className="text-2xl font-semibold tracking-[-0.01em] text-[#0737a8]">
                 {formatGameDateTitle(new Date(game.starts_at))}
               </h1>
             </div>
@@ -334,7 +334,7 @@ async function GameDetailContent({
       {!hasListError ? (
         <div className="grid gap-5 lg:grid-cols-2">
           <Card>
-            <h2 className="text-xl font-semibold tracking-[-0.01em] text-[#006241]">
+            <h2 className="text-xl font-semibold tracking-[-0.01em] text-[#0737a8]">
               {t("participantsTitle")}
             </h2>
 
@@ -373,7 +373,7 @@ async function GameDetailContent({
                       className="flex items-center gap-3 rounded-xl bg-[#f9f9f9] px-4 py-3"
                     >
                       <InitialsAvatar name={name} />
-                      <p className="truncate text-sm font-semibold text-[#33433d]">
+                      <p className="truncate text-sm font-semibold text-[#26375f]">
                         {name}
                       </p>
                     </li>
@@ -384,7 +384,7 @@ async function GameDetailContent({
           </Card>
 
           <Card>
-            <h2 className="text-xl font-semibold tracking-[-0.01em] text-[#006241]">
+            <h2 className="text-xl font-semibold tracking-[-0.01em] text-[#0737a8]">
               {t("waitlistTitle")}
             </h2>
 
@@ -417,7 +417,7 @@ async function GameDetailContent({
                     >
                       <div className="flex min-w-0 items-center gap-3">
                         <InitialsAvatar name={name} />
-                        <p className="min-w-0 truncate text-sm font-semibold text-[#33433d]">
+                        <p className="min-w-0 truncate text-sm font-semibold text-[#26375f]">
                           {name}
                         </p>
                       </div>

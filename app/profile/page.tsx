@@ -29,15 +29,15 @@ export default async function ProfilePage() {
     .maybeSingle<Profile>();
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[#f2f0eb] px-4 py-16 text-[rgba(0,0,0,0.87)] sm:px-6">
+    <main className="flex min-h-screen items-center justify-center bg-[#fff8d8] px-4 py-16 text-[rgba(0,0,0,0.87)] sm:px-6">
       <section className="w-full max-w-md rounded-xl bg-white px-6 py-8 shadow-[0_0_0.5px_0_rgba(0,0,0,0.14),0_1px_1px_0_rgba(0,0,0,0.24)] sm:px-8">
-        <p className="text-sm font-semibold tracking-[0.1em] text-[#00754A] uppercase">
+        <p className="text-sm font-semibold tracking-[0.1em] text-[#0b46c7] uppercase">
           {t("eyebrow")}
         </p>
-        <h1 className="mt-3 text-3xl font-semibold tracking-[-0.01em] text-[#006241]">
+        <h1 className="mt-3 text-3xl font-semibold tracking-[-0.01em] text-[#0737a8]">
           {t("title")}
         </h1>
-        <p className="mt-3 text-base leading-7 text-[#33433d]">{t("intro")}</p>
+        <p className="mt-3 text-base leading-7 text-[#26375f]">{t("intro")}</p>
 
         <div className="mt-8">
           <ProfileForm
@@ -48,7 +48,7 @@ export default async function ProfilePage() {
 
         <Link
           href="/dashboard"
-          className="ripple ripple-dark mt-4 block rounded-full border border-[#00754A] bg-white px-5 py-3 text-center text-sm font-semibold text-[#00754A] transition active:scale-95"
+          className="ripple ripple-dark mt-4 block rounded-full border border-[#0737a8] bg-white px-5 py-3 text-center text-sm font-semibold text-[#0737a8] transition active:scale-95"
         >
           {t("backToDashboard")}
         </Link>

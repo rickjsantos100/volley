@@ -144,11 +144,11 @@ export function AdminCreateGameButton({
             type="number"
           />
 
-          <label className="flex items-center gap-3 text-sm font-semibold text-[#33433d]">
+          <label className="flex items-center gap-3 text-sm font-semibold text-[#26375f]">
             <input
               name="isRepeatable"
               type="checkbox"
-              className="size-4 accent-[#00754A]"
+              className="size-4 accent-[#ffd21a]"
             />
             <span>{labels.repeat}</span>
           </label>

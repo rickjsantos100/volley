@@ -82,7 +82,7 @@ export default async function DashboardPage() {
     return counts;
   }, {});
   return (
-    <main className="min-h-screen bg-[#f2f0eb] px-4 py-20 pb-32 text-[rgba(0,0,0,0.87)] sm:px-6 lg:px-10">
+    <main className="min-h-screen bg-[#fff8d8] px-4 py-20 pb-32 text-[rgba(0,0,0,0.87)] sm:px-6 lg:px-10">
       <section className="mx-auto w-full max-w-5xl">
         {hasGamesError ? (
           <Alert>{t("gamesLoadError")}</Alert>
@@ -90,7 +90,7 @@ export default async function DashboardPage() {
 
         {!hasGamesError && games.length === 0 ? (
           <Card className="py-6" variant="muted">
-            <p className="text-base font-semibold text-[#33433d]">
+            <p className="text-base font-semibold text-[#26375f]">
               {t("emptyGamesTitle")}
             </p>
             <p className="mt-2 text-sm leading-6 text-[rgba(0,0,0,0.58)]">
@@ -109,7 +109,7 @@ export default async function DashboardPage() {
                 <>
                   <div className="flex items-start justify-between gap-4">
                     <div>
-                      <h3 className="text-xl font-semibold tracking-[-0.01em] text-[#006241]">
+                      <h3 className="text-xl font-semibold tracking-[-0.01em] text-[#0737a8]">
                         {formatGameDateTitle(new Date(game.starts_at))}
                       </h3>
                     </div>

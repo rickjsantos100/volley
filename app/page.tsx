@@ -17,10 +17,10 @@ export default async function Home() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[#f2f0eb] px-4 py-10 text-[rgba(0,0,0,0.87)] sm:px-6">
+    <main className="flex min-h-screen items-center justify-center bg-[#fff8d8] px-4 py-10 text-[rgba(0,0,0,0.87)] sm:px-6">
       <section className="w-full max-w-[430px] px-4 py-8 sm:px-6">
         <div className="mb-6 text-center">
-          <h1 className="text-2xl font-semibold tracking-[-0.01em] text-[#006241]">
+          <h1 className="text-2xl font-semibold tracking-[-0.01em] text-[#0737a8]">
             {t("title")}
           </h1>
         </div>

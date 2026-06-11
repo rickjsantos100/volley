@@ -218,7 +218,7 @@ export function AuthPanel() {
           onClick={() => setMode("login")}
           data-active={mode === "login"}
           variant="ghost"
-          className="border-transparent px-4 py-3 text-[#33433d] data-[active=true]:bg-[#00754A] data-[active=true]:text-white"
+          className="border-transparent px-4 py-3 text-[#26375f] data-[active=true]:bg-[#ffd21a] data-[active=true]:text-[#061b6b]"
         >
           {t("loginButton")}
         </Button>
@@ -227,7 +227,7 @@ export function AuthPanel() {
           onClick={() => setMode("signup")}
           data-active={mode === "signup"}
           variant="ghost"
-          className="border-transparent px-4 py-3 text-[#33433d] data-[active=true]:bg-[#00754A] data-[active=true]:text-white"
+          className="border-transparent px-4 py-3 text-[#26375f] data-[active=true]:bg-[#ffd21a] data-[active=true]:text-[#061b6b]"
         >
           {t("signupButton")}
         </Button>
@@ -366,7 +366,7 @@ export function AuthPanel() {
               {!getSignupError("password") ? (
                 <p
                   id="home-signup-password-hint"
-                  className="mt-2 text-sm leading-6 text-[#33433d]"
+                  className="mt-2 text-sm leading-6 text-[#26375f]"
                 >
                   {t("passwordHint")}
                 </p>

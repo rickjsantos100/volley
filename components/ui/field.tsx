@@ -13,7 +13,7 @@ export function inputClassName(hasError?: boolean, className?: string) {
     "w-full rounded-xl border bg-white px-4 py-3 text-base outline-none transition disabled:cursor-not-allowed disabled:bg-[#f9f9f9]",
     hasError
       ? "border-[#c82014] focus:border-[#c82014] focus:ring-2 focus:ring-[hsl(4_82%_43%_/_18%)]"
-      : "border-[rgba(0,0,0,0.16)] focus:border-[#00754A] focus:ring-2 focus:ring-[#d4e9e2]",
+      : "border-[rgba(0,0,0,0.16)] focus:border-[#0737a8] focus:ring-2 focus:ring-[#fff3b0]",
     className,
   );
 }
@@ -23,7 +23,7 @@ export function Field({ className, error, id, label, ...props }: FieldProps) {
 
   return (
     <div className="space-y-2">
-      <label htmlFor={id} className="block text-sm font-semibold text-[#33433d]">
+      <label htmlFor={id} className="block text-sm font-semibold text-[#26375f]">
         {label}
       </label>
       <input

@@ -37,9 +37,9 @@ const variantClasses: Record<ButtonVariant, string> = {
   ghost:
     "border-[rgba(0,0,0,0.24)] bg-transparent text-[rgba(0,0,0,0.87)]",
   icon:
-    "size-11 justify-center border-[#00754A] bg-[#00754A] p-0 text-white shadow-[0_0_0.5px_0_rgba(0,0,0,0.14),0_1px_1px_0_rgba(0,0,0,0.18)]",
-  outline: "border-[#00754A] bg-white text-[#00754A]",
-  primary: "border-[#00754A] bg-[#00754A] text-white",
+    "size-11 justify-center border-[#ffd21a] bg-[#ffd21a] p-0 text-[#061b6b] shadow-[0_0_0.5px_0_rgba(0,0,0,0.14),0_1px_1px_0_rgba(0,0,0,0.18)]",
+  outline: "border-[#0737a8] bg-white text-[#0737a8]",
+  primary: "border-[#ffd21a] bg-[#ffd21a] text-[#061b6b]",
 };
 
 export function buttonClassName({
@@ -121,7 +121,7 @@ function Spinner({ variant = "primary" }: { variant?: ButtonVariant }) {
       aria-hidden="true"
       className={
         variant === "primary" || variant === "icon"
-          ? "size-4 animate-spin rounded-full border-2 border-white/40 border-t-white"
+          ? "size-4 animate-spin rounded-full border-2 border-[#061b6b]/30 border-t-[#061b6b]"
           : "size-4 animate-spin rounded-full border-2 border-current/30 border-t-current"
       }
     />

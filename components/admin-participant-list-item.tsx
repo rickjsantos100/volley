@@ -49,7 +49,7 @@ export function AdminParticipantListItem({
     >
       <div className="flex min-w-0 items-center gap-3">
         <InitialsAvatar name={name} />
-        <p className="truncate text-sm font-semibold text-[#33433d]">{name}</p>
+        <p className="truncate text-sm font-semibold text-[#26375f]">{name}</p>
       </div>
 
       <div className="flex shrink-0 items-center gap-2">

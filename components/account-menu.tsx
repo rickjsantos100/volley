@@ -47,14 +47,14 @@ export function AccountMenu({ initials, label }: AccountMenuProps) {
         aria-expanded={isOpen}
         aria-label={t("openMenu", { name: label })}
         onClick={() => setIsOpen((currentValue) => !currentValue)}
-        className="ripple flex size-11 items-center justify-center rounded-full border border-[#00754A] bg-[#00754A] text-sm font-semibold text-white shadow-[0_0_0.5px_0_rgba(0,0,0,0.14),0_1px_1px_0_rgba(0,0,0,0.18)] transition active:scale-95"
+        className="ripple flex size-11 items-center justify-center rounded-full border border-[#ffd21a] bg-[#ffd21a] text-sm font-semibold text-[#061b6b] shadow-[0_0_0.5px_0_rgba(0,0,0,0.14),0_1px_1px_0_rgba(0,0,0,0.18)] transition active:scale-95"
       >
         {initials}
       </button>
 
       {isOpen ? (
         <div className="absolute top-14 left-0 w-52 rounded-xl bg-[#f9f9f9] p-2 shadow-[0_4px_12px_rgba(0,0,0,0.14)]">
-          <p className="px-3 py-2 text-sm font-semibold text-[#33433d]">
+          <p className="px-3 py-2 text-sm font-semibold text-[#26375f]">
             {label}
           </p>
           <Link

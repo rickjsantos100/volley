@@ -4,7 +4,7 @@ import { cx } from "./class-name";
 type CardVariant = "cancelled" | "default" | "muted";
 
 const variants: Record<CardVariant, string> = {
-  cancelled: "border border-[rgba(0,0,0,0.14)] bg-[#edebe9] opacity-75",
+  cancelled: "border border-[rgba(0,0,0,0.14)] bg-[#fff3b0] opacity-75",
   default: "bg-white",
   muted: "border border-[rgba(0,0,0,0.14)] bg-white",
 };

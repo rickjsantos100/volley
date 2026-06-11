@@ -9,7 +9,7 @@ export function StatTile({ label, value }: StatTileProps) {
       <dt className="text-xs font-semibold tracking-[0.1em] text-[rgba(0,0,0,0.58)] uppercase">
         {label}
       </dt>
-      <dd className="mt-1 text-base font-semibold text-[#33433d]">{value}</dd>
+      <dd className="mt-1 text-base font-semibold text-[#26375f]">{value}</dd>
     </div>
   );
 }

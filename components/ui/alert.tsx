@@ -5,7 +5,7 @@ type AlertVariant = "error" | "success";
 
 const variants: Record<AlertVariant, string> = {
   error: "bg-[hsl(4_82%_43%_/_5%)] text-[#c82014]",
-  success: "bg-[#d4e9e2] text-[#006241]",
+  success: "bg-[#fff3b0] text-[#0737a8]",
 };
 
 export function alertClassName({
