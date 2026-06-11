@@ -176,19 +176,19 @@ Authorization should be enforced server-side using Supabase Row Level Security.
 
 Required access rules include:
 
-- Authenticated users can view upcoming scheduled and cancelled games.
+- Authenticated users can view upcoming scheduled games and see cancelled games in the dashboard list.
 - Authenticated users can join available games.
 - Authenticated users can remove themselves from participant lists.
 - Authenticated users can join and leave waitlists.
 - Users can see only their own payment status.
 - Users cannot see other users' payment status.
 - Admins can see and update all participant payment statuses.
-- Admins can create, edit, cancel, and delete game events.
+- Admins can create, edit, cancel, uncancel, and delete game events.
 - Admins can remove users from participant lists.
 - Admins can remove users from waitlists.
 - Admins can reorder active waitlist entries.
 
-Cancelled game events must remain queryable by authenticated users while their start time is still in the future. A cancelled game must not allow participant or waitlist inserts, and the UI must render it as disabled with a cancelled badge.
+Cancelled game events must remain queryable for the dashboard list while their start time is still in the future. Only admins can open a cancelled game detail page. A cancelled game must not allow participant or waitlist inserts, and the user-facing dashboard UI must render it as disabled with a cancelled badge.
 
 Deleting a game event should remove it from user-facing schedule queries. Existing foreign-key behavior should intentionally decide whether related participant and waitlist rows cascade or are retained elsewhere before deletion is enabled in the UI.
 
@@ -223,8 +223,8 @@ Admin game management should be implemented through server actions backed by Sup
 The initial admin game-management slice should include:
 
 - An admin-only create game form.
-- Admin-only cancel and delete controls for each game detail page.
-- Dashboard and game detail rendering for cancelled upcoming games.
+- Admin-only cancel, uncancel, and delete controls for each game detail page.
+- Dashboard rendering for cancelled upcoming games, with game detail rendering restricted to admins.
 - Disabled join, leave, and waitlist controls for cancelled games.
 - Server-side authorization checks before create, cancel, or delete mutations.
 
@@ -232,9 +232,11 @@ Database support for this slice should include:
 
 - RLS policies allowing only admins to insert, update, and delete `game_events`.
 - A `cancelled` status value on `game_events` used for soft cancellation.
+- A `deleted` status value on recurring `game_events` used as a tombstone so generated occurrences are not recreated by the recurring-game cron job.
+- A scheduled cleanup job that permanently deletes game events whose end time is more than 4 months in the past.
 - User-facing select policies that include upcoming `scheduled` and `cancelled` games.
 - Insert guards that reject participant and waitlist inserts unless the game status is `scheduled`.
-- Tests that prove regular users cannot create, cancel, delete, join, or waitlist cancelled games.
+- Tests that prove regular users cannot create, cancel, delete, open, join, or waitlist cancelled games.
 
 ## 11. Deployment Requirements
 
@@ -293,8 +295,8 @@ Required test coverage should include:
 - Users being unable to see other participants' payment status.
 - Users joining and leaving participant lists.
 - Users joining and leaving waitlists.
-- Admin-only game creation, cancellation, and deletion.
-- Cancelled games remaining visible but non-joinable.
+- Admin-only game creation, cancellation, uncancellation, and deletion.
+- Cancelled games remaining visible in the dashboard but non-openable and non-joinable for regular users.
 - Regular users being unable to create, cancel, or delete games.
 - Admin waitlist removals and reorder operations.
 - Automatic waitlist promotion order.

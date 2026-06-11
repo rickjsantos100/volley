@@ -1,4 +1,7 @@
+"use client";
+
 import type { HTMLAttributes } from "react";
+import { useEffect, useState } from "react";
 import { alertClassName } from "./alert";
 import { cx } from "./class-name";
 
@@ -6,9 +9,33 @@ type ToastVariant = "error" | "success";
 
 export function Toast({
   className,
+  durationMs = 4000,
   variant = "error",
   ...props
-}: HTMLAttributes<HTMLParagraphElement> & { variant?: ToastVariant }) {
+}: HTMLAttributes<HTMLParagraphElement> & {
+  durationMs?: number;
+  variant?: ToastVariant;
+}) {
+  const [visible, setVisible] = useState(true);
+
+  useEffect(() => {
+    if (durationMs <= 0) {
+      return;
+    }
+
+    const timeout = window.setTimeout(() => {
+      setVisible(false);
+    }, durationMs);
+
+    return () => {
+      window.clearTimeout(timeout);
+    };
+  }, [durationMs, props.children, variant]);
+
+  if (!visible) {
+    return null;
+  }
+
   return (
     <p
       aria-live="polite"

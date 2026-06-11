@@ -14,7 +14,7 @@ Required capabilities:
 
 - Create new game events.
 - Edit existing game events.
-- Cancel game events while keeping them visible to users.
+- Cancel and uncancel game events while keeping cancelled games visible to users.
 - Delete game events when they should be removed from the schedule.
 - Add users to a game event.
 - Remove users from a game event.
@@ -30,8 +30,8 @@ Users participate in scheduled games.
 
 Required capabilities:
 
-- View upcoming scheduled and cancelled game events.
-- View game details, including date, duration, capacity, and joined users.
+- View upcoming scheduled and cancelled game events in the dashboard list.
+- View scheduled game details, including date, duration, capacity, and joined users.
 - Join a game when capacity is available.
 - Join a waitlist when a game is full.
 - Remove themselves from the participant list for a game they have joined.
@@ -72,11 +72,11 @@ Each listed game should show:
 - Whether the game repeats.
 - Whether the game is cancelled.
 
-Cancelled games must remain visible in the upcoming games list when their start time is still in the future. They must be visually disabled, show a clear cancelled badge, and not allow users to join the game or waitlist.
+Cancelled games must remain visible in the upcoming games list when their start time is still in the future. They must be visually disabled, show a clear cancelled badge, and not allow non-admin users to open the detail page, join the game, or join the waitlist.
 
 ### Game Details
 
-Users and admins must be able to open a game event and see:
+Users and admins must be able to open a scheduled game event and see:
 
 - Full event date and duration.
 - Maximum participant count.
@@ -90,6 +90,7 @@ Admins must also be able to see:
 
 - Payment status for every participant.
 - Full waitlist order.
+- Cancelled game detail pages.
 
 ### Joining Rules
 
@@ -217,9 +218,10 @@ Admins must be able to:
 - Automatically promoted users are removed from the active waitlist.
 - An admin can create a game.
 - An admin can edit a game.
-- An admin can cancel or delete a game.
+- An admin can cancel, uncancel, or delete a game.
 - A cancelled upcoming game remains visible to users.
 - A cancelled game is visually disabled and shows a cancelled badge.
+- A user cannot open a cancelled game detail page.
 - A user cannot join or waitlist for a cancelled game.
 - An admin can add a user to a game.
 - An admin can remove a user from a game.

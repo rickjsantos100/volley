@@ -10,6 +10,7 @@ export type GameActionStatus =
   | "left-game"
   | "cancelled-game"
   | "cancelled-series"
+  | "uncancelled-game"
   | "payment-updated"
   | "removed-player"
   | "join-error"
@@ -392,6 +393,36 @@ export async function cancelGame(
   return { status: isSeriesAction ? "cancelled-series" : "cancelled-game" };
 }
 
+export async function uncancelGame(
+  gameId: string,
+  previousState: GameActionState,
+  formData: FormData,
+): Promise<GameActionState> {
+  void previousState;
+  void formData;
+
+  const { game, supabase, status } = await getAdminGame(gameId);
+
+  if (status) {
+    return { status: status === "delete-error" ? "cancel-error" : status };
+  }
+
+  const { error } = await supabase
+    .from("game_events")
+    .update({ status: "scheduled" })
+    .eq("id", game.id)
+    .eq("status", "cancelled");
+
+  revalidatePath("/dashboard");
+  revalidatePath(`/dashboard/games/${gameId}`);
+
+  if (error) {
+    return { status: "cancel-error" };
+  }
+
+  return { status: "uncancelled-game" };
+}
+
 export async function deleteGame(
   gameId: string,
   previousState: GameActionState,
@@ -399,7 +430,7 @@ export async function deleteGame(
 ): Promise<GameActionState> {
   void previousState;
 
-  const { game, supabase, status, user } = await getAdminGame(gameId);
+  const { game, supabase, status } = await getAdminGame(gameId);
 
   if (status) {
     return { status };
@@ -422,34 +453,20 @@ export async function deleteGame(
       revalidatePath(`/dashboard/games/${gameId}`);
       return { status: "delete-error" };
     }
-  } else if (isRecurringGame) {
-    const { error: exceptionError } = await supabase
-      .from("recurring_game_exceptions")
-      .upsert(
-        {
-          created_by: user.id,
-          recurring_series_id: game.recurring_series_id,
-          recurring_starts_at: game.recurring_starts_at,
-        },
-        {
-          onConflict: "recurring_series_id,recurring_starts_at",
-        },
-      );
-
-    if (exceptionError) {
-      revalidatePath("/dashboard");
-      revalidatePath(`/dashboard/games/${gameId}`);
-      return { status: "delete-error" };
-    }
   }
 
   const { error } = isSeriesAction
     ? await supabase
         .from("game_events")
-        .delete()
+        .update({ status: "deleted" })
         .eq("recurring_series_id", game.recurring_series_id)
         .gte("recurring_starts_at", game.recurring_starts_at)
-    : await supabase.from("game_events").delete().eq("id", gameId);
+    : isRecurringGame
+      ? await supabase
+          .from("game_events")
+          .update({ status: "deleted" })
+          .eq("id", gameId)
+      : await supabase.from("game_events").delete().eq("id", gameId);
 
   revalidatePath("/dashboard");
   revalidatePath(`/dashboard/games/${gameId}`);

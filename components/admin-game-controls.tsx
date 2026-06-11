@@ -5,10 +5,10 @@ import type {
   GameActionState,
   GameActionStatus,
 } from "@/app/dashboard/games/[gameId]/actions";
-import { Alert } from "@/components/ui/alert";
 import { Button, SubmitButton } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Modal } from "@/components/ui/modal";
+import { Toast } from "@/components/ui/toast";
 
 type AdminGameControlsProps = {
   cancelAction: (
@@ -17,6 +17,11 @@ type AdminGameControlsProps = {
   ) => Promise<GameActionState>;
   cancelConfirmMessage: string;
   cancelLabel: string;
+  uncancelAction: (
+    previousState: GameActionState,
+    formData: FormData,
+  ) => Promise<GameActionState>;
+  uncancelLabel: string;
   deleteAction: (
     previousState: GameActionState,
     formData: FormData,
@@ -24,32 +29,44 @@ type AdminGameControlsProps = {
   deleteConfirmMessage: string;
   deleteLabel: string;
   deleteOccurrenceLabel: string;
-  deleteScopeCloseLabel: string;
   deleteScopeIntro: string;
   deleteScopeTitle: string;
-  deleteSeriesConfirmMessage: string;
   deleteSeriesLabel: string;
   isCancelled: boolean;
   isRecurring: boolean;
   statusLabels: Partial<Record<GameActionStatus, string>>;
 };
 
+type PendingConfirmation = {
+  action: "cancel" | "delete";
+  destructive: boolean;
+  label: string;
+  message: string;
+  scope: "occurrence" | "series";
+  title: string;
+};
+
 const initialState: GameActionState = {};
-const successStatuses = new Set<GameActionStatus>([
-  "cancelled-game",
-  "cancelled-series",
+const errorStatuses = new Set<GameActionStatus>([
+  "cancel-error",
+  "delete-error",
+  "not-authorized",
 ]);
 
 function AdminActionButton({
   destructive = false,
   label,
+  onClick,
 }: {
   destructive?: boolean;
   label: string;
+  onClick: () => void;
 }) {
   return (
     <Button
+      onClick={onClick}
       size="compact"
+      type="button"
       variant={destructive ? "dangerOutline" : "outline"}
     >
       {label}
@@ -61,76 +78,110 @@ export function AdminGameControls({
   cancelAction,
   cancelConfirmMessage,
   cancelLabel,
+  uncancelAction,
+  uncancelLabel,
   deleteAction,
   deleteConfirmMessage,
   deleteLabel,
   deleteOccurrenceLabel,
-  deleteScopeCloseLabel,
   deleteScopeIntro,
   deleteScopeTitle,
-  deleteSeriesConfirmMessage,
   deleteSeriesLabel,
   isCancelled,
   isRecurring,
   statusLabels,
 }: AdminGameControlsProps) {
+  const [deleteScopeOpen, setDeleteScopeOpen] = useState(false);
+  const [pendingConfirmation, setPendingConfirmation] =
+    useState<PendingConfirmation | null>(null);
+
+  async function handleCancelAction(
+    previousState: GameActionState,
+    formData: FormData,
+  ) {
+    const nextState = await cancelAction(previousState, formData);
+    setPendingConfirmation(null);
+    return nextState;
+  }
+
+  async function handleDeleteAction(
+    previousState: GameActionState,
+    formData: FormData,
+  ) {
+    const nextState = await deleteAction(previousState, formData);
+    setDeleteScopeOpen(false);
+    setPendingConfirmation(null);
+    return nextState;
+  }
+
   const [cancelState, cancelFormAction] = useActionState(
-    cancelAction,
+    handleCancelAction,
+    initialState,
+  );
+  const [uncancelState, uncancelFormAction] = useActionState(
+    uncancelAction,
     initialState,
   );
   const [deleteState, deleteFormAction] = useActionState(
-    deleteAction,
+    handleDeleteAction,
     initialState,
   );
-  const [deleteScopeOpen, setDeleteScopeOpen] = useState(false);
-  const status = deleteState.status ?? cancelState.status;
+  const status =
+    deleteState.status ?? uncancelState.status ?? cancelState.status;
 
   return (
     <Card>
-      {status && statusLabels[status] ? (
-        <Alert variant={successStatuses.has(status) ? "success" : "error"}>
-          {statusLabels[status]}
-        </Alert>
+      {status && errorStatuses.has(status) && statusLabels[status] ? (
+        <Toast variant="error">{statusLabels[status]}</Toast>
       ) : null}
 
-      <div className={status ? "mt-4 grid gap-3" : "grid gap-3"}>
+      <div className="grid gap-3">
         <div className="flex flex-wrap gap-3">
           {!isCancelled ? (
-            <form
-              action={cancelFormAction}
-              onSubmit={(event) => {
-                if (!window.confirm(cancelConfirmMessage)) {
-                  event.preventDefault();
-                }
+            <AdminActionButton
+              label={cancelLabel}
+              onClick={() => {
+                setPendingConfirmation({
+                  action: "cancel",
+                  destructive: false,
+                  label: cancelLabel,
+                  message: cancelConfirmMessage,
+                  scope: "occurrence",
+                  title: cancelLabel,
+                });
               }}
-            >
-              <input name="scope" type="hidden" value="occurrence" />
-              <AdminActionButton label={cancelLabel} />
+            />
+          ) : (
+            <form action={uncancelFormAction}>
+              <SubmitButton size="compact" variant="outline">
+                {uncancelLabel}
+              </SubmitButton>
             </form>
-          ) : null}
+          )}
 
-          <form
-            action={deleteFormAction}
-            onSubmit={(event) => {
+          <AdminActionButton
+            destructive
+            label={deleteLabel}
+            onClick={() => {
               if (isRecurring) {
-                event.preventDefault();
                 setDeleteScopeOpen(true);
                 return;
               }
 
-              if (!window.confirm(deleteConfirmMessage)) {
-                event.preventDefault();
-              }
+              setPendingConfirmation({
+                action: "delete",
+                destructive: true,
+                label: deleteLabel,
+                message: deleteConfirmMessage,
+                scope: "occurrence",
+                title: deleteLabel,
+              });
             }}
-          >
-            <input name="scope" type="hidden" value="occurrence" />
-            <AdminActionButton destructive label={deleteLabel} />
-          </form>
+          />
         </div>
       </div>
 
       <Modal
-        closeLabel={deleteScopeCloseLabel}
         onClose={() => {
           setDeleteScopeOpen(false);
         }}
@@ -141,28 +192,14 @@ export function AdminGameControls({
           <p className="text-sm leading-6 text-[#33433d]">{deleteScopeIntro}</p>
 
           <div className="flex flex-wrap gap-3">
-            <form
-              action={deleteFormAction}
-              onSubmit={(event) => {
-                if (!window.confirm(deleteConfirmMessage)) {
-                  event.preventDefault();
-                }
-              }}
-            >
+            <form action={deleteFormAction}>
               <input name="scope" type="hidden" value="occurrence" />
               <SubmitButton size="compact" variant="dangerOutline">
                 {deleteOccurrenceLabel}
               </SubmitButton>
             </form>
 
-            <form
-              action={deleteFormAction}
-              onSubmit={(event) => {
-                if (!window.confirm(deleteSeriesConfirmMessage)) {
-                  event.preventDefault();
-                }
-              }}
-            >
+            <form action={deleteFormAction}>
               <input name="scope" type="hidden" value="series" />
               <SubmitButton size="compact" variant="dangerOutline">
                 {deleteSeriesLabel}
@@ -170,6 +207,43 @@ export function AdminGameControls({
             </form>
           </div>
         </div>
+      </Modal>
+
+      <Modal
+        onClose={() => {
+          setPendingConfirmation(null);
+        }}
+        open={Boolean(pendingConfirmation)}
+        title={pendingConfirmation?.title ?? ""}
+      >
+        {pendingConfirmation ? (
+          <div className="mt-5 grid gap-4">
+            <p className="text-sm leading-6 text-[#33433d]">
+              {pendingConfirmation.message}
+            </p>
+            <form
+              action={
+                pendingConfirmation.action === "cancel"
+                  ? cancelFormAction
+                  : deleteFormAction
+              }
+            >
+              <input
+                name="scope"
+                type="hidden"
+                value={pendingConfirmation.scope}
+              />
+              <SubmitButton
+                size="compact"
+                variant={
+                  pendingConfirmation.destructive ? "dangerOutline" : "outline"
+                }
+              >
+                {pendingConfirmation.label}
+              </SubmitButton>
+            </form>
+          </div>
+        ) : null}
       </Modal>
     </Card>
   );

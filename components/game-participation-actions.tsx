@@ -1,14 +1,15 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { useRouter } from "next/navigation";
 import type {
   GameActionState,
   GameActionStatus,
 } from "@/app/dashboard/games/[gameId]/actions";
-import { Alert } from "@/components/ui/alert";
 import { Button, SubmitButton } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Modal } from "@/components/ui/modal";
+import { Toast } from "@/components/ui/toast";
 
 type GameParticipationActionsProps = {
   alreadyWaitlistedLabel: string;
@@ -35,10 +36,10 @@ type GameParticipationActionsProps = {
 };
 
 const initialState: GameActionState = {};
-const successStatuses = new Set<GameActionStatus>([
-  "joined-game",
-  "joined-waitlist",
-  "left-game",
+const errorStatuses = new Set<GameActionStatus>([
+  "join-error",
+  "waitlist-error",
+  "leave-error",
 ]);
 
 export function GameParticipationActions({
@@ -56,6 +57,7 @@ export function GameParticipationActions({
   statusLabels,
 }: GameParticipationActionsProps) {
   const router = useRouter();
+  const [leaveConfirmOpen, setLeaveConfirmOpen] = useState(false);
 
   async function handleAction(
     action: (
@@ -92,7 +94,9 @@ export function GameParticipationActions({
     previousState: GameActionState,
     formData: FormData,
   ) {
-    return handleAction(leaveGameAction, previousState, formData);
+    const nextState = await handleAction(leaveGameAction, previousState, formData);
+    setLeaveConfirmOpen(false);
+    return nextState;
   }
 
   const [actionState, submitAction] = useActionState(
@@ -107,26 +111,23 @@ export function GameParticipationActions({
 
   return (
     <>
-      {status ? (
-        <Alert variant={successStatuses.has(status) ? "success" : "error"}>
-          {statusLabels[status]}
-        </Alert>
+      {status && errorStatuses.has(status) ? (
+        <Toast variant="error">{statusLabels[status]}</Toast>
       ) : null}
 
       <Card>
         {isParticipant ? (
-          <form
-            action={submitAction}
-            onSubmit={(event) => {
-              if (!window.confirm(confirmLeaveMessage)) {
-                event.preventDefault();
-              }
+          <Button
+            fullWidth
+            variant="dangerOutline"
+            className="sm:w-auto"
+            type="button"
+            onClick={() => {
+              setLeaveConfirmOpen(true);
             }}
           >
-            <SubmitButton fullWidth variant="dangerOutline" className="sm:w-auto">
-              {leaveGameLabel}
-            </SubmitButton>
-          </form>
+            {leaveGameLabel}
+          </Button>
         ) : isWaitlisted ? (
           <Button
             disabled
@@ -151,6 +152,25 @@ export function GameParticipationActions({
           </form>
         )}
       </Card>
+
+      <Modal
+        onClose={() => {
+          setLeaveConfirmOpen(false);
+        }}
+        open={leaveConfirmOpen}
+        title={leaveGameLabel}
+      >
+        <div className="mt-5 grid gap-4">
+          <p className="text-sm leading-6 text-[#33433d]">
+            {confirmLeaveMessage}
+          </p>
+          <form action={submitAction}>
+            <SubmitButton fullWidth variant="dangerOutline">
+              {leaveGameLabel}
+            </SubmitButton>
+          </form>
+        </div>
+      </Modal>
     </>
   );
 }

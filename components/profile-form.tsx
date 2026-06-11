@@ -3,9 +3,9 @@
 import { useActionState, useState } from "react";
 import { useTranslations } from "next-intl";
 import { updateProfile } from "@/app/profile/actions";
-import { Alert } from "@/components/ui/alert";
 import { Field } from "@/components/ui/field";
 import { SubmitButton } from "@/components/ui/button";
+import { Toast } from "@/components/ui/toast";
 
 type ProfileFormProps = {
   firstName: string;
@@ -64,11 +64,7 @@ export function ProfileForm({ firstName, lastName }: ProfileFormProps) {
   return (
     <form action={formAction} className="space-y-5">
       {state.errors?.form ? (
-        <Alert>{t(`errors.${state.errors.form}`)}</Alert>
-      ) : null}
-
-      {state.success ? (
-        <Alert variant="success">{t("successMessage")}</Alert>
+        <Toast variant="error">{t(`errors.${state.errors.form}`)}</Toast>
       ) : null}
 
       <Field

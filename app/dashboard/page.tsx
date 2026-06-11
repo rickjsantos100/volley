@@ -17,7 +17,7 @@ type GameEvent = {
   duration_minutes: number;
   max_participants: number;
   is_repeatable: boolean;
-  status: "scheduled" | "cancelled" | "completed";
+  status: "scheduled" | "cancelled" | "completed" | "deleted";
 };
 
 type GameParticipantCountRow = {
@@ -105,18 +105,8 @@ export default async function DashboardPage() {
               const occupiedSlots = participantCounts[game.id] ?? 0;
               const isFull = occupiedSlots >= game.max_participants;
               const isCancelled = game.status === "cancelled";
-
-              return (
-                <Link
-                  key={game.id}
-                  aria-disabled={isCancelled}
-                  href={`/dashboard/games/${game.id}`}
-                  className={cardClassName({
-                    className:
-                      "block transition active:scale-[0.99] hover:shadow-[0_2px_10px_rgba(0,0,0,0.14)]",
-                    variant: isCancelled ? "cancelled" : "default",
-                  })}
-                >
+              const cardContent = (
+                <>
                   <div className="flex items-start justify-between gap-4">
                     <div>
                       <h3 className="text-xl font-semibold tracking-[-0.01em] text-[#006241]">
@@ -145,11 +135,31 @@ export default async function DashboardPage() {
                     />
                   </dl>
 
-                  {game.is_repeatable ? (
-                    <p className="mt-4 text-sm font-medium text-[#00754A]">
-                      {t("repeatLabel")}
-                    </p>
-                  ) : null}
+                </>
+              );
+
+              if (isCancelled && !isAdmin) {
+                return (
+                  <article
+                    key={game.id}
+                    className={cardClassName({ variant: "cancelled" })}
+                  >
+                    {cardContent}
+                  </article>
+                );
+              }
+
+              return (
+                <Link
+                  key={game.id}
+                  href={`/dashboard/games/${game.id}`}
+                  className={cardClassName({
+                    className:
+                      "block transition active:scale-[0.99] hover:shadow-[0_2px_10px_rgba(0,0,0,0.14)]",
+                    variant: isCancelled ? "cancelled" : "default",
+                  })}
+                >
+                  {cardContent}
                 </Link>
               );
             })}
@@ -162,7 +172,6 @@ export default async function DashboardPage() {
           action={createGame}
           labels={{
             button: t("createGameButton"),
-            cancel: t("createGameCancel"),
             create: t("createGameSubmit"),
             createError: t("createGameError"),
             created: t("createGameSuccess"),

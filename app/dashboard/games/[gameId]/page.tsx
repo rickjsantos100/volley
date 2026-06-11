@@ -24,6 +24,7 @@ import {
   removeWaitlistEntryFromGame,
   reorderWaitlist,
   updateParticipantPaymentStatus,
+  uncancelGame,
 } from "./actions";
 
 type GameEvent = {
@@ -31,7 +32,7 @@ type GameEvent = {
   starts_at: string;
   duration_minutes: number;
   max_participants: number;
-  status: "scheduled" | "cancelled" | "completed";
+  status: "scheduled" | "cancelled" | "completed" | "deleted";
   recurring_series_id: string | null;
   recurring_starts_at: string | null;
 };
@@ -122,10 +123,19 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
     notFound();
   }
 
+  if (game.status === "deleted") {
+    notFound();
+  }
+
   const isAdmin = profile?.role === "admin";
   const occupiedSlots = participantCount ?? 0;
   const isFull = occupiedSlots >= game.max_participants;
   const isCancelled = game.status === "cancelled";
+
+  if (isCancelled && !isAdmin) {
+    notFound();
+  }
+
   const isRecurring = Boolean(game.recurring_series_id);
 
   const cancelGameAction = cancelGame.bind(null, game.id);
@@ -136,6 +146,7 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
     "left-game": t("leftGameMessage"),
     "cancelled-game": t("cancelledGameMessage"),
     "cancelled-series": t("cancelledSeriesMessage"),
+    "uncancelled-game": t("uncancelledGameMessage"),
     "payment-updated": t("paymentUpdatedMessage"),
     "removed-player": t("removedPlayerMessage"),
     "join-error": t("joinErrorMessage"),
@@ -167,17 +178,19 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
             ) : null}
           </div>
 
-          <dl className="mt-5 grid gap-3 sm:grid-cols-2">
+          <dl
+            className={`mt-5 grid gap-3 ${isRecurring ? "sm:grid-cols-3" : "sm:grid-cols-2"}`}
+          >
             <StatTile
               label={t("durationLabel")}
               value={formatDuration(game.duration_minutes)}
             />
+            {isRecurring ? (
+              <StatTile label={t("repeatLabel")} value={t("weeklyRepeatValue")} />
+            ) : null}
             <StatTile
               label={t("slotsLabel")}
-              value={t("slotsValue", {
-                occupied: occupiedSlots,
-                capacity: game.max_participants,
-              })}
+              value={`${occupiedSlots}/${game.max_participants}`}
             />
           </dl>
         </Card>
@@ -199,14 +212,14 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
             }
             deleteLabel={t("deleteGameButton")}
             deleteOccurrenceLabel={t("deleteOccurrenceButton")}
-            deleteScopeCloseLabel={t("deleteScopeCloseLabel")}
             deleteScopeIntro={t("deleteScopeIntro")}
             deleteScopeTitle={t("deleteScopeTitle")}
-            deleteSeriesConfirmMessage={t("deleteSeriesConfirmMessage")}
             deleteSeriesLabel={t("deleteSeriesButton")}
             isCancelled={isCancelled}
             isRecurring={isRecurring}
             statusLabels={statusLabels}
+            uncancelAction={uncancelGame.bind(null, game.id)}
+            uncancelLabel={t("uncancelGameButton")}
           />
         ) : null}
 
@@ -283,6 +296,7 @@ async function GameDetailContent({
     "left-game": t("leftGameMessage"),
     "cancelled-game": t("cancelledGameMessage"),
     "cancelled-series": t("cancelledSeriesMessage"),
+    "uncancelled-game": t("uncancelledGameMessage"),
     "payment-updated": t("paymentUpdatedMessage"),
     "removed-player": t("removedPlayerMessage"),
     "join-error": t("joinErrorMessage"),
@@ -298,9 +312,7 @@ async function GameDetailContent({
 
   return (
     <>
-      {isCancelled ? (
-        <Alert>{t("cancelledGameNotice")}</Alert>
-      ) : (
+      {!isCancelled ? (
         <GameParticipationActions
           alreadyWaitlistedLabel={t("alreadyWaitlistedButton")}
           confirmLeaveMessage={t("leaveGameConfirmMessage")}
@@ -315,7 +327,7 @@ async function GameDetailContent({
           leaveGameLabel={t("leaveGameButton")}
           statusLabels={statusLabels}
         />
-      )}
+      ) : null}
 
       {hasListError ? <Alert>{t("listLoadError")}</Alert> : null}
 

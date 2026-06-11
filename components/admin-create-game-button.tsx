@@ -18,7 +18,6 @@ type AdminCreateGameButtonProps = {
   ) => Promise<CreateGameActionState>;
   labels: {
     button: string;
-    cancel: string;
     create: string;
     createError: string;
     created: string;
@@ -101,14 +100,15 @@ export function AdminCreateGameButton({
           setIsOpen(true);
         }}
       >
-        <span aria-hidden="true" className="text-xl leading-none">
-          +
+        <span className="inline-flex items-center gap-3">
+          <span aria-hidden="true" className="text-xl leading-none">
+            +
+          </span>
+          {labels.button}
         </span>
-        {labels.button}
       </Button>
 
       <Modal
-        closeLabel={labels.cancel}
         onClose={() => {
           setIsOpen(false);
         }}
