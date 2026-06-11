@@ -1,13 +1,14 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import type {
   GameActionState,
   GameActionStatus,
 } from "@/app/dashboard/games/[gameId]/actions";
 import { Alert } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
+import { Button, SubmitButton } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Modal } from "@/components/ui/modal";
 
 type AdminGameControlsProps = {
   cancelAction: (
@@ -22,12 +23,22 @@ type AdminGameControlsProps = {
   ) => Promise<GameActionState>;
   deleteConfirmMessage: string;
   deleteLabel: string;
+  deleteOccurrenceLabel: string;
+  deleteScopeCloseLabel: string;
+  deleteScopeIntro: string;
+  deleteScopeTitle: string;
+  deleteSeriesConfirmMessage: string;
+  deleteSeriesLabel: string;
   isCancelled: boolean;
+  isRecurring: boolean;
   statusLabels: Partial<Record<GameActionStatus, string>>;
 };
 
 const initialState: GameActionState = {};
-const successStatuses = new Set<GameActionStatus>(["cancelled-game"]);
+const successStatuses = new Set<GameActionStatus>([
+  "cancelled-game",
+  "cancelled-series",
+]);
 
 function AdminActionButton({
   destructive = false,
@@ -53,7 +64,14 @@ export function AdminGameControls({
   deleteAction,
   deleteConfirmMessage,
   deleteLabel,
+  deleteOccurrenceLabel,
+  deleteScopeCloseLabel,
+  deleteScopeIntro,
+  deleteScopeTitle,
+  deleteSeriesConfirmMessage,
+  deleteSeriesLabel,
   isCancelled,
+  isRecurring,
   statusLabels,
 }: AdminGameControlsProps) {
   const [cancelState, cancelFormAction] = useActionState(
@@ -64,6 +82,7 @@ export function AdminGameControls({
     deleteAction,
     initialState,
   );
+  const [deleteScopeOpen, setDeleteScopeOpen] = useState(false);
   const status = deleteState.status ?? cancelState.status;
 
   return (
@@ -74,33 +93,84 @@ export function AdminGameControls({
         </Alert>
       ) : null}
 
-      <div
-        className={status ? "mt-4 flex flex-wrap gap-3" : "flex flex-wrap gap-3"}
-      >
-        {!isCancelled ? (
+      <div className={status ? "mt-4 grid gap-3" : "grid gap-3"}>
+        <div className="flex flex-wrap gap-3">
+          {!isCancelled ? (
+            <form
+              action={cancelFormAction}
+              onSubmit={(event) => {
+                if (!window.confirm(cancelConfirmMessage)) {
+                  event.preventDefault();
+                }
+              }}
+            >
+              <input name="scope" type="hidden" value="occurrence" />
+              <AdminActionButton label={cancelLabel} />
+            </form>
+          ) : null}
+
           <form
-            action={cancelFormAction}
+            action={deleteFormAction}
             onSubmit={(event) => {
-              if (!window.confirm(cancelConfirmMessage)) {
+              if (isRecurring) {
+                event.preventDefault();
+                setDeleteScopeOpen(true);
+                return;
+              }
+
+              if (!window.confirm(deleteConfirmMessage)) {
                 event.preventDefault();
               }
             }}
           >
-            <AdminActionButton label={cancelLabel} />
+            <input name="scope" type="hidden" value="occurrence" />
+            <AdminActionButton destructive label={deleteLabel} />
           </form>
-        ) : null}
-
-        <form
-          action={deleteFormAction}
-          onSubmit={(event) => {
-            if (!window.confirm(deleteConfirmMessage)) {
-              event.preventDefault();
-            }
-          }}
-        >
-          <AdminActionButton destructive label={deleteLabel} />
-        </form>
+        </div>
       </div>
+
+      <Modal
+        closeLabel={deleteScopeCloseLabel}
+        onClose={() => {
+          setDeleteScopeOpen(false);
+        }}
+        open={deleteScopeOpen}
+        title={deleteScopeTitle}
+      >
+        <div className="mt-5 grid gap-4">
+          <p className="text-sm leading-6 text-[#33433d]">{deleteScopeIntro}</p>
+
+          <div className="flex flex-wrap gap-3">
+            <form
+              action={deleteFormAction}
+              onSubmit={(event) => {
+                if (!window.confirm(deleteConfirmMessage)) {
+                  event.preventDefault();
+                }
+              }}
+            >
+              <input name="scope" type="hidden" value="occurrence" />
+              <SubmitButton size="compact" variant="dangerOutline">
+                {deleteOccurrenceLabel}
+              </SubmitButton>
+            </form>
+
+            <form
+              action={deleteFormAction}
+              onSubmit={(event) => {
+                if (!window.confirm(deleteSeriesConfirmMessage)) {
+                  event.preventDefault();
+                }
+              }}
+            >
+              <input name="scope" type="hidden" value="series" />
+              <SubmitButton size="compact" variant="dangerOutline">
+                {deleteSeriesLabel}
+              </SubmitButton>
+            </form>
+          </div>
+        </div>
+      </Modal>
     </Card>
   );
 }

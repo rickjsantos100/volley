@@ -130,16 +130,27 @@ export async function createGame(
     return { status: "invalid" };
   }
 
-  const { error } = await supabase.from("game_events").insert({
-    created_by: user.id,
-    duration_minutes: durationMinutes,
-    is_repeatable: isRepeatable,
-    max_participants: maxParticipants,
-    repeat_frequency: isRepeatable ? "weekly" : null,
-    starts_at: startsAt.toISOString(),
-    status: "scheduled",
-    title: "Volleyball game",
-  });
+  const { error } = isRepeatable
+    ? await supabase.from("recurring_game_series").insert({
+        active: true,
+        created_by: user.id,
+        duration_minutes: durationMinutes,
+        frequency: "weekly",
+        max_participants: maxParticipants,
+        starts_at: startsAt.toISOString(),
+        timezone: "Europe/Lisbon",
+        title: "Volleyball game",
+      })
+    : await supabase.from("game_events").insert({
+        created_by: user.id,
+        duration_minutes: durationMinutes,
+        is_repeatable: false,
+        max_participants: maxParticipants,
+        repeat_frequency: null,
+        starts_at: startsAt.toISOString(),
+        status: "scheduled",
+        title: "Volleyball game",
+      });
 
   revalidatePath("/dashboard");
 

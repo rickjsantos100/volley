@@ -33,3 +33,4 @@ Early implementation. The app has a basic Next.js setup, language toggle, and Su
 - Secrets and credentials should not be committed.
 - Design work should follow `DESIGN.md`.
 - Technical decisions should follow `docs/technical-requirements.md`.
+- Messages that start with `TODO:` are requests to add the item to `TODO.md`.

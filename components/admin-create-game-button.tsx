@@ -6,10 +6,10 @@ import type {
   CreateGameActionState,
   CreateGameActionStatus,
 } from "@/app/dashboard/actions";
-import { Alert } from "@/components/ui/alert";
 import { Button, SubmitButton } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { Modal } from "@/components/ui/modal";
+import { Toast } from "@/components/ui/toast";
 
 type AdminCreateGameButtonProps = {
   action: (
@@ -87,14 +87,10 @@ export function AdminCreateGameButton({
 
   return (
     <>
-      {status ? (
-        <Alert
-          aria-live="polite"
-          className="fixed bottom-24 left-4 z-50 max-w-[calc(100vw-2rem)] shadow-[0_0_0.5px_0_rgba(0,0,0,0.14),0_1px_1px_0_rgba(0,0,0,0.24)] sm:left-6"
-          variant={errorStatuses.has(status) ? "error" : "success"}
-        >
+      {status && errorStatuses.has(status) ? (
+        <Toast variant="error">
           {getStatusMessage(status, labels)}
-        </Alert>
+        </Toast>
       ) : null}
 
       <Button

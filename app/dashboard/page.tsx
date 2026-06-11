@@ -41,6 +41,10 @@ export default async function DashboardPage() {
     redirect("/");
   }
 
+  const now = new Date();
+  const horizon = new Date(now);
+  horizon.setDate(horizon.getDate() + 30);
+
   const [
     { data: profile },
     { data: gameRows, error: gamesError },
@@ -56,7 +60,8 @@ export default async function DashboardPage() {
         "id, starts_at, duration_minutes, max_participants, is_repeatable, status",
       )
       .in("status", ["scheduled", "cancelled"])
-      .gte("starts_at", new Date().toISOString())
+      .gte("starts_at", now.toISOString())
+      .lte("starts_at", horizon.toISOString())
       .order("starts_at", { ascending: true }),
   ]);
   const games = (gameRows ?? []) as GameEvent[];

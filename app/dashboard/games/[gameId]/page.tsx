@@ -2,6 +2,8 @@ import { Suspense } from "react";
 import { notFound, redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { AdminGameControls } from "@/components/admin-game-controls";
+import { AdminParticipantListItem } from "@/components/admin-participant-list-item";
+import { AdminWaitlistSortableList } from "@/components/admin-waitlist-sortable-list";
 import { GameParticipationActions } from "@/components/game-participation-actions";
 import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -18,6 +20,10 @@ import {
   joinGame,
   joinWaitlist,
   leaveGame,
+  removeParticipantFromGame,
+  removeWaitlistEntryFromGame,
+  reorderWaitlist,
+  updateParticipantPaymentStatus,
 } from "./actions";
 
 type GameEvent = {
@@ -26,6 +32,8 @@ type GameEvent = {
   duration_minutes: number;
   max_participants: number;
   status: "scheduled" | "cancelled" | "completed";
+  recurring_series_id: string | null;
+  recurring_starts_at: string | null;
 };
 
 type ProfileRoleRow = {
@@ -94,7 +102,9 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
   ] = await Promise.all([
     supabase
       .from("game_events")
-      .select("id, starts_at, duration_minutes, max_participants, status")
+      .select(
+        "id, starts_at, duration_minutes, max_participants, status, recurring_series_id, recurring_starts_at",
+      )
       .eq("id", gameId)
       .maybeSingle<GameEvent>(),
     supabase
@@ -116,6 +126,7 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
   const occupiedSlots = participantCount ?? 0;
   const isFull = occupiedSlots >= game.max_participants;
   const isCancelled = game.status === "cancelled";
+  const isRecurring = Boolean(game.recurring_series_id);
 
   const cancelGameAction = cancelGame.bind(null, game.id);
   const deleteGameAction = deleteGame.bind(null, game.id);
@@ -124,11 +135,17 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
     "joined-waitlist": t("joinedWaitlistMessage"),
     "left-game": t("leftGameMessage"),
     "cancelled-game": t("cancelledGameMessage"),
+    "cancelled-series": t("cancelledSeriesMessage"),
+    "payment-updated": t("paymentUpdatedMessage"),
+    "removed-player": t("removedPlayerMessage"),
     "join-error": t("joinErrorMessage"),
     "waitlist-error": t("waitlistErrorMessage"),
+    "waitlist-reorder-error": t("waitlistReorderErrorMessage"),
     "leave-error": t("leaveErrorMessage"),
+    "remove-player-error": t("removePlayerErrorMessage"),
     "cancel-error": t("cancelErrorMessage"),
     "delete-error": t("deleteErrorMessage"),
+    "payment-error": t("paymentErrorMessage"),
     "not-authorized": t("notAuthorizedMessage"),
   };
 
@@ -168,12 +185,27 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
         {isAdmin ? (
           <AdminGameControls
             cancelAction={cancelGameAction}
-            cancelConfirmMessage={t("cancelGameConfirmMessage")}
+            cancelConfirmMessage={
+              isRecurring
+                ? t("cancelOccurrenceConfirmMessage")
+                : t("cancelGameConfirmMessage")
+            }
             cancelLabel={t("cancelGameButton")}
             deleteAction={deleteGameAction}
-            deleteConfirmMessage={t("deleteGameConfirmMessage")}
+            deleteConfirmMessage={
+              isRecurring
+                ? t("deleteOccurrenceConfirmMessage")
+                : t("deleteGameConfirmMessage")
+            }
             deleteLabel={t("deleteGameButton")}
+            deleteOccurrenceLabel={t("deleteOccurrenceButton")}
+            deleteScopeCloseLabel={t("deleteScopeCloseLabel")}
+            deleteScopeIntro={t("deleteScopeIntro")}
+            deleteScopeTitle={t("deleteScopeTitle")}
+            deleteSeriesConfirmMessage={t("deleteSeriesConfirmMessage")}
+            deleteSeriesLabel={t("deleteSeriesButton")}
             isCancelled={isCancelled}
+            isRecurring={isRecurring}
             statusLabels={statusLabels}
           />
         ) : null}
@@ -228,6 +260,13 @@ async function GameDetailContent({
 
   const participants = (participantRows ?? []) as ParticipantDetail[];
   const waitlist = (waitlistRows ?? []) as WaitlistDetail[];
+  if (participantsError || waitlistError) {
+    console.error("Failed to load game roster lists", {
+      gameId: game.id,
+      participantsError,
+      waitlistError,
+    });
+  }
   const occupiedSlots = participants.length;
   const isFull = occupiedSlots >= game.max_participants;
   const isParticipant = participants.some(
@@ -243,11 +282,17 @@ async function GameDetailContent({
     "joined-waitlist": t("joinedWaitlistMessage"),
     "left-game": t("leftGameMessage"),
     "cancelled-game": t("cancelledGameMessage"),
+    "cancelled-series": t("cancelledSeriesMessage"),
+    "payment-updated": t("paymentUpdatedMessage"),
+    "removed-player": t("removedPlayerMessage"),
     "join-error": t("joinErrorMessage"),
     "waitlist-error": t("waitlistErrorMessage"),
+    "waitlist-reorder-error": t("waitlistReorderErrorMessage"),
     "leave-error": t("leaveErrorMessage"),
+    "remove-player-error": t("removePlayerErrorMessage"),
     "cancel-error": t("cancelErrorMessage"),
     "delete-error": t("deleteErrorMessage"),
+    "payment-error": t("paymentErrorMessage"),
     "not-authorized": t("notAuthorizedMessage"),
   };
 
@@ -290,31 +335,35 @@ async function GameDetailContent({
                 {participants.map((participant) => {
                   const name = getDisplayName(participant);
 
-                  return (
+                  return isAdmin ? (
+                    <AdminParticipantListItem
+                      key={participant.id}
+                      name={name}
+                      paidLabel={t("paidLabel")}
+                      paymentAction={updateParticipantPaymentStatus.bind(
+                        null,
+                        game.id,
+                        participant.id,
+                      )}
+                      paymentStatus={participant.payment_status}
+                      removeAction={removeParticipantFromGame.bind(
+                        null,
+                        game.id,
+                        participant.id,
+                      )}
+                      removeLabel={t("removePlayerLabel", { name })}
+                      statusLabels={statusLabels}
+                      unpaidLabel={t("unpaidLabel")}
+                    />
+                  ) : (
                     <li
                       key={participant.id}
-                      className="flex items-center justify-between gap-3 rounded-xl bg-[#f9f9f9] px-4 py-3"
+                      className="flex items-center gap-3 rounded-xl bg-[#f9f9f9] px-4 py-3"
                     >
-                      <div className="flex min-w-0 items-center gap-3">
-                        <InitialsAvatar name={name} />
-                        <p className="truncate text-sm font-semibold text-[#33433d]">
-                          {name}
-                        </p>
-                      </div>
-
-                      {isAdmin ? (
-                        <Badge
-                          variant={
-                            participant.payment_status === "paid"
-                              ? "success"
-                              : "soft"
-                          }
-                        >
-                          {participant.payment_status === "paid"
-                            ? t("paidLabel")
-                            : t("unpaidLabel")}
-                        </Badge>
-                      ) : null}
+                      <InitialsAvatar name={name} />
+                      <p className="truncate text-sm font-semibold text-[#33433d]">
+                        {name}
+                      </p>
                     </li>
                   );
                 })}
@@ -331,6 +380,19 @@ async function GameDetailContent({
               <p className="mt-4 text-sm leading-6 text-[rgba(0,0,0,0.58)]">
                 {t("emptyWaitlist")}
               </p>
+            ) : isAdmin ? (
+              <AdminWaitlistSortableList
+                action={reorderWaitlist.bind(null, game.id)}
+                dragHandleLabel={t("dragWaitlistPlayerLabel")}
+                items={waitlist.map((entry) => ({
+                  id: entry.id,
+                  name: getDisplayName(entry),
+                }))}
+                key={waitlist.map((entry) => entry.id).join(":")}
+                removeAction={removeWaitlistEntryFromGame.bind(null, game.id)}
+                removeLabel={t("removeWaitlistPlayerLabel")}
+                statusLabels={statusLabels}
+              />
             ) : (
               <ul className="mt-4 grid gap-3">
                 {waitlist.map((entry) => {
@@ -339,15 +401,14 @@ async function GameDetailContent({
                   return (
                     <li
                       key={entry.id}
-                      className="flex items-center gap-3 rounded-xl bg-[#f9f9f9] px-4 py-3"
+                      className="flex items-center justify-between gap-3 rounded-xl bg-[#f9f9f9] px-4 py-3"
                     >
-                      <span className="text-sm font-semibold text-[rgba(0,0,0,0.58)]">
-                        {entry.position}
-                      </span>
-                      <InitialsAvatar name={name} />
-                      <p className="min-w-0 truncate text-sm font-semibold text-[#33433d]">
-                        {name}
-                      </p>
+                      <div className="flex min-w-0 items-center gap-3">
+                        <InitialsAvatar name={name} />
+                        <p className="min-w-0 truncate text-sm font-semibold text-[#33433d]">
+                          {name}
+                        </p>
+                      </div>
                     </li>
                   );
                 })}
