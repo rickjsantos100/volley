@@ -148,7 +148,12 @@
   "ProfilePage": {
     "eyebrow": "Profile",
     "title": "Your profile",
-    "intro": "Update the name shown on your account.",
+    "intro": "Update the name and photo shown on your account.",
+    "avatarTitle": "Profile photo",
+    "avatarHelp": "Choose an image or take a photo.",
+    "avatarUploading": "Uploading...",
+    "chooseImageButton": "Choose image",
+    "takePhotoButton": "Take photo",
     "firstNameLabel": "First name",
     "firstNamePlaceholder": "First name",
     "lastNameLabel": "Last name",
@@ -160,8 +165,10 @@
       "lastNameRequired": "Enter your last name."
     },
     "errors": {
+      "invalidImage": "Choose an image file.",
       "notAuthenticated": "Log in again to update your profile.",
-      "updateFailed": "We could not update your profile. Please try again."
+      "updateFailed": "We could not update your profile. Please try again.",
+      "uploadFailed": "We could not upload your photo. Please try again."
     }
   }
 }

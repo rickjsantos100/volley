@@ -5,10 +5,30 @@ import { LanguageToggle } from "@/components/language-toggle";
 import { createClient } from "@/lib/supabase/server";
 
 type Profile = {
+  avatar_path: string | null;
+  avatar_updated_at: string | null;
   display_name: string | null;
   first_name: string | null;
   last_name: string | null;
 };
+
+function getAvatarUrl(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  profile: Profile | null,
+) {
+  if (!profile?.avatar_path) {
+    return "";
+  }
+
+  const { data } = supabase.storage
+    .from("avatars")
+    .getPublicUrl(profile.avatar_path);
+  const version = profile.avatar_updated_at
+    ? `?v=${encodeURIComponent(profile.avatar_updated_at)}`
+    : "";
+
+  return `${data.publicUrl}${version}`;
+}
 
 function getInitials(profile: Profile | null, email: string | undefined) {
   const nameParts = [profile?.first_name, profile?.last_name].filter(Boolean);
@@ -51,10 +71,11 @@ export async function GlobalHeader() {
   const { data: profile } = user
     ? await supabase
         .from("profiles")
-        .select("display_name, first_name, last_name")
+        .select("avatar_path, avatar_updated_at, display_name, first_name, last_name")
         .eq("id", user.id)
         .maybeSingle<Profile>()
     : { data: null };
+  const avatarUrl = getAvatarUrl(supabase, profile);
 
   return (
     <header className="fixed inset-x-0 top-0 z-50 bg-[#fff8d8]/95 shadow-[0_1px_3px_rgba(0,0,0,0.1),0_2px_2px_rgba(0,0,0,0.06),0_0_2px_rgba(0,0,0,0.07)] backdrop-blur">
@@ -62,6 +83,7 @@ export async function GlobalHeader() {
         <div className="justify-self-start">
           {user ? (
             <AccountMenu
+              avatarUrl={avatarUrl}
               initials={getInitials(profile, user.email)}
               label={getLabel(profile, user.email)}
             />

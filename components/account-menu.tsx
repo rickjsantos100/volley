@@ -6,11 +6,12 @@ import { useTranslations } from "next-intl";
 import { logOut } from "@/app/dashboard/actions";
 
 type AccountMenuProps = {
+  avatarUrl: string;
   initials: string;
   label: string;
 };
 
-export function AccountMenu({ initials, label }: AccountMenuProps) {
+export function AccountMenu({ avatarUrl, initials, label }: AccountMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const t = useTranslations("AccountMenu");
@@ -49,7 +50,16 @@ export function AccountMenu({ initials, label }: AccountMenuProps) {
         onClick={() => setIsOpen((currentValue) => !currentValue)}
         className="ripple flex size-11 items-center justify-center rounded-full border border-[#ffd21a] bg-[#ffd21a] text-sm font-semibold text-[#061b6b] shadow-[0_0_0.5px_0_rgba(0,0,0,0.14),0_1px_1px_0_rgba(0,0,0,0.18)] transition active:scale-95"
       >
-        {initials}
+        {avatarUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            alt=""
+            className="size-full rounded-full object-cover"
+            src={avatarUrl}
+          />
+        ) : (
+          initials
+        )}
       </button>
 
       {isOpen ? (

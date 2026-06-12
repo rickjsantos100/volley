@@ -5,9 +5,29 @@ import { ProfileForm } from "@/components/profile-form";
 import { createClient } from "@/lib/supabase/server";
 
 type Profile = {
+  avatar_path: string | null;
+  avatar_updated_at: string | null;
   first_name: string | null;
   last_name: string | null;
 };
+
+function getAvatarUrl(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  profile: Profile | null,
+) {
+  if (!profile?.avatar_path) {
+    return "";
+  }
+
+  const { data } = supabase.storage
+    .from("avatars")
+    .getPublicUrl(profile.avatar_path);
+  const version = profile.avatar_updated_at
+    ? `?v=${encodeURIComponent(profile.avatar_updated_at)}`
+    : "";
+
+  return `${data.publicUrl}${version}`;
+}
 
 export default async function ProfilePage() {
   const [t, supabase] = await Promise.all([
@@ -24,9 +44,10 @@ export default async function ProfilePage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("first_name, last_name")
+    .select("avatar_path, avatar_updated_at, first_name, last_name")
     .eq("id", user.id)
     .maybeSingle<Profile>();
+  const avatarUrl = getAvatarUrl(supabase, profile);
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-[#fff8d8] px-4 py-16 text-[rgba(0,0,0,0.87)] sm:px-6">
@@ -41,8 +62,11 @@ export default async function ProfilePage() {
 
         <div className="mt-8">
           <ProfileForm
+            avatarPath={profile?.avatar_path ?? ""}
+            avatarUrl={avatarUrl}
             firstName={profile?.first_name ?? ""}
             lastName={profile?.last_name ?? ""}
+            userId={user.id}
           />
         </div>
 

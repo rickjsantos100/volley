@@ -148,7 +148,12 @@
   "ProfilePage": {
     "eyebrow": "Perfil",
     "title": "O teu perfil",
-    "intro": "Atualiza o nome apresentado na tua conta.",
+    "intro": "Atualiza o nome e a fotografia apresentados na tua conta.",
+    "avatarTitle": "Fotografia de perfil",
+    "avatarHelp": "Escolhe uma imagem ou tira uma fotografia.",
+    "avatarUploading": "A enviar...",
+    "chooseImageButton": "Escolher imagem",
+    "takePhotoButton": "Tirar fotografia",
     "firstNameLabel": "Primeiro nome",
     "firstNamePlaceholder": "Primeiro nome",
     "lastNameLabel": "Último nome",
@@ -160,8 +165,10 @@
       "lastNameRequired": "Introduz o teu último nome."
     },
     "errors": {
+      "invalidImage": "Escolhe um ficheiro de imagem.",
       "notAuthenticated": "Inicia sessão novamente para atualizares o perfil.",
-      "updateFailed": "Não foi possível atualizar o teu perfil. Tenta novamente."
+      "updateFailed": "Não foi possível atualizar o teu perfil. Tenta novamente.",
+      "uploadFailed": "Não foi possível enviar a fotografia. Tenta novamente."
     }
   }
 }
