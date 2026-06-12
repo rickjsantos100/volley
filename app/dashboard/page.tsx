@@ -173,6 +173,7 @@ export default async function DashboardPage() {
           labels={{
             button: t("createGameButton"),
             create: t("createGameSubmit"),
+            date: t("createGameDateLabel"),
             createError: t("createGameError"),
             created: t("createGameSuccess"),
             endsAt: t("createGameEndsAtLabel"),

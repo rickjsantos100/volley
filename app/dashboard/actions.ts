@@ -126,7 +126,13 @@ export async function createGame(
     : null;
   const isRepeatable = formData.get("isRepeatable") === "on";
 
-  if (!durationMinutes || !maxParticipants || !startsAt || !endsAt) {
+  if (
+    !durationMinutes ||
+    !maxParticipants ||
+    !startsAt ||
+    !endsAt ||
+    startsAt.getTime() < Date.now()
+  ) {
     return { status: "invalid" };
   }
 
