@@ -83,9 +83,13 @@ export async function GlobalHeader() {
         <div className="justify-self-start">
           {user ? (
             <AccountMenu
+              avatarPath={profile?.avatar_path ?? ""}
               avatarUrl={avatarUrl}
+              firstName={profile?.first_name ?? ""}
               initials={getInitials(profile, user.email)}
               label={getLabel(profile, user.email)}
+              lastName={profile?.last_name ?? ""}
+              userId={user.id}
             />
           ) : null}
         </div>

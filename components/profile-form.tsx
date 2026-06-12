@@ -1,11 +1,18 @@
 "use client";
 
-import { useActionState, useRef, useState } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type FormEvent,
+  type PointerEvent,
+} from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { updateProfile } from "@/app/profile/actions";
+import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
-import { SubmitButton } from "@/components/ui/button";
+import { Modal } from "@/components/ui/modal";
 import { Toast } from "@/components/ui/toast";
 import { createClient } from "@/lib/supabase/client";
 
@@ -14,6 +21,7 @@ type ProfileFormProps = {
   avatarUrl: string;
   firstName: string;
   lastName: string;
+  onSaved?: () => void;
   userId: string;
 };
 
@@ -30,34 +38,107 @@ type ProfileFormState = {
   };
 };
 
-const initialState: ProfileFormState = {};
+type DraftAvatar = {
+  height: number;
+  offsetX: number;
+  offsetY: number;
+  url: string;
+  width: number;
+  zoom: number;
+};
 
 const avatarFileName = "avatar.webp";
-const avatarSize = 512;
+const avatarCropSize = 280;
+const avatarOutputSize = 512;
+const avatarPreviewSize = 96;
 const maxAvatarBytes = 500 * 1024;
+const minAvatarZoom = 1;
+const maxAvatarZoom = 3;
 
-function loadImage(file: File) {
+function loadImage(source: File | string) {
   return new Promise<HTMLImageElement>((resolve, reject) => {
     const image = new Image();
-    const objectUrl = URL.createObjectURL(file);
+    let objectUrl: string | null = null;
+    let imageSource: string;
+
+    if (typeof source === "string") {
+      imageSource = source;
+    } else {
+      objectUrl = URL.createObjectURL(source);
+      imageSource = objectUrl;
+    }
 
     image.onload = () => {
-      URL.revokeObjectURL(objectUrl);
+      if (objectUrl) {
+        URL.revokeObjectURL(objectUrl);
+      }
       resolve(image);
     };
     image.onerror = () => {
-      URL.revokeObjectURL(objectUrl);
+      if (objectUrl) {
+        URL.revokeObjectURL(objectUrl);
+      }
       reject(new Error("imageLoadFailed"));
     };
-    image.src = objectUrl;
+    image.src = imageSource;
   });
 }
 
-async function compressAvatar(file: File) {
-  const image = await loadImage(file);
-  const sourceSize = Math.min(image.naturalWidth, image.naturalHeight);
-  const sourceX = (image.naturalWidth - sourceSize) / 2;
-  const sourceY = (image.naturalHeight - sourceSize) / 2;
+function getBaseScale(draftAvatar: DraftAvatar, cropSize = avatarCropSize) {
+  return Math.max(
+    cropSize / draftAvatar.width,
+    cropSize / draftAvatar.height,
+  );
+}
+
+function clampOffset(offset: number, renderedSize: number, cropSize = avatarCropSize) {
+  const extraSize = Math.max(0, renderedSize - cropSize);
+  const limit = extraSize / 2;
+
+  return Math.min(limit, Math.max(-limit, offset));
+}
+
+function clampDraftAvatar(draftAvatar: DraftAvatar): DraftAvatar {
+  const scale = getBaseScale(draftAvatar) * draftAvatar.zoom;
+
+  return {
+    ...draftAvatar,
+    offsetX: clampOffset(draftAvatar.offsetX, draftAvatar.width * scale),
+    offsetY: clampOffset(draftAvatar.offsetY, draftAvatar.height * scale),
+  };
+}
+
+function getDefaultDraftAvatar(draftAvatar: DraftAvatar): DraftAvatar {
+  return clampDraftAvatar({
+    ...draftAvatar,
+    offsetX: 0,
+    offsetY: 0,
+    zoom: minAvatarZoom,
+  });
+}
+
+function getDraftImageStyle(draftAvatar: DraftAvatar, displaySize: number) {
+  const displayRatio = displaySize / avatarCropSize;
+  const scale = getBaseScale(draftAvatar) * draftAvatar.zoom * displayRatio;
+  const width = draftAvatar.width * scale;
+  const height = draftAvatar.height * scale;
+
+  return {
+    height: `${height}px`,
+    left: `${(displaySize - width) / 2 + draftAvatar.offsetX * displayRatio}px`,
+    top: `${(displaySize - height) / 2 + draftAvatar.offsetY * displayRatio}px`,
+    width: `${width}px`,
+  };
+}
+
+async function createCompressedAvatarBlob(draftAvatar: DraftAvatar) {
+  const image = await loadImage(draftAvatar.url);
+  const sourceScale = getBaseScale(draftAvatar) * draftAvatar.zoom;
+  const sourceSize = avatarCropSize / sourceScale;
+  const sourceX =
+    (draftAvatar.width - sourceSize) / 2 - draftAvatar.offsetX / sourceScale;
+  const sourceY =
+    (draftAvatar.height - sourceSize) / 2 - draftAvatar.offsetY / sourceScale;
   const canvas = document.createElement("canvas");
   const context = canvas.getContext("2d");
 
@@ -65,23 +146,21 @@ async function compressAvatar(file: File) {
     throw new Error("compressionFailed");
   }
 
-  const drawingContext = context;
+  canvas.width = avatarOutputSize;
+  canvas.height = avatarOutputSize;
+  context.drawImage(
+    image,
+    sourceX,
+    sourceY,
+    sourceSize,
+    sourceSize,
+    0,
+    0,
+    avatarOutputSize,
+    avatarOutputSize,
+  );
 
-  async function createBlob(size: number, quality: number) {
-    canvas.width = size;
-    canvas.height = size;
-    drawingContext.drawImage(
-      image,
-      sourceX,
-      sourceY,
-      sourceSize,
-      sourceSize,
-      0,
-      0,
-      size,
-      size,
-    );
-
+  async function createBlob(quality: number) {
     return new Promise<Blob>((resolve, reject) => {
       canvas.toBlob(
         (blob) => {
@@ -97,29 +176,21 @@ async function compressAvatar(file: File) {
     });
   }
 
-  for (const size of [avatarSize, 384]) {
-    for (const quality of [0.82, 0.72, 0.62]) {
-      const blob = await createBlob(size, quality);
+  for (const quality of [0.82, 0.72, 0.62]) {
+    const blob = await createBlob(quality);
 
-      if (blob.size <= maxAvatarBytes) {
-        return blob;
-      }
+    if (blob.size <= maxAvatarBytes) {
+      return blob;
     }
   }
 
-  return new Promise<Blob>((resolve, reject) => {
-    canvas.toBlob(
-      (blob) => {
-        if (blob && blob.size <= maxAvatarBytes) {
-          resolve(blob);
-        } else {
-          reject(new Error("compressionFailed"));
-        }
-      },
-      "image/webp",
-      0.8,
-    );
-  });
+  throw new Error("compressionFailed");
+}
+
+function clearInput(input: HTMLInputElement | null) {
+  if (input) {
+    input.value = "";
+  }
 }
 
 export function ProfileForm({
@@ -127,26 +198,49 @@ export function ProfileForm({
   avatarUrl,
   firstName,
   lastName,
+  onSaved,
   userId,
 }: ProfileFormProps) {
-  const [state, formAction] = useActionState(updateProfile, initialState);
   const router = useRouter();
   const chooseInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
+  const draftAvatarRef = useRef<DraftAvatar | null>(null);
+  const dragStateRef = useRef<{
+    offsetX: number;
+    offsetY: number;
+    pointerId: number;
+    startX: number;
+    startY: number;
+  } | null>(null);
+  const [state, setState] = useState<ProfileFormState>({});
   const [values, setValues] = useState({
     firstName,
     lastName,
   });
+  const [savedValues, setSavedValues] = useState({ firstName, lastName });
   const [currentAvatarPath, setCurrentAvatarPath] = useState(avatarPath);
   const [currentAvatarUrl, setCurrentAvatarUrl] = useState(avatarUrl);
+  const [draftAvatar, setDraftAvatar] = useState<DraftAvatar | null>(null);
+  const [isCropModalOpen, setIsCropModalOpen] = useState(false);
   const [avatarError, setAvatarError] = useState<string | null>(null);
-  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [touched, setTouched] = useState({
     firstName: false,
     lastName: false,
   });
   const t = useTranslations("ProfilePage");
-  const savedValues = state.profile ?? { firstName, lastName };
+
+  useEffect(() => {
+    draftAvatarRef.current = draftAvatar;
+  }, [draftAvatar]);
+
+  useEffect(() => {
+    return () => {
+      if (draftAvatarRef.current) {
+        URL.revokeObjectURL(draftAvatarRef.current.url);
+      }
+    };
+  }, []);
 
   const clientErrors = {
     firstName: values.firstName.trim()
@@ -157,9 +251,10 @@ export function ProfileForm({
       : t("validation.lastNameRequired"),
   };
   const isValid = !clientErrors.firstName && !clientErrors.lastName;
-  const isChanged =
+  const isNameChanged =
     values.firstName.trim() !== savedValues.firstName ||
     values.lastName.trim() !== savedValues.lastName;
+  const isChanged = isNameChanged || Boolean(draftAvatar);
   const firstNameError =
     (touched.firstName && clientErrors.firstName) ||
     (state.errors?.firstName
@@ -169,103 +264,218 @@ export function ProfileForm({
     (touched.lastName && clientErrors.lastName) ||
     (state.errors?.lastName ? t(`validation.${state.errors.lastName}`) : null);
 
-  function handleAvatarFile(file: File | undefined) {
+  async function handleAvatarFile(file: File | undefined) {
     if (!file) {
       return;
     }
 
-    const selectedFile = file;
+    setAvatarError(null);
 
-    async function uploadAvatar() {
-      setAvatarError(null);
-
-      if (!selectedFile.type.startsWith("image/")) {
-        setAvatarError("invalidImage");
-        if (chooseInputRef.current) {
-          chooseInputRef.current.value = "";
-        }
-        if (cameraInputRef.current) {
-          cameraInputRef.current.value = "";
-        }
-        return;
-      }
-
-      try {
-        setIsUploadingAvatar(true);
-        const compressedAvatar = await compressAvatar(selectedFile);
-        const supabase = createClient();
-        const newAvatarPath = `${userId}/${avatarFileName}`;
-        const { error: uploadError } = await supabase.storage
-          .from("avatars")
-          .upload(newAvatarPath, compressedAvatar, {
-            cacheControl: "3600",
-            contentType: compressedAvatar.type || "image/webp",
-            upsert: true,
-          });
-
-        if (uploadError) {
-          throw uploadError;
-        }
-
-        const avatarUpdatedAt = new Date().toISOString();
-        const { error: updateError } = await supabase
-          .from("profiles")
-          .update({
-            avatar_path: newAvatarPath,
-            avatar_updated_at: avatarUpdatedAt,
-          })
-          .eq("id", userId);
-
-        if (updateError) {
-          throw updateError;
-        }
-
-        const { data } = supabase.storage
-          .from("avatars")
-          .getPublicUrl(newAvatarPath);
-        const nextAvatarUrl = `${data.publicUrl}?v=${encodeURIComponent(avatarUpdatedAt)}`;
-
-        setCurrentAvatarPath(newAvatarPath);
-        setCurrentAvatarUrl(nextAvatarUrl);
-        router.refresh();
-
-        const stalePaths = new Set<string>();
-
-        if (currentAvatarPath && currentAvatarPath !== newAvatarPath) {
-          stalePaths.add(currentAvatarPath);
-        }
-
-        const { data: userAvatarFiles } = await supabase.storage
-          .from("avatars")
-          .list(userId);
-
-        userAvatarFiles?.forEach((avatarFile) => {
-          if (avatarFile.name !== avatarFileName) {
-            stalePaths.add(`${userId}/${avatarFile.name}`);
-          }
-        });
-
-        if (stalePaths.size > 0) {
-          await supabase.storage.from("avatars").remove([...stalePaths]);
-        }
-      } catch {
-        setAvatarError("uploadFailed");
-      } finally {
-        setIsUploadingAvatar(false);
-        if (chooseInputRef.current) {
-          chooseInputRef.current.value = "";
-        }
-        if (cameraInputRef.current) {
-          cameraInputRef.current.value = "";
-        }
-      }
+    if (!file.type.startsWith("image/")) {
+      setAvatarError("invalidImage");
+      clearInput(chooseInputRef.current);
+      clearInput(cameraInputRef.current);
+      return;
     }
 
-    void uploadAvatar();
+    let objectUrl = "";
+
+    try {
+      objectUrl = URL.createObjectURL(file);
+      const image = await loadImage(objectUrl);
+      const nextDraftAvatar = clampDraftAvatar({
+        height: image.naturalHeight,
+        offsetX: 0,
+        offsetY: 0,
+        url: objectUrl,
+        width: image.naturalWidth,
+        zoom: minAvatarZoom,
+      });
+
+      setDraftAvatar((currentDraftAvatar) => {
+        if (currentDraftAvatar) {
+          URL.revokeObjectURL(currentDraftAvatar.url);
+        }
+
+        return nextDraftAvatar;
+      });
+      setIsCropModalOpen(true);
+    } catch {
+      if (objectUrl) {
+        URL.revokeObjectURL(objectUrl);
+      }
+      setAvatarError("invalidImage");
+    } finally {
+      clearInput(chooseInputRef.current);
+      clearInput(cameraInputRef.current);
+    }
+  }
+
+  function handleAvatarPointerDown(event: PointerEvent<HTMLDivElement>) {
+    if (!draftAvatar) {
+      return;
+    }
+
+    event.currentTarget.setPointerCapture(event.pointerId);
+    dragStateRef.current = {
+      offsetX: draftAvatar.offsetX,
+      offsetY: draftAvatar.offsetY,
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+    };
+  }
+
+  function handleAvatarPointerMove(event: PointerEvent<HTMLDivElement>) {
+    const dragState = dragStateRef.current;
+
+    if (!dragState || dragState.pointerId !== event.pointerId) {
+      return;
+    }
+
+    setDraftAvatar((currentDraftAvatar) => {
+      if (!currentDraftAvatar) {
+        return currentDraftAvatar;
+      }
+
+      return clampDraftAvatar({
+        ...currentDraftAvatar,
+        offsetX:
+          dragState.offsetX +
+          ((event.clientX - dragState.startX) * avatarCropSize) /
+            avatarCropSize,
+        offsetY:
+          dragState.offsetY +
+          ((event.clientY - dragState.startY) * avatarCropSize) /
+            avatarCropSize,
+      });
+    });
+  }
+
+  function handleAvatarPointerUp(event: PointerEvent<HTMLDivElement>) {
+    if (dragStateRef.current?.pointerId === event.pointerId) {
+      dragStateRef.current = null;
+    }
+  }
+
+  async function uploadAvatar() {
+    if (!draftAvatar) {
+      return null;
+    }
+
+    const compressedAvatar = await createCompressedAvatarBlob(draftAvatar);
+    const supabase = createClient();
+    const newAvatarPath = `${userId}/${avatarFileName}`;
+    const { error: uploadError } = await supabase.storage
+      .from("avatars")
+      .upload(newAvatarPath, compressedAvatar, {
+        cacheControl: "3600",
+        contentType: compressedAvatar.type || "image/webp",
+        upsert: true,
+      });
+
+    if (uploadError) {
+      throw uploadError;
+    }
+
+    const avatarUpdatedAt = new Date().toISOString();
+    const { error: updateError } = await supabase
+      .from("profiles")
+      .update({
+        avatar_path: newAvatarPath,
+        avatar_updated_at: avatarUpdatedAt,
+      })
+      .eq("id", userId);
+
+    if (updateError) {
+      throw updateError;
+    }
+
+    const { data } = supabase.storage.from("avatars").getPublicUrl(newAvatarPath);
+    const nextAvatarUrl = `${data.publicUrl}?v=${encodeURIComponent(avatarUpdatedAt)}`;
+
+    const stalePaths = new Set<string>();
+
+    if (currentAvatarPath && currentAvatarPath !== newAvatarPath) {
+      stalePaths.add(currentAvatarPath);
+    }
+
+    const { data: userAvatarFiles } = await supabase.storage
+      .from("avatars")
+      .list(userId);
+
+    userAvatarFiles?.forEach((avatarFile) => {
+      if (avatarFile.name !== avatarFileName) {
+        stalePaths.add(`${userId}/${avatarFile.name}`);
+      }
+    });
+
+    if (stalePaths.size > 0) {
+      await supabase.storage.from("avatars").remove([...stalePaths]);
+    }
+
+    return { path: newAvatarPath, url: nextAvatarUrl };
+  }
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setTouched({ firstName: true, lastName: true });
+
+    if (!isValid || !isChanged) {
+      return;
+    }
+
+    setAvatarError(null);
+    setIsSaving(true);
+
+    const formData = new FormData(event.currentTarget);
+    const nextState = await updateProfile(state, formData);
+    setState(nextState);
+
+    if (nextState.errors) {
+      setIsSaving(false);
+      return;
+    }
+
+    try {
+      const avatarResult = await uploadAvatar();
+
+      setSavedValues({
+        firstName: values.firstName.trim(),
+        lastName: values.lastName.trim(),
+      });
+      setState(nextState);
+
+      if (avatarResult) {
+        setCurrentAvatarPath(avatarResult.path);
+        setCurrentAvatarUrl(avatarResult.url);
+        setDraftAvatar((currentDraftAvatar) => {
+          if (currentDraftAvatar) {
+            URL.revokeObjectURL(currentDraftAvatar.url);
+          }
+
+          return null;
+        });
+      }
+
+      router.refresh();
+      onSaved?.();
+    } catch {
+      setAvatarError("uploadFailed");
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  function handleCloseCropModal() {
+    setDraftAvatar((currentDraftAvatar) =>
+      currentDraftAvatar ? getDefaultDraftAvatar(currentDraftAvatar) : null,
+    );
+    setIsCropModalOpen(false);
   }
 
   return (
-    <form action={formAction} className="space-y-5">
+    <form className="space-y-5" onSubmit={handleSubmit}>
       {state.errors?.form ? (
         <Toast variant="error">{t(`errors.${state.errors.form}`)}</Toast>
       ) : null}
@@ -276,8 +486,16 @@ export function ProfileForm({
 
       <div className="rounded-xl bg-[#fff8d8] p-4">
         <div className="flex flex-col items-center gap-4 text-center sm:flex-row sm:text-left">
-          <div className="flex size-24 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#0737a8] text-2xl font-semibold text-white shadow-[0_0_0.5px_0_rgba(0,0,0,0.14),0_1px_1px_0_rgba(0,0,0,0.24)]">
-            {currentAvatarUrl ? (
+          <div className="relative flex size-24 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#0737a8] text-2xl font-semibold text-white shadow-[0_0_0.5px_0_rgba(0,0,0,0.14),0_1px_1px_0_rgba(0,0,0,0.24)]">
+            {draftAvatar ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                alt=""
+                className="pointer-events-none absolute max-w-none"
+                src={draftAvatar.url}
+                style={getDraftImageStyle(draftAvatar, avatarPreviewSize)}
+              />
+            ) : currentAvatarUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 alt=""
@@ -300,15 +518,15 @@ export function ProfileForm({
             <div className="flex flex-col gap-2 sm:flex-row">
               <button
                 className="ripple rounded-full border border-[#0737a8] bg-white px-4 py-2 text-sm font-semibold text-[#0737a8] transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
-                disabled={isUploadingAvatar}
+                disabled={isSaving}
                 onClick={() => chooseInputRef.current?.click()}
                 type="button"
               >
-                {isUploadingAvatar ? t("avatarUploading") : t("chooseImageButton")}
+                {t("chooseImageButton")}
               </button>
               <button
                 className="ripple rounded-full border border-[#ffd21a] bg-[#ffd21a] px-4 py-2 text-sm font-semibold text-[#061b6b] transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
-                disabled={isUploadingAvatar}
+                disabled={isSaving}
                 onClick={() => cameraInputRef.current?.click()}
                 type="button"
               >
@@ -321,7 +539,7 @@ export function ProfileForm({
           ref={chooseInputRef}
           accept="image/*"
           className="sr-only"
-          onChange={(event) => handleAvatarFile(event.target.files?.[0])}
+          onChange={(event) => void handleAvatarFile(event.target.files?.[0])}
           type="file"
         />
         <input
@@ -329,10 +547,67 @@ export function ProfileForm({
           accept="image/*"
           capture="user"
           className="sr-only"
-          onChange={(event) => handleAvatarFile(event.target.files?.[0])}
+          onChange={(event) => void handleAvatarFile(event.target.files?.[0])}
           type="file"
         />
       </div>
+
+      <Modal
+        onClose={handleCloseCropModal}
+        open={isCropModalOpen && Boolean(draftAvatar)}
+        title={t("avatarCropTitle")}
+      >
+        {draftAvatar ? (
+          <div className="mt-6 space-y-5">
+            <p className="text-sm leading-6 text-[#26375f]">
+              {t("avatarCropHelp")}
+            </p>
+            <div className="flex justify-center">
+              <div
+                className="relative touch-none select-none overflow-hidden rounded-xl bg-[#061b6b]"
+                onPointerCancel={handleAvatarPointerUp}
+                onPointerDown={handleAvatarPointerDown}
+                onPointerMove={handleAvatarPointerMove}
+                onPointerUp={handleAvatarPointerUp}
+                style={{ height: avatarCropSize, width: avatarCropSize }}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  alt=""
+                  className="pointer-events-none absolute max-w-none"
+                  src={draftAvatar.url}
+                  style={getDraftImageStyle(draftAvatar, avatarCropSize)}
+                />
+                <div className="pointer-events-none absolute inset-0 rounded-full border-2 border-white shadow-[0_0_0_999px_rgba(0,0,0,0.42)]" />
+              </div>
+            </div>
+            <label className="block text-sm font-semibold text-[#26375f]">
+              <span>{t("avatarZoomLabel")}</span>
+              <input
+                aria-label={t("avatarZoomLabel")}
+                className="mt-2 w-full accent-[#ffd21a]"
+                max={maxAvatarZoom}
+                min={minAvatarZoom}
+                onChange={(event) => {
+                  const zoom = Number(event.target.value);
+
+                  setDraftAvatar((currentDraftAvatar) =>
+                    currentDraftAvatar
+                      ? clampDraftAvatar({ ...currentDraftAvatar, zoom })
+                      : currentDraftAvatar,
+                  );
+                }}
+                step="0.05"
+                type="range"
+                value={draftAvatar.zoom}
+              />
+            </label>
+            <Button fullWidth onClick={() => setIsCropModalOpen(false)} type="button">
+              {t("avatarCropButton")}
+            </Button>
+          </div>
+        ) : null}
+      </Modal>
 
       <Field
         autoComplete="given-name"
@@ -382,9 +657,9 @@ export function ProfileForm({
         value={values.lastName}
       />
 
-      <SubmitButton disabled={!isValid || !isChanged} fullWidth>
+      <Button disabled={!isValid || !isChanged || isSaving} fullWidth loading={isSaving}>
         {t("saveButton")}
-      </SubmitButton>
+      </Button>
     </form>
   );
 }

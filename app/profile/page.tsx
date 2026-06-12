@@ -1,39 +1,8 @@
 import { redirect } from "next/navigation";
-import { getTranslations } from "next-intl/server";
-import Link from "next/link";
-import { ProfileForm } from "@/components/profile-form";
 import { createClient } from "@/lib/supabase/server";
 
-type Profile = {
-  avatar_path: string | null;
-  avatar_updated_at: string | null;
-  first_name: string | null;
-  last_name: string | null;
-};
-
-function getAvatarUrl(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  profile: Profile | null,
-) {
-  if (!profile?.avatar_path) {
-    return "";
-  }
-
-  const { data } = supabase.storage
-    .from("avatars")
-    .getPublicUrl(profile.avatar_path);
-  const version = profile.avatar_updated_at
-    ? `?v=${encodeURIComponent(profile.avatar_updated_at)}`
-    : "";
-
-  return `${data.publicUrl}${version}`;
-}
-
 export default async function ProfilePage() {
-  const [t, supabase] = await Promise.all([
-    getTranslations("ProfilePage"),
-    createClient(),
-  ]);
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -42,41 +11,5 @@ export default async function ProfilePage() {
     redirect("/");
   }
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("avatar_path, avatar_updated_at, first_name, last_name")
-    .eq("id", user.id)
-    .maybeSingle<Profile>();
-  const avatarUrl = getAvatarUrl(supabase, profile);
-
-  return (
-    <main className="flex min-h-screen items-center justify-center bg-[#fff8d8] px-4 py-16 text-[rgba(0,0,0,0.87)] sm:px-6">
-      <section className="w-full max-w-md rounded-xl bg-white px-6 py-8 shadow-[0_0_0.5px_0_rgba(0,0,0,0.14),0_1px_1px_0_rgba(0,0,0,0.24)] sm:px-8">
-        <p className="text-sm font-semibold tracking-[0.1em] text-[#0b46c7] uppercase">
-          {t("eyebrow")}
-        </p>
-        <h1 className="mt-3 text-3xl font-semibold tracking-[-0.01em] text-[#0737a8]">
-          {t("title")}
-        </h1>
-        <p className="mt-3 text-base leading-7 text-[#26375f]">{t("intro")}</p>
-
-        <div className="mt-8">
-          <ProfileForm
-            avatarPath={profile?.avatar_path ?? ""}
-            avatarUrl={avatarUrl}
-            firstName={profile?.first_name ?? ""}
-            lastName={profile?.last_name ?? ""}
-            userId={user.id}
-          />
-        </div>
-
-        <Link
-          href="/dashboard"
-          className="ripple ripple-dark mt-4 block rounded-full border border-[#0737a8] bg-white px-5 py-3 text-center text-sm font-semibold text-[#0737a8] transition active:scale-95"
-        >
-          {t("backToDashboard")}
-        </Link>
-      </section>
-    </main>
-  );
+  redirect("/dashboard");
 }

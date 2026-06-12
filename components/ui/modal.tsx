@@ -8,6 +8,7 @@ import {
   type MouseEvent,
   type ReactNode,
 } from "react";
+import { createPortal } from "react-dom";
 
 type ModalProps = {
   children: ReactNode;
@@ -43,6 +44,10 @@ export function Modal({
     closingFromPopstateRef.current = false;
 
     function handlePopstate() {
+      if (window.history.state?.__volleyModalId === modalId) {
+        return;
+      }
+
       pushedHistoryRef.current = false;
       closingFromPopstateRef.current = true;
       closeModal();
@@ -64,7 +69,7 @@ export function Modal({
     };
   }, [modalId, open]);
 
-  if (!open) {
+  if (!open || typeof document === "undefined") {
     return null;
   }
 
@@ -74,7 +79,7 @@ export function Modal({
     }
   }
 
-  return (
+  return createPortal(
     <div
       onClick={handleBackdropClick}
       className="fixed inset-0 z-[60] flex items-end justify-center bg-black/40 px-4 py-4 sm:items-center"
@@ -92,6 +97,7 @@ export function Modal({
         </div>
         {children}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

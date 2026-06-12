@@ -14,9 +14,13 @@
     "switchToEnglish": "Mudar idioma para inglês"
   },
   "AccountMenu": {
-    "openMenu": "Abrir menu da conta de {name}",
+    "cancelLogout": "Cancelar",
+    "confirmLogoutButton": "Log out",
+    "confirmLogoutMessage": "Vais precisar de iniciar sessão novamente para gerir jogos.",
+    "confirmLogoutTitle": "Log out?",
+    "openProfile": "Abrir perfil de {name}",
     "profile": "Perfil",
-    "signOut": "Sair"
+    "signOut": "Log out"
   },
   "AuthPage": {
     "eyebrow": "Conta",
@@ -151,7 +155,11 @@
     "intro": "Atualiza o nome e a fotografia apresentados na tua conta.",
     "avatarTitle": "Fotografia de perfil",
     "avatarHelp": "Escolhe uma imagem ou tira uma fotografia.",
+    "avatarCropButton": "Usar fotografia",
+    "avatarCropHelp": "Arrasta a imagem e usa o zoom para escolher o que aparece dentro do círculo.",
+    "avatarCropTitle": "Posicionar fotografia",
     "avatarUploading": "A enviar...",
+    "avatarZoomLabel": "Zoom",
     "chooseImageButton": "Escolher imagem",
     "takePhotoButton": "Tirar fotografia",
     "firstNameLabel": "Primeiro nome",

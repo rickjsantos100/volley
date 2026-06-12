@@ -14,7 +14,11 @@
     "switchToEnglish": "Switch language to English"
   },
   "AccountMenu": {
-    "openMenu": "Open account menu for {name}",
+    "cancelLogout": "Cancel",
+    "confirmLogoutButton": "Log out",
+    "confirmLogoutMessage": "You will need to log in again to manage games.",
+    "confirmLogoutTitle": "Log out?",
+    "openProfile": "Open profile for {name}",
     "profile": "Profile",
     "signOut": "Sign out"
   },
@@ -151,7 +155,11 @@
     "intro": "Update the name and photo shown on your account.",
     "avatarTitle": "Profile photo",
     "avatarHelp": "Choose an image or take a photo.",
+    "avatarCropButton": "Use photo",
+    "avatarCropHelp": "Drag the image and use zoom to choose what appears inside the circle.",
+    "avatarCropTitle": "Position photo",
     "avatarUploading": "Uploading...",
+    "avatarZoomLabel": "Zoom",
     "chooseImageButton": "Choose image",
     "takePhotoButton": "Take photo",
     "firstNameLabel": "First name",
