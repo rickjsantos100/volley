@@ -1,0 +1,967 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Voley Lisboa - Matchday Design Exploration</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700&amp;family=Inter:wght@400;500;600;700&amp;display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --color-navy: #061b6b;
+        --color-blue: #0737a8;
+        --color-yellow: #ffd21a;
+        --color-yellow-hover: #f2c600;
+        --color-canvas: #f5f7fa;
+        --color-surface: #ffffff;
+        --color-text: #101828;
+        --color-muted: #667085;
+        --color-placeholder: #98a2b3;
+        --color-border: #dde2ea;
+        --color-control-border: #b8c0cc;
+        --color-success: #138a5b;
+        --color-danger: #c73a3a;
+        --color-blue-soft: #eef3ff;
+        --color-disabled: #eef1f5;
+        --radius-card: 12px;
+        --radius-control: 12px;
+        --radius-button: 10px;
+        --shadow-card: 0 8px 24px rgba(16, 24, 40, 0.07);
+        --font-display: "Barlow Condensed", "Arial Narrow", sans-serif;
+        --font-interface: Inter, "Helvetica Neue", Arial, sans-serif;
+      }
+
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+
+      html {
+        color-scheme: light;
+        background: var(--color-canvas);
+      }
+
+      body {
+        min-width: 320px;
+        margin: 0;
+        background: var(--color-canvas);
+        color: var(--color-text);
+        font-family: var(--font-interface);
+        font-size: 16px;
+        line-height: 1.5;
+      }
+
+      button,
+      input,
+      select,
+      textarea {
+        font: inherit;
+      }
+
+      .site-header {
+        border-bottom: 4px solid var(--color-yellow);
+        background: var(--color-navy);
+        color: white;
+      }
+
+      .header-inner,
+      .showcase {
+        width: min(100% - 32px, 1120px);
+        margin-inline: auto;
+      }
+
+      .header-inner {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        min-height: 72px;
+        gap: 24px;
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-weight: 700;
+      }
+
+      .brand-mark {
+        display: grid;
+        width: 36px;
+        height: 36px;
+        place-items: center;
+        border-radius: 50%;
+        background: var(--color-yellow);
+        color: var(--color-navy);
+        font-family: var(--font-display);
+        font-size: 22px;
+        line-height: 1;
+      }
+
+      .status-note {
+        color: rgba(255, 255, 255, 0.72);
+        font-size: 13px;
+        font-weight: 600;
+      }
+
+      .showcase {
+        padding-block: 48px 80px;
+      }
+
+      .intro {
+        max-width: 700px;
+      }
+
+      .eyebrow,
+      .meta-label {
+        margin: 0;
+        color: var(--color-blue);
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        line-height: 16px;
+        text-transform: uppercase;
+      }
+
+      h1,
+      h2,
+      h3,
+      p {
+        margin-top: 0;
+      }
+
+      h1 {
+        margin-bottom: 12px;
+        font-family: var(--font-display);
+        font-size: clamp(40px, 7vw, 48px);
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        line-height: 1;
+      }
+
+      h2 {
+        margin-bottom: 20px;
+        font-family: var(--font-display);
+        font-size: 36px;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+        line-height: 38px;
+      }
+
+      h3 {
+        margin-bottom: 8px;
+        font-family: var(--font-display);
+        font-size: 26px;
+        font-weight: 700;
+        line-height: 28px;
+      }
+
+      .intro-copy,
+      .section-copy {
+        color: var(--color-muted);
+      }
+
+      .intro-copy {
+        margin-bottom: 0;
+        font-size: 16px;
+        line-height: 24px;
+      }
+
+      .showcase-section {
+        padding-top: 56px;
+      }
+
+      .section-heading {
+        display: flex;
+        align-items: end;
+        justify-content: space-between;
+        gap: 24px;
+        margin-bottom: 20px;
+        border-bottom: 1px solid var(--color-border);
+      }
+
+      .section-heading h2 {
+        margin-bottom: 12px;
+      }
+
+      .section-heading p {
+        max-width: 500px;
+        margin-bottom: 16px;
+        color: var(--color-muted);
+        font-size: 14px;
+      }
+
+      .type-grid,
+      .card-grid,
+      .form-grid {
+        display: grid;
+        gap: 20px;
+      }
+
+      .type-grid {
+        grid-template-columns: minmax(0, 1fr) minmax(280px, 0.72fr);
+      }
+
+      .type-panel,
+      .card,
+      .form-panel {
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-card);
+        background: var(--color-surface);
+        box-shadow: var(--shadow-card);
+      }
+
+      .type-panel,
+      .form-panel {
+        padding: 24px;
+      }
+
+      .match-display {
+        margin-bottom: 16px;
+        color: var(--color-navy);
+        font-family: var(--font-display);
+        font-size: 48px;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        line-height: 48px;
+      }
+
+      .type-sample-title {
+        margin-bottom: 8px;
+        font-size: 20px;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+        line-height: 28px;
+      }
+
+      .type-list {
+        display: grid;
+        gap: 16px;
+        margin: 0;
+      }
+
+      .type-list div {
+        display: grid;
+        grid-template-columns: 96px 1fr;
+        gap: 16px;
+        align-items: baseline;
+        padding-bottom: 12px;
+        border-bottom: 1px solid var(--color-border);
+      }
+
+      .type-list div:last-child {
+        padding-bottom: 0;
+        border-bottom: 0;
+      }
+
+      .type-list dt {
+        color: var(--color-muted);
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .type-list dd {
+        margin: 0;
+      }
+
+      .palette {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 12px;
+        margin-top: 20px;
+      }
+
+      .swatch {
+        min-height: 92px;
+        padding: 12px;
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-card);
+        background: var(--swatch);
+        color: var(--swatch-text, white);
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      .swatch span {
+        display: block;
+        margin-top: 4px;
+        opacity: 0.72;
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 11px;
+      }
+
+      .card-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        align-items: stretch;
+      }
+
+      .card {
+        position: relative;
+        min-width: 0;
+        padding: 24px;
+      }
+
+      .card-copy {
+        margin-bottom: 20px;
+        color: var(--color-muted);
+        font-size: 14px;
+        line-height: 20px;
+      }
+
+      .featured-card {
+        overflow: hidden;
+        border: 0;
+        border-top: 4px solid var(--color-yellow);
+        background: var(--color-navy);
+        color: white;
+        box-shadow: 0 12px 28px rgba(6, 27, 107, 0.18);
+      }
+
+      .featured-card::after {
+        position: absolute;
+        right: -38px;
+        bottom: -58px;
+        width: 150px;
+        height: 150px;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 50%;
+        content: "";
+        pointer-events: none;
+      }
+
+      .featured-card .meta-label {
+        color: var(--color-yellow);
+      }
+
+      .featured-card h3 {
+        margin-top: 12px;
+        font-size: 32px;
+        line-height: 32px;
+      }
+
+      .featured-card .card-copy {
+        color: rgba(255, 255, 255, 0.72);
+      }
+
+      .match-facts {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px 16px;
+        margin: 0 0 24px;
+        color: rgba(255, 255, 255, 0.82);
+        font-size: 13px;
+        font-weight: 600;
+      }
+
+      .event-card {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr);
+        gap: 16px;
+        border-left: 4px solid var(--color-success);
+      }
+
+      .date-block {
+        min-width: 60px;
+        padding-right: 16px;
+        border-right: 1px solid var(--color-border);
+        text-align: center;
+      }
+
+      .date-block span {
+        display: block;
+        color: var(--color-blue);
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .date-block strong {
+        display: block;
+        color: var(--color-navy);
+        font-family: var(--font-display);
+        font-size: 36px;
+        line-height: 36px;
+      }
+
+      .event-card h3 {
+        overflow-wrap: anywhere;
+      }
+
+      .event-meta {
+        display: grid;
+        gap: 6px;
+        margin: 12px 0 0;
+        color: var(--color-muted);
+        font-size: 13px;
+        font-weight: 600;
+      }
+
+      .button-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+      }
+
+      .button {
+        display: inline-flex;
+        min-height: 44px;
+        align-items: center;
+        justify-content: center;
+        padding: 10px 18px;
+        border: 1px solid transparent;
+        border-radius: var(--radius-button);
+        font-size: 14px;
+        font-weight: 700;
+        line-height: 20px;
+        text-decoration: none;
+        transition:
+          background-color 160ms ease,
+          border-color 160ms ease,
+          box-shadow 160ms ease,
+          transform 160ms ease;
+      }
+
+      .button:hover {
+        cursor: pointer;
+      }
+
+      .button:active {
+        transform: translateY(1px);
+      }
+
+      .button:focus-visible {
+        outline: 2px solid var(--color-navy);
+        outline-offset: 2px;
+      }
+
+      .button-primary {
+        border-color: var(--color-yellow);
+        background: var(--color-yellow);
+        color: var(--color-navy);
+      }
+
+      .button-primary:hover {
+        border-color: var(--color-yellow-hover);
+        background: var(--color-yellow-hover);
+      }
+
+      .button-secondary {
+        border-color: var(--color-blue);
+        background: white;
+        color: var(--color-blue);
+      }
+
+      .button-secondary:hover {
+        background: var(--color-blue-soft);
+      }
+
+      .button-danger {
+        border-color: var(--color-danger);
+        background: white;
+        color: var(--color-danger);
+      }
+
+      .button:disabled {
+        cursor: default;
+        opacity: 0.5;
+        transform: none;
+      }
+
+      .card .button-row {
+        margin-top: auto;
+      }
+
+      .form-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .form-panel h3 {
+        margin-bottom: 4px;
+      }
+
+      .form-intro {
+        margin-bottom: 24px;
+        color: var(--color-muted);
+        font-size: 14px;
+      }
+
+      .field-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 20px;
+      }
+
+      .field {
+        min-width: 0;
+      }
+
+      .field-full {
+        grid-column: 1 / -1;
+      }
+
+      .field label,
+      .field-label {
+        display: block;
+        margin-bottom: 7px;
+        color: var(--color-text);
+        font-size: 14px;
+        font-weight: 600;
+        line-height: 20px;
+      }
+
+      .required {
+        color: var(--color-danger);
+      }
+
+      .control {
+        width: 100%;
+        min-height: 48px;
+        padding: 11px 14px;
+        border: 1px solid var(--color-control-border);
+        border-radius: var(--radius-control);
+        background: white;
+        color: var(--color-text);
+        outline: none;
+        transition:
+          border-color 160ms ease,
+          box-shadow 160ms ease;
+      }
+
+      .control::placeholder {
+        color: var(--color-placeholder);
+      }
+
+      .control:hover:not(:disabled) {
+        border-color: var(--color-blue);
+      }
+
+      .control:focus-visible,
+      .control.is-focus-demo {
+        border-color: var(--color-blue);
+        box-shadow: 0 0 0 3px rgba(7, 55, 168, 0.16);
+      }
+
+      .control[aria-invalid="true"] {
+        border-color: var(--color-danger);
+        box-shadow: 0 0 0 3px rgba(199, 58, 58, 0.12);
+      }
+
+      .control:disabled {
+        border-color: var(--color-border);
+        background: var(--color-disabled);
+        color: var(--color-placeholder);
+        cursor: default;
+      }
+
+      select.control {
+        appearance: auto;
+      }
+
+      .hint,
+      .error-message {
+        margin: 6px 0 0;
+        font-size: 13px;
+        line-height: 18px;
+      }
+
+      .hint {
+        color: var(--color-muted);
+      }
+
+      .error-message {
+        color: var(--color-danger);
+        font-weight: 600;
+      }
+
+      .checkbox-label {
+        display: flex;
+        min-height: 44px;
+        align-items: center;
+        gap: 10px;
+        margin: 0;
+        font-size: 14px;
+        font-weight: 600;
+      }
+
+      .checkbox-label input {
+        width: 18px;
+        height: 18px;
+        margin: 0;
+        accent-color: var(--color-navy);
+      }
+
+      .checkbox-label input:focus-visible {
+        outline: 3px solid rgba(7, 55, 168, 0.2);
+        outline-offset: 2px;
+      }
+
+      .form-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 24px;
+      }
+
+      .state-stack {
+        display: grid;
+        gap: 20px;
+      }
+
+      .state-label {
+        display: inline-block;
+        margin-bottom: 8px;
+        padding: 3px 7px;
+        border-radius: 6px;
+        background: var(--color-disabled);
+        color: var(--color-muted);
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+      }
+
+      .footer-note {
+        margin-top: 56px;
+        padding-top: 20px;
+        border-top: 1px solid var(--color-border);
+        color: var(--color-muted);
+        font-size: 13px;
+      }
+
+      @media (max-width: 820px) {
+        .type-grid,
+        .card-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .palette {
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+      }
+
+      @media (max-width: 640px) {
+        .header-inner,
+        .showcase {
+          width: min(100% - 32px, 1120px);
+        }
+
+        .header-inner {
+          min-height: 64px;
+        }
+
+        .status-note {
+          display: none;
+        }
+
+        .showcase {
+          padding-block: 32px 56px;
+        }
+
+        .showcase-section {
+          padding-top: 44px;
+        }
+
+        .section-heading {
+          display: block;
+        }
+
+        .type-panel,
+        .card,
+        .form-panel {
+          padding: 20px;
+        }
+
+        .palette,
+        .form-grid,
+        .field-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .field-full {
+          grid-column: auto;
+        }
+
+        .button-row,
+        .form-actions {
+          flex-direction: column;
+        }
+
+        .button-row .button,
+        .form-actions .button {
+          width: 100%;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          scroll-behavior: auto !important;
+          transition-duration: 0.01ms !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="header-inner">
+        <div class="brand">
+          <span class="brand-mark" aria-hidden="true">VL</span>
+          <span>Voley Lisboa</span>
+        </div>
+        <span class="status-note">Matchday design exploration</span>
+      </div>
+    </header>
+
+    <main class="showcase">
+      <section class="intro" aria-labelledby="page-title">
+        <p class="eyebrow">Design exploration 01</p>
+        <h1 id="page-title">Built for matchday.</h1>
+        <p class="intro-copy">
+          A compact sports interface using clear hierarchy, confident contrast,
+          and simple controls. This page demonstrates components only and does
+          not replace the current Voley Lisboa design system.
+        </p>
+      </section>
+
+      <section class="showcase-section" aria-labelledby="typography-title">
+        <div class="section-heading">
+          <h2 id="typography-title">Typography</h2>
+          <p>Barlow Condensed carries the match. Inter carries the interface.</p>
+        </div>
+
+        <div class="type-grid">
+          <article class="type-panel">
+            <p class="meta-label">Next match</p>
+            <p class="match-display">SAT 20 JUN - 11:00</p>
+            <p class="type-sample-title">Every point starts with showing up.</p>
+            <p class="section-copy">
+              Interface copy stays calm and readable while dates, times, and
+              scores receive a compact sports voice.
+            </p>
+          </article>
+
+          <article class="type-panel">
+            <dl class="type-list">
+              <div>
+                <dt>Display</dt>
+                <dd style="font: 700 32px/32px var(--font-display)">19:00</dd>
+              </div>
+              <div>
+                <dt>Heading</dt>
+                <dd style="font-weight: 700">Upcoming games</dd>
+              </div>
+              <div>
+                <dt>Body</dt>
+                <dd>Join the squad before Friday.</dd>
+              </div>
+              <div>
+                <dt>Metadata</dt>
+                <dd class="meta-label">4 spots open</dd>
+              </div>
+            </dl>
+          </article>
+        </div>
+
+        <div class="palette" aria-label="Core color palette">
+          <div class="swatch" style="--swatch: #061b6b">
+            Navy <span>#061b6b</span>
+          </div>
+          <div class="swatch" style="--swatch: #0737a8">
+            Blue <span>#0737a8</span>
+          </div>
+          <div
+            class="swatch"
+            style="--swatch: #ffd21a; --swatch-text: #061b6b"
+          >
+            Yellow <span>#ffd21a</span>
+          </div>
+          <div
+            class="swatch"
+            style="--swatch: #ffffff; --swatch-text: #101828"
+          >
+            Surface <span>#ffffff</span>
+          </div>
+          <div
+            class="swatch"
+            style="--swatch: #f5f7fa; --swatch-text: #101828"
+          >
+            Canvas <span>#f5f7fa</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="showcase-section" aria-labelledby="cards-title">
+        <div class="section-heading">
+          <h2 id="cards-title">Cards</h2>
+          <p>One surface for content, one for the next match, and one for the schedule.</p>
+        </div>
+
+        <div class="card-grid">
+          <article class="card">
+            <p class="meta-label">Standard card</p>
+            <h3>Team update</h3>
+            <p class="card-copy">
+              Training starts fifteen minutes early this week. Bring both
+              shirts and arrive ready to warm up.
+            </p>
+            <div class="button-row">
+              <button class="button button-secondary" type="button">View update</button>
+            </div>
+          </article>
+
+          <article class="card featured-card">
+            <p class="meta-label">Next game</p>
+            <h3>Saturday, 11:00</h3>
+            <p class="card-copy">Campo Pequeno Sports Hall</p>
+            <p class="match-facts">
+              <span>6 / 10 players</span>
+              <span>2 hours</span>
+            </p>
+            <div class="button-row">
+              <button class="button button-primary" type="button">Join game</button>
+            </div>
+          </article>
+
+          <article class="card event-card">
+            <div class="date-block" aria-hidden="true">
+              <span>Jun</span>
+              <strong>22</strong>
+            </div>
+            <div>
+              <p class="meta-label">Available</p>
+              <h3>Monday training</h3>
+              <div class="event-meta">
+                <span>19:00 - 20:30</span>
+                <span>4 spots open</span>
+                <span>Lisboa Sports Club</span>
+              </div>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="showcase-section" aria-labelledby="forms-title">
+        <div class="section-heading">
+          <h2 id="forms-title">Buttons and forms</h2>
+          <p>Persistent labels, visible states, and rectangular controls built for fast use.</p>
+        </div>
+
+        <div class="form-grid">
+          <form class="form-panel" action="#" method="get">
+            <h3>Create a game</h3>
+            <p class="form-intro">A compact example of the default form rhythm.</p>
+
+            <div class="field-grid">
+              <div class="field">
+                <label for="game-date">Date <span class="required">*</span></label>
+                <input class="control" id="game-date" name="date" type="date" value="2026-06-27" />
+              </div>
+
+              <div class="field">
+                <label for="game-time">Start time <span class="required">*</span></label>
+                <input class="control" id="game-time" name="time" type="time" value="19:00" />
+              </div>
+
+              <div class="field field-full">
+                <label for="venue">Venue</label>
+                <input
+                  class="control"
+                  id="venue"
+                  name="venue"
+                  placeholder="Enter a venue"
+                  type="text"
+                />
+                <p class="hint" id="venue-hint">Players will see this on the game card.</p>
+              </div>
+
+              <div class="field">
+                <label for="capacity">Capacity</label>
+                <select class="control" id="capacity" name="capacity">
+                  <option>6 players</option>
+                  <option selected>10 players</option>
+                  <option>12 players</option>
+                </select>
+              </div>
+
+              <div class="field">
+                <span class="field-label">Options</span>
+                <label class="checkbox-label">
+                  <input name="repeat" type="checkbox" />
+                  Repeat weekly
+                </label>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button class="button button-primary" type="submit">Create game</button>
+              <button class="button button-secondary" type="button">Cancel</button>
+            </div>
+          </form>
+
+          <article class="form-panel">
+            <h3>Control states</h3>
+            <p class="form-intro">States remain explicit without floating labels.</p>
+
+            <div class="state-stack">
+              <div class="field">
+                <span class="state-label">Focus</span>
+                <label for="focused-example">Player email</label>
+                <input
+                  class="control is-focus-demo"
+                  id="focused-example"
+                  type="email"
+                  value="player@example.com"
+                />
+              </div>
+
+              <div class="field">
+                <span class="state-label">Error</span>
+                <label for="error-example">Maximum players</label>
+                <input
+                  aria-describedby="capacity-error"
+                  aria-invalid="true"
+                  class="control"
+                  id="error-example"
+                  type="number"
+                  value="0"
+                />
+                <p class="error-message" id="capacity-error">Error: enter at least 2 players.</p>
+              </div>
+
+              <div class="field">
+                <span class="state-label">Disabled</span>
+                <label for="disabled-example">Payment status</label>
+                <input
+                  class="control"
+                  disabled
+                  id="disabled-example"
+                  type="text"
+                  value="Managed by an admin"
+                />
+              </div>
+
+              <div class="button-row">
+                <button class="button button-danger" type="button">Cancel game</button>
+                <button class="button button-secondary" disabled type="button">Unavailable</button>
+              </div>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <p class="footer-note">
+        Experimental reference only. The existing DESIGN.md remains the active
+        source of truth for the application.
+      </p>
+    </main>
+  </body>
+</html>

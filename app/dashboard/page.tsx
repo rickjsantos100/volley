@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { AdminCreateGameButton } from "@/components/admin-create-game-button";
+import { PwaInstallPrompt } from "@/components/pwa-install-prompt";
 import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Card, cardClassName } from "@/components/ui/card";
@@ -186,6 +187,19 @@ export default async function DashboardPage() {
           }}
         />
       ) : null}
+
+      <PwaInstallPrompt
+        labels={{
+          close: t("installClose"),
+          install: t("installButton"),
+          intro: t("installIntro"),
+          iosAction: t("installIOSButton"),
+          iosInstructions: t("installIOSInstructions"),
+          iosTitle: t("installIOSTitle"),
+          notNow: t("installDismiss"),
+          title: t("installTitle"),
+        }}
+      />
     </main>
   );
 }

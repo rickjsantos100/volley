@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="pt">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#061b6b" />
+    <title>Sem ligação - Voley Lisboa</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        display: grid;
+        min-height: 100vh;
+        margin: 0;
+        place-items: center;
+        background: #fff8d8;
+        color: rgba(0, 0, 0, 0.87);
+        font-family: Inter, "Helvetica Neue", Helvetica, Arial, sans-serif;
+      }
+
+      main {
+        width: min(100% - 2rem, 28rem);
+        padding: 2rem;
+        border-radius: 0.75rem;
+        background: white;
+        box-shadow:
+          0 0 0.5px rgba(0, 0, 0, 0.14),
+          0 1px 1px rgba(0, 0, 0, 0.24);
+        text-align: center;
+      }
+
+      img {
+        width: 4.5rem;
+        height: 4.5rem;
+      }
+
+      h1 {
+        margin: 1rem 0 0;
+        color: #0737a8;
+        font-size: 1.75rem;
+        line-height: 1.2;
+      }
+
+      p {
+        margin: 0.75rem 0 0;
+        color: #26375f;
+        line-height: 1.6;
+      }
+
+      .english {
+        padding-top: 1rem;
+        border-top: 1px solid rgba(0, 0, 0, 0.12);
+        margin-top: 1rem;
+        font-size: 0.9rem;
+      }
+
+      button {
+        width: 100%;
+        min-height: 2.75rem;
+        padding: 0.75rem 1.25rem;
+        border: 1px solid #ffd21a;
+        border-radius: 999px;
+        margin-top: 1.5rem;
+        background: #ffd21a;
+        color: #061b6b;
+        cursor: pointer;
+        font: inherit;
+        font-weight: 600;
+      }
+
+      button:focus-visible {
+        outline: 3px solid rgba(7, 55, 168, 0.35);
+        outline-offset: 3px;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <img alt="" src="/ball.png" />
+      <h1>Estás sem ligação</h1>
+      <p>
+        Os jogos e a tua conta precisam de internet para mostrarem informação
+        atualizada. Volta a tentar quando recuperares a ligação.
+      </p>
+      <p class="english" lang="en">
+        You're offline. Games and account information need an internet
+        connection to stay current.
+      </p>
+      <button onclick="window.location.reload()" type="button">
+        Tentar novamente / Retry
+      </button>
+    </main>
+  </body>
+</html>
