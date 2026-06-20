@@ -10,3 +10,4 @@ Use this file to collect future work items.
       credentials in environment variables and verifying delivery.
 - [ ] Add web push notifications, including permission handling, subscription
       storage, notification delivery, and user controls for opting in or out.
+- [ ] Fix up portuguese translations 

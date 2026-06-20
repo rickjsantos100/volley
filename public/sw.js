@@ -1,4 +1,4 @@
-const CACHE_NAME = "voley-lisboa-static-v1";
+const CACHE_NAME = "voley-lisboa-static-v3";
 const CACHE_PREFIX = "voley-lisboa-static-";
 const PRECACHE_URLS = [
   "/offline.html",
