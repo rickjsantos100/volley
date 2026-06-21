@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { logOut } from "@/app/dashboard/actions";
 import { ProfileForm } from "@/components/profile-form";
+import { Button, SubmitButton } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 
 type AccountMenuProps = {
@@ -38,7 +39,7 @@ export function AccountMenu({
         aria-haspopup="dialog"
         aria-label={accountT("openProfile", { name: label })}
         onClick={() => setIsOpen(true)}
-        className="ripple flex size-11 items-center justify-center rounded-full border border-[#ffd21a] bg-[#ffd21a] text-sm font-semibold text-[#061b6b] shadow-[0_0_0.5px_0_rgba(0,0,0,0.14),0_1px_1px_0_rgba(0,0,0,0.18)] transition active:scale-95"
+        className="flex size-11 items-center justify-center rounded-full border border-[#dde2ea] bg-white text-sm font-bold text-[#061b6b] shadow-sm transition hover:border-[#0737a8] focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-[#0737a8]/20"
       >
         {avatarUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -66,13 +67,14 @@ export function AccountMenu({
             onSaved={() => setIsOpen(false)}
             userId={userId}
           />
-          <button
-            className="ripple ripple-dark w-full rounded-full border border-[#c82014] bg-white px-5 py-3 text-sm font-semibold text-[#c82014] transition active:scale-95"
+          <Button
+            fullWidth
             onClick={() => setIsLogoutConfirmOpen(true)}
             type="button"
+            variant="dangerOutline"
           >
             {accountT("signOut")}
-          </button>
+          </Button>
         </div>
       </Modal>
 
@@ -82,21 +84,21 @@ export function AccountMenu({
         title={accountT("confirmLogoutTitle")}
       >
         <div className="mt-6 space-y-5">
-          <p className="text-base leading-7 text-[#26375f]">
+          <p className="text-base leading-7 text-[#667085]">
             {accountT("confirmLogoutMessage")}
           </p>
           <div className="grid gap-3 sm:grid-cols-2">
-            <button
-              className="ripple ripple-dark rounded-full border border-[#0737a8] bg-white px-5 py-3 text-sm font-semibold text-[#0737a8] transition active:scale-95"
+            <Button
               onClick={() => setIsLogoutConfirmOpen(false)}
               type="button"
+              variant="outline"
             >
               {accountT("cancelLogout")}
-            </button>
+            </Button>
             <form action={logOut}>
-              <button className="ripple ripple-dark w-full rounded-full border border-[#c82014] bg-white px-5 py-3 text-sm font-semibold text-[#c82014] transition active:scale-95">
+              <SubmitButton fullWidth variant="dangerOutline">
                 {accountT("confirmLogoutButton")}
-              </button>
+              </SubmitButton>
             </form>
           </div>
         </div>

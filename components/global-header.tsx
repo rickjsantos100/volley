@@ -78,8 +78,8 @@ export async function GlobalHeader() {
   const avatarUrl = getAvatarUrl(supabase, profile);
 
   return (
-    <header className="fixed inset-x-0 top-0 z-50 bg-[#fff8d8]/95 shadow-[0_1px_3px_rgba(0,0,0,0.1),0_2px_2px_rgba(0,0,0,0.06),0_0_2px_rgba(0,0,0,0.07)] backdrop-blur">
-      <div className="relative mx-auto grid h-16 w-full grid-cols-[1fr_auto_1fr] items-center gap-3 px-4 sm:h-[72px] sm:px-6 lg:h-20 lg:px-10">
+    <header className="fixed inset-x-0 top-0 z-50 border-b border-[#dde2ea] bg-white/95 shadow-[0_2px_8px_rgba(16,24,40,0.06)] backdrop-blur">
+      <div className="relative mx-auto grid h-16 w-full max-w-[1120px] grid-cols-[1fr_auto_1fr] items-center gap-3 px-4 sm:px-6 lg:px-8">
         <div className="justify-self-start">
           {user ? (
             <AccountMenu
@@ -96,9 +96,9 @@ export async function GlobalHeader() {
 
         <Link
           href="/dashboard"
-          className="flex items-center gap-2 justify-self-center text-lg font-semibold tracking-[-0.01em] text-[#0737a8] transition hover:text-[#0b46c7] active:scale-95 sm:gap-3 sm:text-xl"
+          className="flex items-center gap-2 justify-self-center font-bold text-[#061b6b] transition-colors hover:text-[#0737a8] focus-visible:rounded-lg focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-[#0737a8]/20 sm:gap-3"
         >
-          <span>Voley Lisboa</span>
+          <span className="font-matchday text-xl sm:text-2xl">Voley Lisboa</span>
           <Image
             alt=""
             aria-hidden="true"
@@ -113,10 +113,6 @@ export async function GlobalHeader() {
           <LanguageToggle />
         </div>
       </div>
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-x-0 top-full h-8 bg-gradient-to-b from-[#fff8d8]/95 to-[#fff8d8]/0"
-      />
     </header>
   );
 }

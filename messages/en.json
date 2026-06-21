@@ -70,6 +70,8 @@
     "slotsLabel": "Slots",
     "slotsValue": "{occupied}/{capacity}",
     "fullLabel": "Full",
+    "availableLabel": "Available",
+    "viewGameLabel": "View game",
     "cancelledLabel": "Cancelled",
     "createGameButton": "New game",
     "createGameTitle": "Create game",

@@ -4,8 +4,8 @@ import { cx } from "./class-name";
 type AlertVariant = "error" | "success";
 
 const variants: Record<AlertVariant, string> = {
-  error: "bg-[hsl(4_82%_43%_/_5%)] text-[#c82014]",
-  success: "bg-[#fff3b0] text-[#0737a8]",
+  error: "border-[#c73a3a]/30 bg-[#fff1f1] text-[#a72f2f]",
+  success: "border-[#138a5b]/30 bg-[#ecf8f3] text-[#0d6b46]",
 };
 
 export function alertClassName({
@@ -16,7 +16,7 @@ export function alertClassName({
   variant?: AlertVariant;
 } = {}) {
   return cx(
-    "rounded-xl px-4 py-3 text-sm font-medium",
+    "rounded-xl border px-4 py-3 text-sm font-semibold",
     variants[variant],
     className,
   );

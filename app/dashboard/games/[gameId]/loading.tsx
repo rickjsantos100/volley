@@ -3,14 +3,14 @@ import { Card } from "@/components/ui/card";
 function SkeletonLine({ className }: { className: string }) {
   return (
     <div
-      className={`animate-pulse rounded-full bg-[rgba(0,0,0,0.08)] ${className}`}
+      className={`animate-pulse rounded-lg bg-[#dde2ea] ${className}`}
     />
   );
 }
 
 function SkeletonStatTile() {
   return (
-    <div className="rounded-xl bg-[#f9f9f9] px-4 py-3">
+    <div className="border-l border-white/20 pl-4 first:border-l-0 first:pl-0">
       <SkeletonLine className="h-3 w-20" />
       <SkeletonLine className="mt-3 h-5 w-24" />
     </div>
@@ -24,7 +24,7 @@ function SkeletonListCard() {
       <div className="mt-4 grid gap-3">
         {[0, 1, 2].map((index) => (
           <div
-            className="flex items-center gap-3 rounded-xl bg-[#f9f9f9] px-4 py-3"
+            className="flex items-center gap-3 border-b border-[#dde2ea] py-3"
             key={index}
           >
             <SkeletonLine className="h-9 w-9 shrink-0" />
@@ -38,9 +38,9 @@ function SkeletonListCard() {
 
 export default function Loading() {
   return (
-    <main className="min-h-screen bg-[#fff8d8] px-4 py-20 text-[rgba(0,0,0,0.87)] sm:px-6 lg:px-10">
-      <section className="mx-auto grid w-full max-w-5xl gap-5">
-        <Card>
+    <main className="min-h-screen bg-[#f5f7fa] px-4 pt-24 pb-12 text-[#101828] sm:px-6 lg:px-8">
+      <section className="mx-auto grid w-full max-w-[1120px] gap-5">
+        <Card variant="featured">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
             <SkeletonLine className="h-8 w-64 max-w-full" />
             <SkeletonLine className="h-7 w-20" />

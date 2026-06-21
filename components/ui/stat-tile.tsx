@@ -5,11 +5,11 @@ type StatTileProps = {
 
 export function StatTile({ label, value }: StatTileProps) {
   return (
-    <div className="rounded-xl bg-[#f9f9f9] px-4 py-3">
-      <dt className="text-xs font-semibold tracking-[0.1em] text-[rgba(0,0,0,0.58)] uppercase">
+    <div className="border-l border-[#dde2ea] pl-4 first:border-l-0 first:pl-0">
+      <dt className="text-xs font-bold tracking-[0.08em] text-[#667085] uppercase">
         {label}
       </dt>
-      <dd className="mt-1 text-base font-semibold text-[#26375f]">{value}</dd>
+      <dd className="mt-1 text-base font-semibold text-[#101828]">{value}</dd>
     </div>
   );
 }

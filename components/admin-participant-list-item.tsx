@@ -43,13 +43,13 @@ export function AdminParticipantListItem({
     <li
       aria-busy={isDeleting}
       className={cx(
-        "flex items-center justify-between gap-3 rounded-xl bg-[#f9f9f9] px-4 py-3 transition",
+        "flex min-h-14 items-center justify-between gap-3 border-b border-[#dde2ea] py-3 transition last:border-b-0",
         isDeleting && "pointer-events-none opacity-60",
       )}
     >
       <div className="flex min-w-0 items-center gap-3">
         <InitialsAvatar name={name} />
-        <p className="truncate text-sm font-semibold text-[#26375f]">{name}</p>
+        <p className="min-w-0 text-sm font-semibold text-[#101828] break-words">{name}</p>
       </div>
 
       <div className="flex shrink-0 items-center gap-2">

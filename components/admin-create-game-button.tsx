@@ -96,7 +96,7 @@ function TimeSelect({
 }) {
   return (
     <div className="space-y-2">
-      <label htmlFor={name} className="block text-sm font-semibold text-[#26375f]">
+      <label htmlFor={name} className="block text-sm font-semibold text-[#101828]">
         {label}
       </label>
       <select
@@ -257,11 +257,11 @@ export function AdminCreateGameButton({
             type="number"
           />
 
-          <label className="flex items-center gap-3 text-sm font-semibold text-[#26375f]">
+          <label className="flex min-h-11 items-center gap-3 text-sm font-semibold text-[#101828]">
             <input
               name="isRepeatable"
               type="checkbox"
-              className="size-4 accent-[#ffd21a]"
+              className="size-[18px] accent-[#061b6b]"
             />
             <span>{labels.repeat}</span>
           </label>

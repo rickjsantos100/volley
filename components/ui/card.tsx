@@ -1,12 +1,14 @@
 import type { HTMLAttributes } from "react";
 import { cx } from "./class-name";
 
-type CardVariant = "cancelled" | "default" | "muted";
+type CardVariant = "cancelled" | "default" | "featured" | "muted";
 
 const variants: Record<CardVariant, string> = {
-  cancelled: "border border-[rgba(0,0,0,0.14)] bg-[#fff3b0] opacity-75",
-  default: "bg-white",
-  muted: "border border-[rgba(0,0,0,0.14)] bg-white",
+  cancelled: "border border-[#dde2ea] border-l-4 border-l-[#c73a3a] bg-white",
+  default: "border border-[#dde2ea] bg-white",
+  featured:
+    "border border-[#061b6b] border-t-4 border-t-[#ffd21a] bg-[#061b6b] text-white",
+  muted: "border border-[#dde2ea] bg-white",
 };
 
 export function cardClassName({
@@ -17,7 +19,7 @@ export function cardClassName({
   variant?: CardVariant;
 } = {}) {
   return cx(
-    "rounded-xl px-5 py-5 shadow-[0_0_0.5px_0_rgba(0,0,0,0.14),0_1px_1px_0_rgba(0,0,0,0.24)]",
+    "rounded-xl p-5 shadow-[0_8px_24px_rgba(16,24,40,0.07)] sm:p-6",
     variants[variant],
     className,
   );

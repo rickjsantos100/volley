@@ -114,15 +114,15 @@ export function PwaInstallPrompt({ labels }: PwaInstallPromptProps) {
     <>
       <aside
         aria-labelledby="pwa-install-title"
-        className="fixed inset-x-4 bottom-4 z-[55] mx-auto max-w-md rounded-xl bg-white px-5 py-5 shadow-[0_10px_30px_rgba(0,0,0,0.24)] sm:bottom-6"
+        className="fixed inset-x-4 bottom-4 z-[55] mx-auto max-w-md rounded-xl border border-[#dde2ea] bg-white p-5 shadow-[0_16px_40px_rgba(16,24,40,0.18)] sm:bottom-6 sm:p-6"
       >
         <h2
-          className="text-xl font-semibold tracking-[-0.01em] text-[#0737a8]"
+          className="font-matchday text-[26px] leading-7 font-bold text-[#061b6b]"
           id="pwa-install-title"
         >
           {labels.title}
         </h2>
-        <p className="mt-2 text-sm leading-6 text-[#26375f]">{labels.intro}</p>
+        <p className="mt-2 text-sm leading-6 text-[#667085]">{labels.intro}</p>
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
           <Button onClick={installApp} type="button">
             {isIOS ? labels.iosAction : labels.install}
@@ -138,7 +138,7 @@ export function PwaInstallPrompt({ labels }: PwaInstallPromptProps) {
         open={showIOSInstructions}
         title={labels.iosTitle}
       >
-        <p className="mt-5 text-base leading-7 text-[#26375f]">
+        <p className="mt-5 text-base leading-7 text-[#667085]">
           {labels.iosInstructions}
         </p>
         <div className="mt-6">

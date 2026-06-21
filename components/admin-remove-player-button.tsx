@@ -71,7 +71,7 @@ function TrashSubmitButton({
     <button
       aria-label={label}
       className={cx(
-        "flex size-9 items-center justify-center rounded-full border border-[#c82014] bg-white text-[#c82014] transition hover:bg-[hsl(4_82%_43%_/_5%)] active:scale-95 disabled:cursor-not-allowed disabled:opacity-70 disabled:active:scale-100",
+        "flex size-11 items-center justify-center rounded-[10px] border border-[#c73a3a] bg-white text-[#c73a3a] transition hover:bg-[#fff1f1] focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-[#c73a3a]/20 active:translate-y-px disabled:cursor-default disabled:opacity-50",
       )}
       disabled={isLoading}
       type="submit"

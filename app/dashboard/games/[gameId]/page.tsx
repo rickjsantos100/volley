@@ -9,7 +9,6 @@ import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { InitialsAvatar } from "@/components/ui/initials-avatar";
-import { StatTile } from "@/components/ui/stat-tile";
 import { formatGameDateTitle } from "@/lib/format-game-date-title";
 import { formatDuration } from "@/lib/format-duration";
 import { createClient } from "@/lib/supabase/server";
@@ -161,12 +160,12 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
   };
 
   return (
-    <main className="min-h-screen bg-[#fff8d8] px-4 py-20 text-[rgba(0,0,0,0.87)] sm:px-6 lg:px-10">
-      <section className="mx-auto grid w-full max-w-5xl gap-5">
-        <Card>
+    <main className="min-h-screen bg-[#f5f7fa] px-4 pt-24 pb-12 text-[#101828] sm:px-6 lg:px-8">
+      <section className="mx-auto grid w-full max-w-[1120px] gap-5">
+        <Card variant="featured">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <h1 className="text-2xl font-semibold tracking-[-0.01em] text-[#0737a8]">
+              <h1 className="font-matchday text-4xl leading-[38px] font-bold text-white sm:text-5xl sm:leading-none">
                 {formatGameDateTitle(new Date(game.starts_at))}
               </h1>
             </div>
@@ -174,24 +173,27 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
             {isCancelled ? (
               <Badge variant="danger">{t("cancelledLabel")}</Badge>
             ) : isFull ? (
-              <Badge>{t("fullLabel")}</Badge>
+              <Badge className="border-white/20 bg-white/10 text-white">
+                {t("fullLabel")}
+              </Badge>
             ) : null}
           </div>
 
-          <dl
-            className={`mt-5 grid gap-3 ${isRecurring ? "sm:grid-cols-3" : "sm:grid-cols-2"}`}
-          >
-            <StatTile
-              label={t("durationLabel")}
-              value={formatDuration(game.duration_minutes)}
-            />
+          <dl className={`mt-6 grid grid-cols-2 gap-5 ${isRecurring ? "sm:grid-cols-3" : ""}`}>
+            <div>
+              <dt className="text-xs font-bold tracking-[0.08em] text-white/70 uppercase">{t("durationLabel")}</dt>
+              <dd className="mt-1 font-semibold">{formatDuration(game.duration_minutes)}</dd>
+            </div>
             {isRecurring ? (
-              <StatTile label={t("repeatLabel")} value={t("weeklyRepeatValue")} />
+              <div>
+                <dt className="text-xs font-bold tracking-[0.08em] text-white/70 uppercase">{t("repeatLabel")}</dt>
+                <dd className="mt-1 font-semibold">{t("weeklyRepeatValue")}</dd>
+              </div>
             ) : null}
-            <StatTile
-              label={t("slotsLabel")}
-              value={`${occupiedSlots}/${game.max_participants}`}
-            />
+            <div>
+              <dt className="text-xs font-bold tracking-[0.08em] text-white/70 uppercase">{t("slotsLabel")}</dt>
+              <dd className="mt-1 font-semibold">{occupiedSlots}/{game.max_participants}</dd>
+            </div>
           </dl>
         </Card>
 
@@ -334,12 +336,12 @@ async function GameDetailContent({
       {!hasListError ? (
         <div className="grid gap-5 lg:grid-cols-2">
           <Card>
-            <h2 className="text-xl font-semibold tracking-[-0.01em] text-[#0737a8]">
+            <h2 className="font-matchday text-[26px] leading-7 font-bold text-[#061b6b]">
               {t("participantsTitle")}
             </h2>
 
             {participants.length === 0 ? (
-              <p className="mt-4 text-sm leading-6 text-[rgba(0,0,0,0.58)]">
+              <p className="mt-4 text-sm leading-6 text-[#667085]">
                 {t("emptyParticipants")}
               </p>
             ) : (
@@ -370,10 +372,10 @@ async function GameDetailContent({
                   ) : (
                     <li
                       key={participant.id}
-                      className="flex items-center gap-3 rounded-xl bg-[#f9f9f9] px-4 py-3"
+                      className="flex min-h-14 items-center gap-3 border-b border-[#dde2ea] py-3 last:border-b-0"
                     >
                       <InitialsAvatar name={name} />
-                      <p className="truncate text-sm font-semibold text-[#26375f]">
+                      <p className="min-w-0 text-sm font-semibold text-[#101828] break-words">
                         {name}
                       </p>
                     </li>
@@ -384,12 +386,12 @@ async function GameDetailContent({
           </Card>
 
           <Card>
-            <h2 className="text-xl font-semibold tracking-[-0.01em] text-[#0737a8]">
+            <h2 className="font-matchday text-[26px] leading-7 font-bold text-[#061b6b]">
               {t("waitlistTitle")}
             </h2>
 
             {waitlist.length === 0 ? (
-              <p className="mt-4 text-sm leading-6 text-[rgba(0,0,0,0.58)]">
+              <p className="mt-4 text-sm leading-6 text-[#667085]">
                 {t("emptyWaitlist")}
               </p>
             ) : isAdmin ? (
@@ -413,11 +415,11 @@ async function GameDetailContent({
                   return (
                     <li
                       key={entry.id}
-                      className="flex items-center justify-between gap-3 rounded-xl bg-[#f9f9f9] px-4 py-3"
+                      className="flex min-h-14 items-center justify-between gap-3 border-b border-[#dde2ea] py-3 last:border-b-0"
                     >
                       <div className="flex min-w-0 items-center gap-3">
                         <InitialsAvatar name={name} />
-                        <p className="min-w-0 truncate text-sm font-semibold text-[#26375f]">
+                        <p className="min-w-0 text-sm font-semibold text-[#101828] break-words">
                           {name}
                         </p>
                       </div>
@@ -436,7 +438,7 @@ async function GameDetailContent({
 function SkeletonLine({ className }: { className: string }) {
   return (
     <div
-      className={`animate-pulse rounded-full bg-[rgba(0,0,0,0.08)] ${className}`}
+      className={`animate-pulse rounded-lg bg-[#dde2ea] ${className}`}
     />
   );
 }
@@ -466,7 +468,7 @@ function GameListSkeleton() {
       <div className="mt-4 grid gap-3">
         {[0, 1, 2].map((index) => (
           <div
-            className="flex items-center gap-3 rounded-xl bg-[#f9f9f9] px-4 py-3"
+            className="flex items-center gap-3 border-b border-[#dde2ea] py-3"
             key={index}
           >
             <SkeletonLine className="h-9 w-9 shrink-0" />

@@ -1,8 +1,18 @@
 @import "tailwindcss";
 
 :root {
-  --background: #fff8d8;
-  --foreground: rgba(0, 0, 0, 0.87);
+  --color-navy: #061b6b;
+  --color-blue: #0737a8;
+  --color-yellow: #ffd21a;
+  --color-canvas: #f5f7fa;
+  --color-surface: #ffffff;
+  --color-text: #101828;
+  --color-muted: #667085;
+  --color-border: #dde2ea;
+  --color-success: #138a5b;
+  --color-danger: #c73a3a;
+  --background: var(--color-canvas);
+  --foreground: var(--color-text);
 }
 
 html {
@@ -14,49 +24,25 @@ body {
   margin: 0;
   background: var(--background);
   color: var(--foreground);
-  font-family: Inter, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-family: var(--font-inter), Inter, "Helvetica Neue", Arial, sans-serif;
 }
 
-.ripple {
-  position: relative;
-  isolation: isolate;
-  overflow: hidden;
+button:not(:disabled),
+[role="button"]:not(:disabled) {
+  cursor: pointer;
 }
 
-.ripple::after {
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: radial-gradient(
-    circle at center,
-    rgba(255, 255, 255, 0.42) 0%,
-    rgba(255, 255, 255, 0.28) 28%,
-    transparent 58%
-  );
-  content: "";
-  opacity: 0;
-  pointer-events: none;
-  transform: scale(0.2);
-  transition:
-    opacity 0.35s ease,
-    transform 0.35s ease;
+.font-matchday {
+  font-family: var(--font-barlow-condensed), "Arial Narrow", sans-serif;
 }
 
-.ripple-dark::after {
-  background: radial-gradient(
-    circle at center,
-    rgba(0, 0, 0, 0.14) 0%,
-    rgba(0, 0, 0, 0.09) 28%,
-    transparent 58%
-  );
-}
-
-.ripple:active::after {
-  opacity: 1;
-  transform: scale(2.4);
-  transition: 0s;
-}
-
-.ripple:disabled::after {
-  opacity: 0;
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
 }

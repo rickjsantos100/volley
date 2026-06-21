@@ -82,16 +82,16 @@ export function Modal({
   return createPortal(
     <div
       onClick={handleBackdropClick}
-      className="fixed inset-0 z-[60] flex items-end justify-center bg-black/40 px-4 py-4 sm:items-center"
+      className="fixed inset-0 z-[60] flex items-end justify-center bg-[#101828]/55 px-4 py-4 sm:items-center"
       role="presentation"
     >
       <div
         aria-modal="true"
         role="dialog"
-        className="w-full max-w-md rounded-xl bg-white px-5 py-6 shadow-[0_10px_30px_rgba(0,0,0,0.24)]"
+        className="w-full max-w-md rounded-xl border border-[#dde2ea] bg-white p-5 shadow-[0_16px_40px_rgba(16,24,40,0.18)] sm:p-6"
       >
         <div>
-          <h2 className="text-2xl font-semibold tracking-[-0.01em] text-[#0737a8]">
+          <h2 className="font-matchday text-[26px] leading-7 font-bold text-[#061b6b]">
             {title}
           </h2>
         </div>

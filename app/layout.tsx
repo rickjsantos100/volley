@@ -1,9 +1,21 @@
 import type { Metadata, Viewport } from "next";
+import { Barlow_Condensed, Inter } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale } from "next-intl/server";
 import { GlobalHeader } from "@/components/global-header";
 import { PwaServiceWorker } from "@/components/pwa-service-worker";
 import "./globals.css";
+
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+});
+
+const barlowCondensed = Barlow_Condensed({
+  subsets: ["latin"],
+  variable: "--font-barlow-condensed",
+  weight: ["700"],
+});
 
 export const metadata: Metadata = {
   applicationName: "Voley Lisboa",
@@ -52,7 +64,7 @@ export default async function RootLayout({
 
   return (
     <html lang={locale}>
-      <body>
+      <body className={`${inter.variable} ${barlowCondensed.variable}`}>
         <NextIntlClientProvider>
           <PwaServiceWorker />
           <GlobalHeader />

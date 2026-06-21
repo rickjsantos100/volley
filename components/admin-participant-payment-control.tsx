@@ -68,10 +68,10 @@ function PaymentStatusButton({
   return (
     <button
       className={cx(
-        "w-fit shrink-0 rounded-full px-3 py-1 text-xs font-semibold transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-70 disabled:active:scale-100",
+        "min-h-11 w-fit shrink-0 rounded-[10px] border px-3 py-2 text-xs font-bold transition focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-[#0737a8]/20 active:translate-y-px disabled:cursor-default disabled:opacity-50",
         isPaid
-          ? "bg-[#fff3b0] text-[#0737a8] hover:bg-[#ffe98a]"
-          : "bg-[#fff8d8] text-[#26375f] hover:bg-[#fff3b0]",
+          ? "border-[#138a5b]/25 bg-[#ecf8f3] text-[#0d6b46] hover:bg-[#dff2e9]"
+          : "border-[#dde2ea] bg-white text-[#475467] hover:border-[#0737a8] hover:bg-[#eef3ff]",
       )}
       disabled={pending || disabled}
       title="Toggle payment status"

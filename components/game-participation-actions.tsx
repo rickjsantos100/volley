@@ -134,7 +134,7 @@ export function GameParticipationActions({
             fullWidth
             type="button"
             variant="outline"
-            className="bg-[#fff3b0] text-[#0737a8] sm:w-auto"
+            className="border-[#dde2ea] bg-[#eef1f5] text-[#475467] sm:w-auto"
           >
             {alreadyWaitlistedLabel}
           </Button>
@@ -161,7 +161,7 @@ export function GameParticipationActions({
         title={leaveGameLabel}
       >
         <div className="mt-5 grid gap-4">
-          <p className="text-sm leading-6 text-[#26375f]">
+          <p className="text-sm leading-6 text-[#667085]">
             {confirmLeaveMessage}
           </p>
           <form action={submitAction}>

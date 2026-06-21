@@ -1,348 +1,103 @@
-# Volleyball Blue/Yellow Design System
+# Voley Lisboa MATCHDAY Design System
 
-## 1. Visual Theme & Atmosphere
+MATCHDAY is the active design direction for the application. It should feel
+like a focused sports utility: fast to scan, compact, confident, and ready for
+game day.
 
-The site should feel energetic, confident, organized, and easy to use. The canvas alternates between a soft volleyball-yellow wash (`#fff8d8`) and a pale yellow surface (`#fff3b0`), while a layered blue palette anchors identity, navigation, outlines, and high-contrast panels. Bright ball yellow (`#ffd21a`) should carry primary actions and selected states, balanced by navy text for contrast.
+## Principles
 
-Typography carries most of the product voice. Use an open, readable sans-serif with a friendly but disciplined feel. The preferred implementation font is **Inter**, with `"Helvetica Neue", Helvetica, Arial, sans-serif` as fallback. If a slightly rounder tone is desired, **Manrope** is also acceptable.
+1. Lead with the next action. Dates, times, availability, and the primary
+   action should be understood at a glance.
+2. Use contrast for hierarchy. Navy marks featured matchday moments, white
+   carries everyday content, and yellow identifies action and urgency.
+3. Prefer compact rows and grouped facts over nested tiles.
+4. Use softly squared athletic shapes rather than pill-shaped controls.
+5. Make every state explicit in text; color may reinforce but never replace it.
 
-Surfaces should use rounded geometry. Buttons are full-pill controls. Cards use a 12px rounded rectangle. Interactive controls should give subtle active feedback, especially the `scale(0.95)` press and ripple feedback on buttons and button-like links.
+## Portuguese Voice
 
-**Key Characteristics:**
-- Volleyball palette: deep blue / navy / royal blue / ball yellow, each mapped to a distinct surface role.
-- Yellow reserved for primary action, active state, and volleyball identity moments.
-- Warm yellow canvas (`#fff8d8` / `#fff3b0`) instead of cold white.
-- Open-source sans-serif typography with tight, subtle tracking.
-- Full-pill buttons (`50px` radius) with `scale(0.95)` active press and ripple feedback.
-- 12px card radius + whisper-soft shadows keep content cards restrained.
-- Rem-based spacing scale anchored at 1.6rem (~16px) = `--space-3`, stepping to 6.4rem (~64px).
+- Write in European Portuguese using an upbeat, casual, sporty voice.
+- Keep player actions and success moments short and energetic, with natural
+  court language such as "Vou jogar" and "Até já no campo".
+- Do not use emojis or forced slang. Warmth should come from direct, human copy.
+- Keep destructive actions, errors, payments, and admin instructions calm,
+  precise, and explicit about their consequences.
+- Avoid internal implementation terms and formal product language when a clear
+  everyday phrase works better.
 
-**Color-block page rhythm:** Pale yellow hero -> White content sections -> Navy (`#061b6b`) feature band with white text -> Yellow utility zone -> Navy (`#061b6b`) footer.
+## Foundations
 
-## 2. Color Palette & Roles
+- Display font: Barlow Condensed, Arial Narrow, sans-serif, weight 700.
+- Interface font: Inter, Helvetica Neue, Arial, sans-serif.
+- Use the display font for match dates, times, and major page/card headings.
+- Use Inter for body text, controls, labels, navigation, and metadata.
+- Canvas: `#f5f7fa`; surface: `#ffffff`; text: `#101828`; muted: `#667085`.
+- Navy: `#061b6b`; blue: `#0737a8`; yellow: `#ffd21a`.
+- Border: `#dde2ea`; success: `#138a5b`; danger: `#c73a3a`.
+- Spacing scale: 4, 8, 12, 16, 24, 32, and 48px.
+- Page gutters: 16px mobile, 24px tablet, 32px desktop.
+- Content maximum width: 1120px.
 
-### Primary
+## Components
 
-- **Brand Blue** (`#0737a8`): Main identity blue. Use for important headings, key brand moments, and primary identity.
-- **Ball Yellow** (`#ffd21a`): Bright volleyball yellow. Use for primary filled CTAs and selected states with navy text.
-- **Navy Blue** (`#061b6b`): Deep blue. Use for footer surfaces, feature-band backgrounds, and high-contrast panels.
-- **Royal Blue** (`#0b46c7`): Secondary vivid blue used sparingly for decorative accents and hover states.
-- **Pale Yellow** (`#fff3b0`): Soft yellow wash used for valid states, selected-state tints, and quiet utility surfaces.
+### Cards
 
-### Secondary & Accent
-
-- **Golden Yellow** (`#f2b800`): Shaded ball yellow for special status, achievement, or premium moments.
-- **Yellow Light** (`#ffe98a`): Softer yellow for hover states and background washes.
-- **Yellow Lightest** (`#fff8d8`): Primary page-surface wash.
-
-### Surface & Background
-
-- **White** (`#ffffff`): Primary card and modal surface.
-- **Neutral Cool** (`#f9f9f9`): Subtle cool-gray surface for dropdowns, form-card wraps, and quiet utility containers.
-- **Volleyball Canvas** (`#fff8d8`): Warm yellow primary page canvas.
-- **Pale Yellow** (`#fff3b0`): Slightly stronger yellow for zone separators and soft page-section washes.
-- **Black** (`#000000`): Deep ink for very high-contrast controls only.
-
-### Neutrals & Text
-
-- **Text Black** (`rgba(0, 0, 0, 0.87)`): Primary heading and body text color on light surfaces.
-- **Text Black Soft** (`rgba(0, 0, 0, 0.58)`): Secondary/metadata text on light surfaces.
-- **Text White** (`rgba(255, 255, 255, 1)`): Primary heading/body text on dark green surfaces.
-- **Text White Soft** (`rgba(255, 255, 255, 0.70)`): Secondary text on dark-green surfaces.
-- **Muted Blue Text** (`#26375f`): Muted slate-blue for softer text blocks where black feels too severe.
-
-### Semantic & Accent
-
-- **Red** (`#c82014`): Error and destructive state.
-- **Yellow** (`#fbbc05`): Warning state.
-- **Pale Yellow** (`#fff3b0`): Valid-field tint background.
-- **Red Tint** (`hsl(4 82% 43% / 5%)`): Invalid-field tint on forms.
-
-### Black / White Alpha Ladders
-
-Two parallel translucent scales for overlay and secondary-text use:
-- `rgba(0,0,0,0.06)` through `rgba(0,0,0,0.90)` in 10% steps for dark overlays on light surfaces.
-- `rgba(255,255,255,0.10)` through `rgba(255,255,255,0.90)` in 10% steps for light overlays on dark surfaces.
-
-### Gradient System
-
-Avoid structural gradient tokens. Surface hierarchy should use solid color-blocks and the cream/green surface palette.
-
-## 3. Typography Rules
-
-### Font Family
-
-- **Primary:** `Inter, "Helvetica Neue", Helvetica, Arial, sans-serif`.
-- **Alternative:** `Manrope, "Helvetica Neue", Helvetica, Arial, sans-serif` if a slightly rounder tone is desired.
-- **Optional Serif:** `Lora, "Iowan Old Style", Georgia, serif` for rare editorial headline moments only.
-
-Do not mix multiple decorative typefaces in ordinary app surfaces.
-
-### Hierarchy
-
-| Role | Size | Weight | Line Height | Letter Spacing | Notes |
-|------|------|--------|-------------|----------------|-------|
-| Display | 5.0rem / 80px | 400-600 | 1.2 | -0.16px | Largest hero display |
-| Jumbo | 3.6rem / 58px | 400-600 | 1.2 | -0.16px | Secondary hero headings |
-| Hero Large | 2.8rem / 45px | 400-600 | 1.2-1.5 | -0.16px | Landing section headlines |
-| H1 | 24px | 600 | 36px | -0.16px | Brand Green primary heading |
-| H2 | 24px | 400 | 36px | -0.16px | Regular-weight section title |
-| Body Large | 19px | 400-600 | 33.25px (~1.75) | -0.16px | Hero intro copy, feature-band body |
-| Body | 1.6rem / 16px | 400 | 1.5 (24px) | -0.01em | Default body copy |
-| Small | 1.4rem / ~14px | 400-600 | 1.5 | -0.01em | Button label, metadata, form labels |
-| Micro | 1.3rem / ~13px | 400 | 1.5 | -0.01em | Caption micro-copy |
-| Button Label | 14-16px | 400-600 | 1.2 | -0.01em | Pill-button labels |
-
-**Letter-spacing tokens:**
-- `letterSpacingNormal`: `-0.01em`.
-- `letterSpacingLoose`: `0.1em`.
-- `letterSpacingLooser`: `0.15em`.
-
-**Line-height tokens:**
-- `lineHeightNormal`: `1.5`.
-- `lineHeightCompact`: `1.2`.
-
-### Principles
-
-- Use subtle negative tracking where it improves the confident, compact feel.
-- Let weight and color carry hierarchy before adding more size steps.
-- Body text should use `rgba(0,0,0,0.87)` rather than pure black.
-- Decorative or serif type should be rare and localized.
-
-## 4. Component Stylings
+- Standard cards use a white surface, 1px border, 12px radius, 20px mobile
+  padding (24px on tablet), and `0 8px 24px rgba(16,24,40,.07)` shadow.
+- Featured matches use navy, white text, and a 4px yellow top edge.
+- Compact events use a 4px status edge: blue scheduled, green available,
+  yellow nearly full, and red cancelled.
+- Interactive cards strengthen their blue border and shadow on hover, show a
+  visible focus ring, and move down 1px while pressed.
+- Avoid secondary cards and stat tiles inside cards; use grouped facts or rows.
 
 ### Buttons
 
-**Primary Filled**
-- Background: `#ffd21a` (Ball Yellow)
-- Text: `#061b6b`
-- Border: `1px solid #ffd21a`
-- Radius: `50px`
-- Padding: `7px 16px`
-- Font: 16px, weight 600, letter-spacing `-0.01em`
-- Active state: `transform: scale(0.95)`
-- Feedback: subtle ripple on press
-- Transition: `all 0.2s ease`
+- Inter 14px/20px, weight 700, 10px radius, minimum height 44px.
+- Primary: yellow background/border and navy text.
+- Secondary: white background, blue border, and blue text.
+- Destructive: white background, danger border, and danger text; reserve solid
+  danger for final destructive confirmation.
+- Disabled controls retain their border and readable label at 50% opacity.
+- Do not use ripples or scale animations.
 
-**Primary Outlined**
-- Background: transparent
-- Text: `#0737a8`
-- Border: `1px solid #0737a8`
-- Same radius/padding/active/transition as Primary Filled.
+### Forms
 
-**Black Filled**
-- Background: `#000000`
-- Text: `#ffffff`
-- Border: `1px solid #000000`
-- Radius: `50px`
-- Padding: `7px 16px`
-- Font: 14px, weight 600
-- Use only for high-contrast conversion moments.
+- Use persistent 14px semibold labels above controls. Place hints and explicit
+  errors beneath the relevant control and connect them with ARIA attributes.
+- Inputs are at least 48px tall with a white surface, `#b8c0cc` border, 12px
+  radius, and 14px horizontal padding.
+- Focus uses a blue border and a 3px low-opacity blue ring. Errors use the same
+  treatment in danger red.
+- Checkbox labels provide a 44px touch target.
 
-**Dark Outlined**
-- Background: transparent
-- Text: `rgba(0, 0, 0, 0.87)`
-- Border: `1px solid rgba(0, 0, 0, 0.87)`
-- Radius: `50px`
-- Padding: `7px 16px`
-- Font: 14px, weight 600
+### Shell And Overlays
 
-**Inverted on Dark**
-- Background: `#ffffff`
-- Text: `#0737a8`
-- Border: `1px solid #ffffff`
-- Use when the surface behind the button is House Green.
+- The global header is a compact white surface with a subtle bottom border and
+  shadow. Keep product identity central and actions easy to reach.
+- Menus, modals, PWA prompts, and confirmation dialogs follow the standard-card
+  treatment. Modal actions stack on narrow screens.
+- Avatars remain circular because they represent people. Other icon controls
+  use a 10px radius.
+- Alerts and toasts include explicit text, border, and a low-opacity semantic
+  background. Loading placeholders mirror final layouts.
 
-**Outlined on Dark**
-- Background: transparent
-- Text: `#ffffff`
-- Border: `1px solid #ffffff`
-- Use on dark-green feature bands for secondary actions.
+## Page Hierarchy
 
-### Cards & Containers
+- Feature the earliest non-cancelled upcoming match on the dashboard. Render
+  later matches as compact event cards. If only cancelled events remain, show
+  compact cancelled cards and no featured card.
+- Game detail leads with a navy match summary, followed immediately by the
+  user's participation action, then participant and waitlist rows.
+- Authentication and profile screens use narrow standard cards with clear,
+  persistent labels.
 
-**Content Card**
-- Background: `#ffffff`
-- Radius: `12px`
-- Shadow: `0px 0px .5px 0px rgba(0,0,0,0.14), 0px 1px 1px 0px rgba(0,0,0,0.24)`
-- Use for repeated content, dashboard summaries, game cards, and framed tools.
+## Accessibility And Responsive Behavior
 
-**Status Card**
-- Background: usually `#ffffff` or `#061b6b` depending on importance.
-- Radius and shadow follow default card spec.
-- Use for stateful items such as game status, payment status, waitlist position, or admin summaries.
-
-**Dropdown Menu**
-- Background: `#f9f9f9`
-- Menu items at `24px / weight 400` in Text Black.
-- No border; use background shift and shadow to separate it from the page.
-
-**Modal**
-- Padding: `2.4rem`
-- Top padding: `8.8rem` when room is needed for close controls or a header.
-- Radius inherits from card spec (`12px`).
-
-### Inputs & Forms
-
-**Floating Label Input**
-- Label floats above the input border when focused/filled.
-- Desktop label font size: `1.9rem` default, animates to `1.4rem` when active.
-- Mobile label font size: `1.6rem` default, animates to `1.3rem` active.
-- Label horizontal offset: `12px` from left.
-- Active label translate: up to `-12px` with `-50%` Y translation.
-- Field padding: `12px`.
-- Validation: valid-field gets `rgba(green-light, 0.33)` tint; invalid-field gets `rgba(red, 0.05)` tint.
-
-**Option Icon**
-- Padding: `3px` inner.
-- Use a subtle checked-state animation; avoid distracting bounce.
-
-### Navigation
-
-**Global Nav**
-- Fixed position with progressive heights: `64px` xs -> `72px` mobile -> `83px` tablet -> `99px` desktop.
-- Shadow stack: `0 1px 3px rgba(0,0,0,0.1), 0 2px 2px rgba(0,0,0,0.06), 0 0 2px rgba(0,0,0,0.07)`.
-- Left: product or app identity.
-- Primary links inline in the primary font, weight 400-600.
-- Right: account/session actions where needed.
-
-**Sub-nav**
-- Height: `53px` global subnav / `48px` internal subnav.
-- Use for horizontal tab groups beneath the global nav.
-
-**Mobile Nav**
-- Collapses to a drawer below tablet breakpoint.
-
-### Image Treatment
-
-- **Hero imagery:** Use domain-specific imagery or app-relevant visuals. Avoid generic stock-feeling imagery.
-- **Content thumbnails:** Square or 4:3 imagery with clean white/cream backdrops where applicable.
-- **Image fade-in:** `opacity 0.3s ease-in` transition on image load.
-
-### Feature Band
-
-Full-width `#061b6b` (Navy Blue) band with:
-- Left: white headline + subhead + CTA row.
-- Right: relevant product, app, or domain imagery when useful.
-- Split ratio ~40/60 or 50/50 depending on section.
-- White text throughout with `rgba(255,255,255,0.70)` for secondary copy.
-- CTAs follow Inverted on Dark + Outlined on Dark pairing.
-
-### Expander / Accordion
-
-- Duration: `300ms`.
-- Timing curve: `cubic-bezier(0.25, 0.46, 0.45, 0.94)`.
-- Use for FAQs, grouped settings, or secondary details.
-
-## 5. Layout Principles
-
-### Spacing System
-
-Rem-based semantic scale:
-
-| Token | Rem | Pixels | Typical Use |
-|-------|-----|--------|-------------|
-| `--space-1` | `0.4rem` | 4px | Tightest inline padding |
-| `--space-2` | `0.8rem` | 8px | Small gap, button vertical padding |
-| `--space-3` | `1.6rem` | 16px | Default card padding, outer gutter xs |
-| `--space-4` | `2.4rem` | 24px | Section inner spacing, outer gutter md |
-| `--space-5` | `3.2rem` | 32px | Major between-section spacing |
-| `--space-6` | `4rem` | 40px | Large gaps, outer gutter lg |
-| `--space-7` | `4.8rem` | 48px | Section-to-section spacing |
-| `--space-8` | `5.6rem` | 56px | Very large breathing |
-| `--space-9` | `6.4rem` | 64px | Widest section padding |
-
-**Gutter tokens:**
-- `--outerGutter: 1.6rem` (16px, default / mobile)
-- `--outerGutterMedium: 2.4rem` (24px, tablet)
-- `--outerGutterLarge: 4.0rem` (40px, desktop)
-
-**Universal rhythm constant:** `1.6rem` (16px) is the default outer gutter, card padding baseline, and body text size.
-
-### Grid & Container
-
-- Column width scale: `--columnWidthSmall: 343px` / `Medium: 500px` / `Large: 720px` / `XLarge: 1440px`.
-- Repeated-card grids should move from 1-up on mobile to 2-4-up on larger screens depending on content density.
-- Hero sections may use an asymmetric 40/60 or 50/50 split, collapsing to stacked on mobile.
-
-### Whitespace Philosophy
-
-Section padding should be generous but not wasteful. Content blocks are separated by whitespace rather than dividers. The volleyball-yellow canvas (`#fff8d8`) provides visual breathing room between white cards and navy feature bands.
-
-### Border Radius Scale
-
-| Value | Use |
-|-------|-----|
-| `12px` | Cards, modals, tiles |
-| `12px 12px 0 0` | Top-rounded edge tabs |
-| `50px` | Pill buttons |
-| `50%` | Circular icons and avatar thumbnails |
-
-## 6. Depth & Elevation
-
-| Level | Treatment | Use |
-|-------|-----------|-----|
-| Card | `0 0 0.5px rgba(0,0,0,0.14), 0 1px 1px rgba(0,0,0,0.24)` | Default content cards |
-| Global Nav | `0 1px 3px rgba(0,0,0,0.1), 0 2px 2px rgba(0,0,0,0.06), 0 0 2px rgba(0,0,0,0.07)` | Fixed top bar |
-
-**Shadow philosophy:** Use whisper-soft layered shadows over solid surfaces. Avoid single heavy drop shadows.
-
-### Decorative Depth
-
-- No structural gradient system; surfaces are solid color-block.
-- Color-block banding carries perceived depth.
-- Use SVG filter shadows only when a specific asset needs physicality.
-
-## 7. Do's and Don'ts
-
-### Do
-- Use Volleyball Canvas (`#fff8d8`) or Pale Yellow (`#fff3b0`) as page canvas instead of pure white.
-- Map the volleyball palette to its intended surface role: Brand Blue for headings, Ball Yellow for CTAs, Navy Blue for deep bands, Royal Blue for decorative accents.
-- Keep tracking subtly tight where it remains readable.
-- Use 50px full-pill radius on primary buttons.
-- Apply `transform: scale(0.95)` as the universal button active state.
-- Apply subtle ripple feedback to buttons and links styled as buttons.
-- Reserve Golden Yellow for special status or celebratory moments only.
-- Layer 2-3 low-alpha shadows instead of one heavy drop shadow.
-- Let the cream canvas breathe between content cards; use whitespace, not dividers.
-
-### Don't
-- Don't use pure white as the page canvas by default.
-- Don't flatten the blue/yellow system into a single color.
-- Don't use Golden Yellow as a general-purpose accent.
-- Don't square primary action buttons.
-- Don't introduce gradient fills as a default surface treatment.
-- Don't use pure black for body text.
-- Don't skip active feedback on buttons.
-- Don't stack single heavy shadows.
-
-## 8. Responsive Behavior
-
-### Breakpoints
-
-| Name | Width | Key Changes |
-|------|-------|-------------|
-| xs | < 480px | Global nav 64px; drawer menu; single-column layouts; pill buttons full-width where needed |
-| Mobile | 480-767px | Global nav 72px; card padding tightens |
-| Tablet | 768-1023px | Global nav 83px; multi-column layouts begin |
-| Desktop | 1024-1439px | Global nav 99px; full split heroes and wider card grids |
-| XLarge | 1440px+ | Content caps at `--columnWidthXLarge`; extra cream margin |
-
-### Touch Targets
-
-- Buttons should meet comfortable mobile touch targets. Increase visual padding on mobile when compact desktop pills would feel too small.
-- Form float-label inputs grow their label font size on mobile for readability.
-
-### Collapsing Strategy
-
-- Global nav height scales progressively: 64 -> 72 -> 83 -> 99px.
-- Hero split collapses from split layout to stacked at mobile.
-- Repeated-card grids collapse to fewer columns as the viewport narrows.
-- Feature bands stay full-width but text + imagery stack vertically on mobile.
-- Outer gutter scales from 16px -> 24px -> 40px.
-
-### Image Behavior
-
-- Hero imagery may crop tighter vertically on mobile.
-- Content imagery should preserve aspect ratio.
-- Use `opacity 0.3s ease-in` fade-in transition on image load.
+- Meet WCAG AA contrast and provide visible keyboard focus for every control.
+- Interactive targets are at least 44px high.
+- At widths below 640px, card and modal actions stack and become full width.
+- Long match titles, translations, and player names wrap without horizontal
+  scrolling.
+- Motion is limited to short color, shadow, and 1px position transitions and is
+  disabled when `prefers-reduced-motion` is enabled.

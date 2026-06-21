@@ -212,13 +212,13 @@ export function AuthPanel() {
 
   return (
     <Card className="p-5" variant="muted">
-      <div className="grid grid-cols-2 rounded-full border border-[rgba(0,0,0,0.16)] bg-[#f9f9f9] p-1">
+      <div className="grid grid-cols-2 rounded-xl border border-[#dde2ea] bg-[#eef1f5] p-1">
         <Button
           type="button"
           onClick={() => setMode("login")}
           data-active={mode === "login"}
           variant="ghost"
-          className="border-transparent px-4 py-3 text-[#26375f] data-[active=true]:bg-[#ffd21a] data-[active=true]:text-[#061b6b]"
+          className="border-transparent px-4 py-3 text-[#475467] data-[active=true]:border-[#ffd21a] data-[active=true]:bg-[#ffd21a] data-[active=true]:text-[#061b6b]"
         >
           {t("loginButton")}
         </Button>
@@ -227,7 +227,7 @@ export function AuthPanel() {
           onClick={() => setMode("signup")}
           data-active={mode === "signup"}
           variant="ghost"
-          className="border-transparent px-4 py-3 text-[#26375f] data-[active=true]:bg-[#ffd21a] data-[active=true]:text-[#061b6b]"
+          className="border-transparent px-4 py-3 text-[#475467] data-[active=true]:border-[#ffd21a] data-[active=true]:bg-[#ffd21a] data-[active=true]:text-[#061b6b]"
         >
           {t("signupButton")}
         </Button>
@@ -366,7 +366,7 @@ export function AuthPanel() {
               {!getSignupError("password") ? (
                 <p
                   id="home-signup-password-hint"
-                  className="mt-2 text-sm leading-6 text-[#26375f]"
+                  className="mt-2 text-sm leading-6 text-[#667085]"
                 >
                   {t("passwordHint")}
                 </p>

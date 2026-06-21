@@ -185,9 +185,9 @@ function SortableWaitlistItem({
       aria-label={dragHandleLabel}
       aria-busy={isDeleting}
       className={cx(
-        "flex touch-none cursor-grab items-center justify-between gap-3 rounded-xl bg-[#f9f9f9] px-4 py-3 shadow-[0_0_0.5px_0_rgba(0,0,0,0.08)] active:cursor-grabbing",
+        "flex min-h-14 touch-none cursor-grab items-center justify-between gap-3 border-b border-[#dde2ea] py-3 active:cursor-grabbing",
         isDeleting && "pointer-events-none cursor-not-allowed opacity-60",
-        isDragging && "z-10 opacity-80 shadow-[0_8px_20px_rgba(0,0,0,0.16)]",
+        isDragging && "z-10 rounded-xl border bg-white px-3 opacity-90 shadow-[0_8px_24px_rgba(16,24,40,0.14)]",
       )}
       ref={setNodeRef}
       style={style}
@@ -199,14 +199,14 @@ function SortableWaitlistItem({
       >
         <div className="flex min-w-0 flex-1 items-center gap-3">
           <InitialsAvatar name={item.name} />
-          <p className="min-w-0 truncate text-sm font-semibold text-[#26375f]">
+          <p className="min-w-0 text-sm font-semibold text-[#101828] break-words">
             {item.name}
           </p>
         </div>
 
         <span
           aria-hidden="true"
-          className="shrink-0 rounded-full px-2 py-1 text-sm font-semibold text-[rgba(0,0,0,0.58)]"
+          className="min-h-11 shrink-0 rounded-[10px] px-3 py-2 text-sm font-semibold text-[#667085]"
           title={dragHandleLabel}
         >
           ⋮⋮

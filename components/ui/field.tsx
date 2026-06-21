@@ -10,10 +10,10 @@ type FieldProps = InputHTMLAttributes<HTMLInputElement> & {
 
 export function inputClassName(hasError?: boolean, className?: string) {
   return cx(
-    "w-full rounded-xl border bg-white px-4 py-3 text-base outline-none transition disabled:cursor-not-allowed disabled:bg-[#f9f9f9]",
+    "min-h-12 w-full rounded-xl border bg-white px-3.5 py-3 text-base text-[#101828] outline-none transition placeholder:text-[#98a2b3] disabled:cursor-not-allowed disabled:bg-[#eef1f5] disabled:text-[#98a2b3]",
     hasError
-      ? "border-[#c82014] focus:border-[#c82014] focus:ring-2 focus:ring-[hsl(4_82%_43%_/_18%)]"
-      : "border-[rgba(0,0,0,0.16)] focus:border-[#0737a8] focus:ring-2 focus:ring-[#fff3b0]",
+      ? "border-[#c73a3a] focus:border-[#c73a3a] focus:ring-3 focus:ring-[#c73a3a]/15"
+      : "border-[#b8c0cc] hover:border-[#0737a8] focus:border-[#0737a8] focus:ring-3 focus:ring-[#0737a8]/16",
     className,
   );
 }
@@ -23,7 +23,7 @@ export function Field({ className, error, id, label, ...props }: FieldProps) {
 
   return (
     <div className="space-y-2">
-      <label htmlFor={id} className="block text-sm font-semibold text-[#26375f]">
+      <label htmlFor={id} className="block text-sm font-semibold text-[#101828]">
         {label}
       </label>
       <input
@@ -34,8 +34,8 @@ export function Field({ className, error, id, label, ...props }: FieldProps) {
         {...props}
       />
       {error ? (
-        <p id={errorId} className="text-sm font-medium text-[#c82014]">
-          {error}
+        <p id={errorId} className="text-[13px] font-semibold text-[#c73a3a]">
+          <span className="sr-only">Error: </span>{error}
         </p>
       ) : null}
     </div>

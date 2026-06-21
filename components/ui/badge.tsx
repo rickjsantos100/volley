@@ -4,10 +4,10 @@ import { cx } from "./class-name";
 type BadgeVariant = "danger" | "dark" | "soft" | "success";
 
 const variants: Record<BadgeVariant, string> = {
-  danger: "bg-[#c82014] text-white",
+  danger: "border border-[#c73a3a]/25 bg-[#fff1f1] text-[#a72f2f]",
   dark: "bg-[#061b6b] text-white",
-  soft: "bg-[#fff3b0] text-[#26375f]",
-  success: "bg-[#fff3b0] text-[#0737a8]",
+  soft: "border border-[#dde2ea] bg-[#eef1f5] text-[#475467]",
+  success: "border border-[#138a5b]/25 bg-[#ecf8f3] text-[#0d6b46]",
 };
 
 export function Badge({
@@ -18,7 +18,7 @@ export function Badge({
   return (
     <span
       className={cx(
-        "w-fit shrink-0 rounded-full px-3 py-1 text-xs font-semibold",
+        "w-fit shrink-0 rounded-lg px-2.5 py-1 text-xs font-bold",
         variants[variant],
         className,
       )}

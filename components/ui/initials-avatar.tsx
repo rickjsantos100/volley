@@ -32,7 +32,7 @@ export function InitialsAvatar({
   return (
     <span
       className={cx(
-        "flex size-11 shrink-0 items-center justify-center rounded-full bg-[#0737a8] text-sm font-semibold text-white",
+        "flex size-11 shrink-0 items-center justify-center rounded-full bg-[#061b6b] text-sm font-bold text-white",
         className,
       )}
     >

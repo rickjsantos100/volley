@@ -484,9 +484,9 @@ export function ProfileForm({
         <Toast variant="error">{t(`errors.${avatarError}`)}</Toast>
       ) : null}
 
-      <div className="rounded-xl bg-[#fff8d8] p-4">
+      <div className="rounded-xl border border-[#dde2ea] bg-[#f5f7fa] p-4">
         <div className="flex flex-col items-center gap-4 text-center sm:flex-row sm:text-left">
-          <div className="relative flex size-24 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#0737a8] text-2xl font-semibold text-white shadow-[0_0_0.5px_0_rgba(0,0,0,0.14),0_1px_1px_0_rgba(0,0,0,0.24)]">
+          <div className="relative flex size-24 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#061b6b] text-2xl font-bold text-white shadow-[0_8px_24px_rgba(16,24,40,0.12)]">
             {draftAvatar ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
@@ -511,13 +511,13 @@ export function ProfileForm({
               <h2 className="text-base font-semibold text-[#061b6b]">
                 {t("avatarTitle")}
               </h2>
-              <p className="mt-1 text-sm leading-6 text-[#26375f]">
+              <p className="mt-1 text-sm leading-6 text-[#667085]">
                 {t("avatarHelp")}
               </p>
             </div>
             <div className="flex flex-col gap-2 sm:flex-row">
               <button
-                className="ripple rounded-full border border-[#0737a8] bg-white px-4 py-2 text-sm font-semibold text-[#0737a8] transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
+                className="min-h-11 rounded-[10px] border border-[#0737a8] bg-white px-4 py-2 text-sm font-bold text-[#0737a8] transition hover:bg-[#eef3ff] focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-[#0737a8]/20 disabled:cursor-default disabled:opacity-50"
                 disabled={isSaving}
                 onClick={() => chooseInputRef.current?.click()}
                 type="button"
@@ -525,7 +525,7 @@ export function ProfileForm({
                 {t("chooseImageButton")}
               </button>
               <button
-                className="ripple rounded-full border border-[#ffd21a] bg-[#ffd21a] px-4 py-2 text-sm font-semibold text-[#061b6b] transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
+                className="min-h-11 rounded-[10px] border border-[#ffd21a] bg-[#ffd21a] px-4 py-2 text-sm font-bold text-[#061b6b] transition hover:bg-[#f2c600] focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-[#0737a8]/20 disabled:cursor-default disabled:opacity-50"
                 disabled={isSaving}
                 onClick={() => cameraInputRef.current?.click()}
                 type="button"
@@ -559,7 +559,7 @@ export function ProfileForm({
       >
         {draftAvatar ? (
           <div className="mt-6 space-y-5">
-            <p className="text-sm leading-6 text-[#26375f]">
+            <p className="text-sm leading-6 text-[#667085]">
               {t("avatarCropHelp")}
             </p>
             <div className="flex justify-center">
@@ -581,7 +581,7 @@ export function ProfileForm({
                 <div className="pointer-events-none absolute inset-0 rounded-full border-2 border-white shadow-[0_0_0_999px_rgba(0,0,0,0.42)]" />
               </div>
             </div>
-            <label className="block text-sm font-semibold text-[#26375f]">
+            <label className="block text-sm font-semibold text-[#101828]">
               <span>{t("avatarZoomLabel")}</span>
               <input
                 aria-label={t("avatarZoomLabel")}

@@ -5,7 +5,6 @@ import { PwaInstallPrompt } from "@/components/pwa-install-prompt";
 import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Card, cardClassName } from "@/components/ui/card";
-import { StatTile } from "@/components/ui/stat-tile";
 import { getTranslations } from "next-intl/server";
 import { formatGameDateTitle } from "@/lib/format-game-date-title";
 import { createClient } from "@/lib/supabase/server";
@@ -82,88 +81,138 @@ export default async function DashboardPage() {
       (counts[participant.game_event_id] ?? 0) + 1;
     return counts;
   }, {});
+  const featuredGame = games.find((game) => game.status === "scheduled");
+  const remainingGames = featuredGame
+    ? games.filter((game) => game.id !== featuredGame.id)
+    : games;
+
+  function renderGameCard(game: GameEvent, featured = false) {
+    const occupiedSlots = participantCounts[game.id] ?? 0;
+    const isFull = occupiedSlots >= game.max_participants;
+    const isCancelled = game.status === "cancelled";
+    const statusLabel = isCancelled
+      ? t("cancelledLabel")
+      : isFull
+        ? t("fullLabel")
+        : t("availableLabel");
+    const variant = featured
+      ? "featured"
+      : isCancelled
+        ? "cancelled"
+        : "default";
+    const statusEdge =
+      featured || isCancelled
+        ? ""
+        : isFull
+          ? "border-l-4 border-l-[#ffd21a]"
+          : "border-l-4 border-l-[#138a5b]";
+    const content = (
+      <>
+        <div className="flex items-start justify-between gap-4">
+          <h2
+            className={
+              featured
+                ? "font-matchday text-4xl leading-[38px] font-bold text-white sm:text-5xl sm:leading-none"
+                : "font-matchday text-[26px] leading-7 font-bold text-[#061b6b]"
+            }
+          >
+            {formatGameDateTitle(new Date(game.starts_at))}
+          </h2>
+          <Badge
+            className={
+              featured && !isCancelled
+                ? "border-white/20 bg-white/10 text-white"
+                : undefined
+            }
+            variant={isCancelled ? "danger" : isFull ? "soft" : "success"}
+          >
+            {statusLabel}
+          </Badge>
+        </div>
+        <dl className="mt-5 grid grid-cols-2 gap-4">
+          <div>
+            <dt
+              className={`text-xs font-bold tracking-[0.08em] uppercase ${featured ? "text-white/70" : "text-[#667085]"}`}
+            >
+              {t("durationLabel")}
+            </dt>
+            <dd className="mt-1 font-semibold">
+              {formatDuration(game.duration_minutes)}
+            </dd>
+          </div>
+          <div>
+            <dt
+              className={`text-xs font-bold tracking-[0.08em] uppercase ${featured ? "text-white/70" : "text-[#667085]"}`}
+            >
+              {t("slotsLabel")}
+            </dt>
+            <dd className="mt-1 font-semibold">
+              {t("slotsValue", {
+                occupied: occupiedSlots,
+                capacity: game.max_participants,
+              })}
+            </dd>
+          </div>
+        </dl>
+        {featured ? (
+          <span className="mt-6 flex min-h-11 items-center justify-center rounded-[10px] border border-[#ffd21a] bg-[#ffd21a] px-5 py-3 text-sm font-bold text-[#061b6b] sm:w-fit">
+            {t("viewGameLabel")}
+          </span>
+        ) : null}
+      </>
+    );
+
+    if (isCancelled && !isAdmin) {
+      return (
+        <article
+          className={cardClassName({ className: statusEdge, variant })}
+          key={game.id}
+        >
+          {content}
+        </article>
+      );
+    }
+
+    return (
+      <Link
+        className={cardClassName({
+          className: `block ${statusEdge} transition-[border-color,box-shadow,transform] hover:border-[#0737a8] hover:shadow-[0_12px_28px_rgba(16,24,40,0.11)] focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-[#0737a8]/20 active:translate-y-px`,
+          variant,
+        })}
+        href={`/dashboard/games/${game.id}`}
+        key={game.id}
+      >
+        {content}
+      </Link>
+    );
+  }
+
   return (
-    <main className="min-h-screen bg-[#fff8d8] px-4 py-20 pb-32 text-[rgba(0,0,0,0.87)] sm:px-6 lg:px-10">
-      <section className="mx-auto w-full max-w-5xl">
+    <main className="min-h-screen bg-[#f5f7fa] px-4 pt-24 pb-32 text-[#101828] sm:px-6 lg:px-8">
+      <section className="mx-auto w-full max-w-[1120px]">
         {hasGamesError ? (
           <Alert>{t("gamesLoadError")}</Alert>
         ) : null}
 
         {!hasGamesError && games.length === 0 ? (
           <Card className="py-6" variant="muted">
-            <p className="text-base font-semibold text-[#26375f]">
+            <p className="text-base font-semibold text-[#101828]">
               {t("emptyGamesTitle")}
             </p>
-            <p className="mt-2 text-sm leading-6 text-[rgba(0,0,0,0.58)]">
+            <p className="mt-2 text-sm leading-6 text-[#667085]">
               {t("emptyGamesIntro")}
             </p>
           </Card>
         ) : null}
 
         {!hasGamesError && games.length > 0 ? (
-          <div className="grid gap-4 md:grid-cols-2">
-            {games.map((game) => {
-              const occupiedSlots = participantCounts[game.id] ?? 0;
-              const isFull = occupiedSlots >= game.max_participants;
-              const isCancelled = game.status === "cancelled";
-              const cardContent = (
-                <>
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <h3 className="text-xl font-semibold tracking-[-0.01em] text-[#0737a8]">
-                        {formatGameDateTitle(new Date(game.starts_at))}
-                      </h3>
-                    </div>
-
-                    {isCancelled ? (
-                      <Badge variant="danger">{t("cancelledLabel")}</Badge>
-                    ) : isFull ? (
-                      <Badge>{t("fullLabel")}</Badge>
-                    ) : null}
-                  </div>
-
-                  <dl className="mt-5 grid grid-cols-2 gap-3">
-                    <StatTile
-                      label={t("durationLabel")}
-                      value={formatDuration(game.duration_minutes)}
-                    />
-                    <StatTile
-                      label={t("slotsLabel")}
-                      value={t("slotsValue", {
-                        occupied: occupiedSlots,
-                        capacity: game.max_participants,
-                      })}
-                    />
-                  </dl>
-
-                </>
-              );
-
-              if (isCancelled && !isAdmin) {
-                return (
-                  <article
-                    key={game.id}
-                    className={cardClassName({ variant: "cancelled" })}
-                  >
-                    {cardContent}
-                  </article>
-                );
-              }
-
-              return (
-                <Link
-                  key={game.id}
-                  href={`/dashboard/games/${game.id}`}
-                  className={cardClassName({
-                    className:
-                      "block transition active:scale-[0.99] hover:shadow-[0_2px_10px_rgba(0,0,0,0.14)]",
-                    variant: isCancelled ? "cancelled" : "default",
-                  })}
-                >
-                  {cardContent}
-                </Link>
-              );
-            })}
+          <div className="grid gap-6">
+            {featuredGame ? renderGameCard(featuredGame, true) : null}
+            {remainingGames.length > 0 ? (
+              <div className="grid gap-4 md:grid-cols-2">
+                {remainingGames.map((game) => renderGameCard(game))}
+              </div>
+            ) : null}
           </div>
         ) : null}
       </section>

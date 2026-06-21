@@ -25,21 +25,16 @@ type SubmitButtonProps = ButtonProps & {
   children: ReactNode;
 };
 
-const rippleClass =
-  "isolate overflow-hidden after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.42)_0%,rgba(255,255,255,0.28)_28%,transparent_58%)] after:opacity-0 after:content-[''] after:scale-[0.2] after:transition-[opacity,transform] after:duration-300 active:after:scale-[2.4] active:after:opacity-100 active:after:duration-0 disabled:after:opacity-0";
-
-const darkRippleClass =
-  "after:bg-[radial-gradient(circle_at_center,rgba(0,0,0,0.14)_0%,rgba(0,0,0,0.09)_28%,transparent_58%)]";
-
 const variantClasses: Record<ButtonVariant, string> = {
   dangerOutline:
-    "border-[#c82014] bg-white text-[#c82014] hover:bg-[hsl(4_82%_43%_/_5%)]",
+    "border-[#c73a3a] bg-white text-[#c73a3a] hover:bg-[#fff1f1]",
   ghost:
-    "border-[rgba(0,0,0,0.24)] bg-transparent text-[rgba(0,0,0,0.87)]",
+    "border-transparent bg-transparent text-[#101828] hover:bg-[#eef1f5]",
   icon:
-    "size-11 justify-center border-[#ffd21a] bg-[#ffd21a] p-0 text-[#061b6b] shadow-[0_0_0.5px_0_rgba(0,0,0,0.14),0_1px_1px_0_rgba(0,0,0,0.18)]",
-  outline: "border-[#0737a8] bg-white text-[#0737a8]",
-  primary: "border-[#ffd21a] bg-[#ffd21a] text-[#061b6b]",
+    "size-11 justify-center border-[#ffd21a] bg-[#ffd21a] p-0 text-[#061b6b] hover:bg-[#f2c600]",
+  outline: "border-[#0737a8] bg-white text-[#0737a8] hover:bg-[#eef3ff]",
+  primary:
+    "border-[#ffd21a] bg-[#ffd21a] text-[#061b6b] hover:border-[#f2c600] hover:bg-[#f2c600]",
 };
 
 export function buttonClassName({
@@ -54,14 +49,12 @@ export function buttonClassName({
 > = {}) {
   return cx(
     fixed ? "fixed" : "relative",
-    "flex items-center justify-center gap-2 rounded-full border text-sm font-semibold transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-70 disabled:active:scale-100",
-    rippleClass,
-    variant !== "primary" && darkRippleClass,
+    "flex min-h-11 items-center justify-center gap-2 rounded-[10px] border text-sm font-bold transition-[background-color,border-color,box-shadow,transform] focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-[#0737a8]/20 active:translate-y-px disabled:cursor-default disabled:opacity-50 disabled:active:translate-y-0",
     variantClasses[variant],
     variant === "icon"
       ? null
       : size === "compact"
-        ? "px-4 py-2"
+        ? "px-4 py-2.5"
         : "px-5 py-3",
     fullWidth && "w-full",
     className,
