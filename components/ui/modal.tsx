@@ -17,6 +17,62 @@ type ModalProps = {
   title: string;
 };
 
+type ScrollLockState = {
+  left: string;
+  overflow: string;
+  position: string;
+  right: string;
+  scrollX: number;
+  scrollY: number;
+  top: string;
+};
+
+let openModalCount = 0;
+let scrollLockState: ScrollLockState | null = null;
+
+function lockPageScroll() {
+  openModalCount += 1;
+
+  if (openModalCount === 1) {
+    const { body } = document;
+
+    scrollLockState = {
+      left: body.style.left,
+      overflow: body.style.overflow,
+      position: body.style.position,
+      right: body.style.right,
+      scrollX: window.scrollX,
+      scrollY: window.scrollY,
+      top: body.style.top,
+    };
+
+    body.style.position = "fixed";
+    body.style.top = `-${scrollLockState.scrollY}px`;
+    body.style.right = "0";
+    body.style.left = "0";
+    body.style.overflow = "hidden";
+  }
+
+  return () => {
+    openModalCount = Math.max(0, openModalCount - 1);
+
+    if (openModalCount > 0 || !scrollLockState) {
+      return;
+    }
+
+    const { body } = document;
+    const previousState = scrollLockState;
+    scrollLockState = null;
+
+    body.style.position = previousState.position;
+    body.style.top = previousState.top;
+    body.style.right = previousState.right;
+    body.style.left = previousState.left;
+    body.style.overflow = previousState.overflow;
+    window.scrollTo(previousState.scrollX, previousState.scrollY);
+  };
+}
+
 export function Modal({
   children,
   onClose,
@@ -69,6 +125,14 @@ export function Modal({
     };
   }, [modalId, open]);
 
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    return lockPageScroll();
+  }, [open]);
+
   if (!open || typeof document === "undefined") {
     return null;
   }
@@ -82,13 +146,13 @@ export function Modal({
   return createPortal(
     <div
       onClick={handleBackdropClick}
-      className="fixed inset-0 z-[60] flex items-end justify-center bg-[#101828]/55 px-4 py-4 sm:items-center"
+      className="fixed inset-0 z-[60] flex items-end justify-center overflow-y-auto bg-[#101828]/55 px-4 py-4 sm:items-center"
       role="presentation"
     >
       <div
         aria-modal="true"
         role="dialog"
-        className="w-full max-w-md rounded-xl border border-[#dde2ea] bg-white p-5 shadow-[0_16px_40px_rgba(16,24,40,0.18)] sm:p-6"
+        className="max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto rounded-xl border border-[#dde2ea] bg-white p-5 shadow-[0_16px_40px_rgba(16,24,40,0.18)] sm:p-6"
       >
         <div>
           <h2 className="font-matchday text-[26px] leading-7 font-bold text-[#061b6b]">

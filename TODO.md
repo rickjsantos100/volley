@@ -13,3 +13,5 @@ Use this file to collect future work items.
 - [x] Configure installed Android PWAs to open shared in-scope links.
 - [x] Add native sharing support for games.
 - it might be good to have some footage of games in the banner
+- [x] Fix scrolling behind open modals.
+- [x] Replace the avatar zoom slider with direct gestures.

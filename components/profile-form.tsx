@@ -5,7 +5,9 @@ import {
   useRef,
   useState,
   type FormEvent,
+  type KeyboardEvent,
   type PointerEvent,
+  type WheelEvent,
 } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
@@ -46,6 +48,8 @@ type DraftAvatar = {
   width: number;
   zoom: number;
 };
+
+type CameraStatus = "capturing" | "error" | "ready" | "requesting";
 
 const avatarFileName = "avatar.webp";
 const avatarCropSize = 280;
@@ -106,6 +110,23 @@ function clampDraftAvatar(draftAvatar: DraftAvatar): DraftAvatar {
     offsetX: clampOffset(draftAvatar.offsetX, draftAvatar.width * scale),
     offsetY: clampOffset(draftAvatar.offsetY, draftAvatar.height * scale),
   };
+}
+
+function zoomDraftAvatar(
+  draftAvatar: DraftAvatar,
+  zoom: number,
+  focalX = 0,
+  focalY = 0,
+) {
+  const nextZoom = Math.min(maxAvatarZoom, Math.max(minAvatarZoom, zoom));
+  const zoomRatio = nextZoom / draftAvatar.zoom;
+
+  return clampDraftAvatar({
+    ...draftAvatar,
+    offsetX: focalX - (focalX - draftAvatar.offsetX) * zoomRatio,
+    offsetY: focalY - (focalY - draftAvatar.offsetY) * zoomRatio,
+    zoom: nextZoom,
+  });
 }
 
 function getDefaultDraftAvatar(draftAvatar: DraftAvatar): DraftAvatar {
@@ -193,6 +214,44 @@ function clearInput(input: HTMLInputElement | null) {
   }
 }
 
+function stopMediaStream(stream: MediaStream | null) {
+  stream?.getTracks().forEach((track) => track.stop());
+}
+
+function createCameraFrameBlob(video: HTMLVideoElement) {
+  return new Promise<Blob>((resolve, reject) => {
+    if (!video.videoWidth || !video.videoHeight) {
+      reject(new Error("cameraNotReady"));
+      return;
+    }
+
+    const canvas = document.createElement("canvas");
+    const context = canvas.getContext("2d");
+
+    if (!context) {
+      reject(new Error("cameraCaptureFailed"));
+      return;
+    }
+
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    context.translate(canvas.width, 0);
+    context.scale(-1, 1);
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+    canvas.toBlob(
+      (blob) => {
+        if (blob) {
+          resolve(blob);
+        } else {
+          reject(new Error("cameraCaptureFailed"));
+        }
+      },
+      "image/jpeg",
+      0.92,
+    );
+  });
+}
+
 export function ProfileForm({
   avatarPath,
   avatarUrl,
@@ -204,6 +263,9 @@ export function ProfileForm({
   const router = useRouter();
   const chooseInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
+  const cameraRequestIdRef = useRef(0);
+  const cameraStreamRef = useRef<MediaStream | null>(null);
+  const cameraVideoRef = useRef<HTMLVideoElement>(null);
   const draftAvatarRef = useRef<DraftAvatar | null>(null);
   const dragStateRef = useRef<{
     offsetX: number;
@@ -211,6 +273,17 @@ export function ProfileForm({
     pointerId: number;
     startX: number;
     startY: number;
+  } | null>(null);
+  const pointerPositionsRef = useRef(
+    new Map<number, { clientX: number; clientY: number }>(),
+  );
+  const pinchStateRef = useRef<{
+    centerX: number;
+    centerY: number;
+    distance: number;
+    offsetX: number;
+    offsetY: number;
+    zoom: number;
   } | null>(null);
   const [state, setState] = useState<ProfileFormState>({});
   const [values, setValues] = useState({
@@ -222,6 +295,11 @@ export function ProfileForm({
   const [currentAvatarUrl, setCurrentAvatarUrl] = useState(avatarUrl);
   const [draftAvatar, setDraftAvatar] = useState<DraftAvatar | null>(null);
   const [isCropModalOpen, setIsCropModalOpen] = useState(false);
+  const [isCameraModalOpen, setIsCameraModalOpen] = useState(false);
+  const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
+  const [cameraStatus, setCameraStatus] =
+    useState<CameraStatus>("requesting");
+  const [cameraError, setCameraError] = useState<string | null>(null);
   const [avatarError, setAvatarError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [touched, setTouched] = useState({
@@ -236,11 +314,38 @@ export function ProfileForm({
 
   useEffect(() => {
     return () => {
+      cameraRequestIdRef.current += 1;
+      stopMediaStream(cameraStreamRef.current);
+      cameraStreamRef.current = null;
+
       if (draftAvatarRef.current) {
         URL.revokeObjectURL(draftAvatarRef.current.url);
       }
     };
   }, []);
+
+  useEffect(() => {
+    const video = cameraVideoRef.current;
+
+    if (!isCameraModalOpen || !cameraStream || !video) {
+      return;
+    }
+
+    video.srcObject = cameraStream;
+    void video.play().catch(() => {
+      setCameraError("cameraUnavailable");
+      setCameraStatus("error");
+      stopMediaStream(cameraStream);
+      cameraStreamRef.current = null;
+      setCameraStream(null);
+    });
+
+    return () => {
+      if (video.srcObject === cameraStream) {
+        video.srcObject = null;
+      }
+    };
+  }, [cameraStream, isCameraModalOpen]);
 
   const clientErrors = {
     firstName: values.firstName.trim()
@@ -311,12 +416,153 @@ export function ProfileForm({
     }
   }
 
+  function closeCameraModal() {
+    cameraRequestIdRef.current += 1;
+    stopMediaStream(cameraStreamRef.current);
+    cameraStreamRef.current = null;
+    setCameraStream(null);
+    setCameraError(null);
+    setCameraStatus("requesting");
+    setIsCameraModalOpen(false);
+  }
+
+  async function openDesktopCamera() {
+    const requestId = cameraRequestIdRef.current + 1;
+    cameraRequestIdRef.current = requestId;
+    stopMediaStream(cameraStreamRef.current);
+    cameraStreamRef.current = null;
+    setCameraStream(null);
+    setCameraError(null);
+    setCameraStatus("requesting");
+    setIsCameraModalOpen(true);
+
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setCameraError("cameraUnavailable");
+      setCameraStatus("error");
+      return;
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: false,
+        video: {
+          facingMode: { ideal: "user" },
+          height: { ideal: 1080 },
+          width: { ideal: 1440 },
+        },
+      });
+
+      if (cameraRequestIdRef.current !== requestId) {
+        stopMediaStream(stream);
+        return;
+      }
+
+      cameraStreamRef.current = stream;
+      setCameraStream(stream);
+    } catch (error) {
+      if (cameraRequestIdRef.current !== requestId) {
+        return;
+      }
+
+      setCameraError(
+        error instanceof DOMException && error.name === "NotAllowedError"
+          ? "cameraPermissionDenied"
+          : "cameraUnavailable",
+      );
+      setCameraStatus("error");
+    }
+  }
+
+  function handleTakePhoto() {
+    const hasFinePointer =
+      typeof window.matchMedia === "function" &&
+      window.matchMedia("(any-pointer: fine)").matches;
+
+    if (!hasFinePointer) {
+      cameraInputRef.current?.click();
+      return;
+    }
+
+    void openDesktopCamera();
+  }
+
+  async function captureCameraPhoto() {
+    const video = cameraVideoRef.current;
+
+    if (!video || cameraStatus !== "ready") {
+      return;
+    }
+
+    setCameraError(null);
+    setCameraStatus("capturing");
+
+    try {
+      const blob = await createCameraFrameBlob(video);
+      const file = new File([blob], `camera-${Date.now()}.jpg`, {
+        type: blob.type,
+      });
+
+      await handleAvatarFile(file);
+      closeCameraModal();
+    } catch {
+      setCameraError("cameraCaptureFailed");
+      setCameraStatus("ready");
+    }
+  }
+
+  function chooseImageFromCameraModal() {
+    closeCameraModal();
+    chooseInputRef.current?.click();
+  }
+
   function handleAvatarPointerDown(event: PointerEvent<HTMLDivElement>) {
     if (!draftAvatar) {
       return;
     }
 
     event.currentTarget.setPointerCapture(event.pointerId);
+    pointerPositionsRef.current.set(event.pointerId, {
+      clientX: event.clientX,
+      clientY: event.clientY,
+    });
+
+    if (pointerPositionsRef.current.size >= 2) {
+      if (pointerPositionsRef.current.size > 2) {
+        return;
+      }
+
+      const [firstPointer, secondPointer] = [
+        ...pointerPositionsRef.current.values(),
+      ];
+      const cropBounds = event.currentTarget.getBoundingClientRect();
+      const displayRatio = avatarCropSize / cropBounds.width;
+
+      pinchStateRef.current = {
+        centerX:
+          ((firstPointer.clientX + secondPointer.clientX) / 2 -
+            cropBounds.left -
+            cropBounds.width / 2) *
+          displayRatio,
+        centerY:
+          ((firstPointer.clientY + secondPointer.clientY) / 2 -
+            cropBounds.top -
+            cropBounds.height / 2) *
+          displayRatio,
+        distance: Math.max(
+          1,
+          Math.hypot(
+            secondPointer.clientX - firstPointer.clientX,
+            secondPointer.clientY - firstPointer.clientY,
+          ),
+        ),
+        offsetX: draftAvatar.offsetX,
+        offsetY: draftAvatar.offsetY,
+        zoom: draftAvatar.zoom,
+      };
+      dragStateRef.current = null;
+      return;
+    }
+
     dragStateRef.current = {
       offsetX: draftAvatar.offsetX,
       offsetY: draftAvatar.offsetY,
@@ -327,6 +573,61 @@ export function ProfileForm({
   }
 
   function handleAvatarPointerMove(event: PointerEvent<HTMLDivElement>) {
+    if (pointerPositionsRef.current.has(event.pointerId)) {
+      pointerPositionsRef.current.set(event.pointerId, {
+        clientX: event.clientX,
+        clientY: event.clientY,
+      });
+    }
+
+    const pinchState = pinchStateRef.current;
+
+    if (pinchState && pointerPositionsRef.current.size >= 2) {
+      const [firstPointer, secondPointer] = [
+        ...pointerPositionsRef.current.values(),
+      ];
+      const distance = Math.hypot(
+        secondPointer.clientX - firstPointer.clientX,
+        secondPointer.clientY - firstPointer.clientY,
+      );
+      const cropBounds = event.currentTarget.getBoundingClientRect();
+      const displayRatio = avatarCropSize / cropBounds.width;
+      const centerX =
+        ((firstPointer.clientX + secondPointer.clientX) / 2 -
+          cropBounds.left -
+          cropBounds.width / 2) *
+        displayRatio;
+      const centerY =
+        ((firstPointer.clientY + secondPointer.clientY) / 2 -
+          cropBounds.top -
+          cropBounds.height / 2) *
+        displayRatio;
+      const zoom = Math.min(
+        maxAvatarZoom,
+        Math.max(
+          minAvatarZoom,
+          pinchState.zoom * (distance / pinchState.distance),
+        ),
+      );
+      const zoomRatio = zoom / pinchState.zoom;
+
+      setDraftAvatar((currentDraftAvatar) =>
+        currentDraftAvatar
+          ? clampDraftAvatar({
+              ...currentDraftAvatar,
+              offsetX:
+                centerX -
+                (pinchState.centerX - pinchState.offsetX) * zoomRatio,
+              offsetY:
+                centerY -
+                (pinchState.centerY - pinchState.offsetY) * zoomRatio,
+              zoom,
+            })
+          : currentDraftAvatar,
+      );
+      return;
+    }
+
     const dragState = dragStateRef.current;
 
     if (!dragState || dragState.pointerId !== event.pointerId) {
@@ -353,8 +654,99 @@ export function ProfileForm({
   }
 
   function handleAvatarPointerUp(event: PointerEvent<HTMLDivElement>) {
+    pointerPositionsRef.current.delete(event.pointerId);
+    pinchStateRef.current = null;
+
     if (dragStateRef.current?.pointerId === event.pointerId) {
       dragStateRef.current = null;
+    }
+
+    if (
+      pointerPositionsRef.current.size === 1 &&
+      draftAvatarRef.current
+    ) {
+      const [remainingPointer] = pointerPositionsRef.current.entries();
+
+      dragStateRef.current = {
+        offsetX: draftAvatarRef.current.offsetX,
+        offsetY: draftAvatarRef.current.offsetY,
+        pointerId: remainingPointer[0],
+        startX: remainingPointer[1].clientX,
+        startY: remainingPointer[1].clientY,
+      };
+    }
+  }
+
+  function handleAvatarWheel(event: WheelEvent<HTMLDivElement>) {
+    if (!draftAvatar) {
+      return;
+    }
+
+    event.preventDefault();
+    const cropBounds = event.currentTarget.getBoundingClientRect();
+    const displayRatio = avatarCropSize / cropBounds.width;
+    const focalX =
+      (event.clientX - cropBounds.left - cropBounds.width / 2) * displayRatio;
+    const focalY =
+      (event.clientY - cropBounds.top - cropBounds.height / 2) * displayRatio;
+    const deltaMultiplier = event.deltaMode === 1 ? 16 : 1;
+    const zoomFactor = Math.exp(-event.deltaY * deltaMultiplier * 0.002);
+
+    setDraftAvatar((currentDraftAvatar) =>
+      currentDraftAvatar
+        ? zoomDraftAvatar(
+            currentDraftAvatar,
+            currentDraftAvatar.zoom * zoomFactor,
+            focalX,
+            focalY,
+          )
+        : currentDraftAvatar,
+    );
+  }
+
+  function handleAvatarKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    const panStep = 8;
+    const zoomStep = 0.1;
+
+    if (["ArrowDown", "ArrowLeft", "ArrowRight", "ArrowUp"].includes(event.key)) {
+      event.preventDefault();
+      setDraftAvatar((currentDraftAvatar) => {
+        if (!currentDraftAvatar) {
+          return currentDraftAvatar;
+        }
+
+        return clampDraftAvatar({
+          ...currentDraftAvatar,
+          offsetX:
+            currentDraftAvatar.offsetX +
+            (event.key === "ArrowLeft"
+              ? -panStep
+              : event.key === "ArrowRight"
+                ? panStep
+                : 0),
+          offsetY:
+            currentDraftAvatar.offsetY +
+            (event.key === "ArrowUp"
+              ? -panStep
+              : event.key === "ArrowDown"
+                ? panStep
+                : 0),
+        });
+      });
+      return;
+    }
+
+    if (["+", "=", "-"].includes(event.key)) {
+      event.preventDefault();
+      setDraftAvatar((currentDraftAvatar) =>
+        currentDraftAvatar
+          ? zoomDraftAvatar(
+              currentDraftAvatar,
+              currentDraftAvatar.zoom +
+                (event.key === "-" ? -zoomStep : zoomStep),
+            )
+          : currentDraftAvatar,
+      );
     }
   }
 
@@ -527,7 +919,7 @@ export function ProfileForm({
               <button
                 className="min-h-11 rounded-[10px] border border-[#ffd21a] bg-[#ffd21a] px-4 py-2 text-sm font-bold text-[#061b6b] transition hover:bg-[#f2c600] focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-[#0737a8]/20 disabled:cursor-default disabled:opacity-50"
                 disabled={isSaving}
-                onClick={() => cameraInputRef.current?.click()}
+                onClick={handleTakePhoto}
                 type="button"
               >
                 {t("takePhotoButton")}
@@ -553,23 +945,93 @@ export function ProfileForm({
       </div>
 
       <Modal
-        onClose={handleCloseCropModal}
-        open={isCropModalOpen && Boolean(draftAvatar)}
-        title={t("avatarCropTitle")}
+        onClose={
+          isCameraModalOpen ? closeCameraModal : handleCloseCropModal
+        }
+        open={
+          isCameraModalOpen ||
+          (isCropModalOpen && Boolean(draftAvatar))
+        }
+        title={
+          isCameraModalOpen ? t("cameraTitle") : t("avatarCropTitle")
+        }
       >
-        {draftAvatar ? (
+        {isCameraModalOpen ? (
+          <div className="mt-6 space-y-5">
+            {cameraError ? (
+              <p
+                className="rounded-xl border border-[#c73a3a]/25 bg-[#c73a3a]/8 px-4 py-3 text-sm leading-6 text-[#8f2626]"
+                role="alert"
+              >
+                {t(`errors.${cameraError}`)}
+              </p>
+            ) : null}
+
+            {cameraStatus === "requesting" ? (
+              <div className="flex aspect-[4/3] items-center justify-center rounded-xl bg-[#061b6b] px-6 text-center text-sm font-semibold text-white">
+                {t("cameraRequesting")}
+              </div>
+            ) : null}
+
+            {cameraStream ? (
+              <div className="aspect-[4/3] overflow-hidden rounded-xl bg-[#061b6b]">
+                <video
+                  aria-label={t("cameraPreviewLabel")}
+                  className="size-full -scale-x-100 object-cover"
+                  muted
+                  onLoadedMetadata={() => setCameraStatus("ready")}
+                  playsInline
+                  ref={cameraVideoRef}
+                />
+              </div>
+            ) : null}
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              {cameraStatus === "error" ? (
+                <Button
+                  onClick={chooseImageFromCameraModal}
+                  type="button"
+                  variant="outline"
+                >
+                  {t("cameraChooseImage")}
+                </Button>
+              ) : (
+                <Button
+                  disabled={cameraStatus !== "ready"}
+                  loading={cameraStatus === "capturing"}
+                  onClick={() => void captureCameraPhoto()}
+                  type="button"
+                >
+                  {t("cameraCaptureButton")}
+                </Button>
+              )}
+              <Button
+                onClick={closeCameraModal}
+                type="button"
+                variant="outline"
+              >
+                {t("cameraCancelButton")}
+              </Button>
+            </div>
+          </div>
+        ) : draftAvatar ? (
           <div className="mt-6 space-y-5">
             <p className="text-sm leading-6 text-[#667085]">
               {t("avatarCropHelp")}
             </p>
             <div className="flex justify-center">
               <div
-                className="relative touch-none select-none overflow-hidden rounded-xl bg-[#061b6b]"
+                aria-label={t("avatarCropInteractionLabel")}
+                className="relative cursor-grab touch-none select-none overflow-hidden rounded-xl bg-[#061b6b] focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-[#0737a8]/30 active:cursor-grabbing"
+                onKeyDown={handleAvatarKeyDown}
                 onPointerCancel={handleAvatarPointerUp}
                 onPointerDown={handleAvatarPointerDown}
                 onPointerMove={handleAvatarPointerMove}
                 onPointerUp={handleAvatarPointerUp}
+                onWheel={handleAvatarWheel}
+                role="group"
                 style={{ height: avatarCropSize, width: avatarCropSize }}
+                tabIndex={0}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
@@ -581,28 +1043,11 @@ export function ProfileForm({
                 <div className="pointer-events-none absolute inset-0 rounded-full border-2 border-white shadow-[0_0_0_999px_rgba(0,0,0,0.42)]" />
               </div>
             </div>
-            <label className="block text-sm font-semibold text-[#101828]">
-              <span>{t("avatarZoomLabel")}</span>
-              <input
-                aria-label={t("avatarZoomLabel")}
-                className="mt-2 w-full accent-[#ffd21a]"
-                max={maxAvatarZoom}
-                min={minAvatarZoom}
-                onChange={(event) => {
-                  const zoom = Number(event.target.value);
-
-                  setDraftAvatar((currentDraftAvatar) =>
-                    currentDraftAvatar
-                      ? clampDraftAvatar({ ...currentDraftAvatar, zoom })
-                      : currentDraftAvatar,
-                  );
-                }}
-                step="0.05"
-                type="range"
-                value={draftAvatar.zoom}
-              />
-            </label>
-            <Button fullWidth onClick={() => setIsCropModalOpen(false)} type="button">
+            <Button
+              fullWidth
+              onClick={() => setIsCropModalOpen(false)}
+              type="button"
+            >
               {t("avatarCropButton")}
             </Button>
           </div>

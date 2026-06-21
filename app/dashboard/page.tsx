@@ -86,7 +86,11 @@ export default async function DashboardPage() {
     ? games.filter((game) => game.id !== featuredGame.id)
     : games;
 
-  function renderGameCard(game: GameEvent, featured = false) {
+  function renderGameCard(
+    game: GameEvent,
+    featured = false,
+    headingLevel: "h2" | "h3" = "h2",
+  ) {
     const occupiedSlots = participantCounts[game.id] ?? 0;
     const isFull = occupiedSlots >= game.max_participants;
     const isCancelled = game.status === "cancelled";
@@ -106,10 +110,11 @@ export default async function DashboardPage() {
         : isFull
           ? "border-l-4 border-l-[#ffd21a]"
           : "border-l-4 border-l-[#138a5b]";
+    const GameHeading = headingLevel;
     const content = (
       <>
         <div className="flex items-start justify-between gap-4">
-          <h2
+          <GameHeading
             className={
               featured
                 ? "font-matchday text-4xl leading-[38px] font-bold text-white sm:text-5xl sm:leading-none"
@@ -117,7 +122,7 @@ export default async function DashboardPage() {
             }
           >
             {formatGameDateTitle(new Date(game.starts_at))}
-          </h2>
+          </GameHeading>
           <Badge
             className={
               featured && !isCancelled
@@ -207,11 +212,40 @@ export default async function DashboardPage() {
 
         {!hasGamesError && games.length > 0 ? (
           <div className="grid gap-6">
-            {featuredGame ? renderGameCard(featuredGame, true) : null}
+            {featuredGame ? (
+              <section aria-labelledby="next-game-heading">
+                <h1
+                  className="font-matchday mb-3 text-3xl font-bold text-[#061b6b]"
+                  id="next-game-heading"
+                >
+                  {t("nextGameTitle")}
+                </h1>
+                {renderGameCard(featuredGame, true)}
+              </section>
+            ) : null}
             {remainingGames.length > 0 ? (
-              <div className="grid gap-4 md:grid-cols-2">
-                {remainingGames.map((game) => renderGameCard(game))}
-              </div>
+              <section aria-labelledby="more-games-heading">
+                {featuredGame ? (
+                  <h2
+                    className="font-matchday mb-3 text-3xl font-bold text-[#061b6b]"
+                    id="more-games-heading"
+                  >
+                    {t("moreGamesTitle")}
+                  </h2>
+                ) : (
+                  <h1
+                    className="font-matchday mb-3 text-3xl font-bold text-[#061b6b]"
+                    id="more-games-heading"
+                  >
+                    {t("moreGamesTitle")}
+                  </h1>
+                )}
+                <div className="grid gap-4 md:grid-cols-2">
+                  {remainingGames.map((game) =>
+                    renderGameCard(game, false, featuredGame ? "h3" : "h2"),
+                  )}
+                </div>
+              </section>
             ) : null}
           </div>
         ) : null}

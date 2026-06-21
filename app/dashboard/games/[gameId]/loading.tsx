@@ -38,15 +38,23 @@ function SkeletonListCard() {
 
 export default function Loading() {
   return (
-    <main className="min-h-screen bg-[#f5f7fa] px-4 pt-24 pb-12 text-[#101828] sm:px-6 lg:px-8">
+    <main className="min-h-screen bg-[#f5f7fa] px-4 pt-28 pb-12 text-[#101828] sm:px-6 lg:px-8">
       <section className="mx-auto grid w-full max-w-[1120px] gap-5">
-        <Card variant="featured">
+        <div className="flex items-center justify-between gap-4">
+          <SkeletonLine className="h-11 w-36" />
+          <SkeletonLine className="h-3 w-28" />
+        </div>
+
+        <Card variant="matchSheet">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
-            <SkeletonLine className="h-8 w-64 max-w-full" />
+            <div>
+              <SkeletonLine className="h-9 w-64 max-w-full" />
+              <SkeletonLine className="mt-2 h-12 w-32" />
+            </div>
             <SkeletonLine className="h-7 w-20" />
           </div>
 
-          <dl className="mt-5 grid gap-3 sm:grid-cols-2">
+          <dl className="mt-6 grid gap-3 border-t border-white/20 pt-5 sm:grid-cols-2">
             <SkeletonStatTile />
             <SkeletonStatTile />
           </dl>

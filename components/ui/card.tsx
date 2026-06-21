@@ -1,13 +1,20 @@
 import type { HTMLAttributes } from "react";
 import { cx } from "./class-name";
 
-type CardVariant = "cancelled" | "default" | "featured" | "muted";
+type CardVariant =
+  | "cancelled"
+  | "default"
+  | "featured"
+  | "matchSheet"
+  | "muted";
 
 const variants: Record<CardVariant, string> = {
   cancelled: "border border-[#dde2ea] border-l-4 border-l-[#c73a3a] bg-white",
   default: "border border-[#dde2ea] bg-white",
   featured:
     "border border-[#061b6b] border-t-4 border-t-[#ffd21a] bg-[#061b6b] text-white",
+  matchSheet:
+    "border border-[#061b6b] border-l-4 border-l-[#ffd21a] bg-[#061b6b] text-white",
   muted: "border border-[#dde2ea] bg-white",
 };
 

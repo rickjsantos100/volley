@@ -27,12 +27,21 @@ function capitalize(value: string) {
   return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
-export function formatGameDateTitle(date: Date) {
+export function formatGameDateParts(date: Date) {
   const parts = GAME_DATE_TITLE_FORMATTER.formatToParts(date);
   const getPart = (type: Intl.DateTimeFormatPartTypes) =>
     parts.find((part) => part.type === type)?.value ?? "";
   const weekday = capitalize(getPart("weekday").replace("-feira", ""));
   const month = MONTH_LABELS[Number(getPart("month")) - 1] ?? "";
 
-  return `${weekday}, ${getPart("day")} ${month} - ${getPart("hour")}:${getPart("minute")}`;
+  return {
+    date: `${weekday}, ${getPart("day")} ${month}`,
+    time: `${getPart("hour")}:${getPart("minute")}`,
+  };
+}
+
+export function formatGameDateTitle(date: Date) {
+  const parts = formatGameDateParts(date);
+
+  return `${parts.date} - ${parts.time}`;
 }

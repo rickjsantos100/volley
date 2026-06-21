@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { AdminGameControls } from "@/components/admin-game-controls";
@@ -9,7 +10,10 @@ import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { InitialsAvatar } from "@/components/ui/initials-avatar";
-import { formatGameDateTitle } from "@/lib/format-game-date-title";
+import {
+  formatGameDateParts,
+  formatGameDateTitle,
+} from "@/lib/format-game-date-title";
 import { formatDuration } from "@/lib/format-duration";
 import { createClient } from "@/lib/supabase/server";
 import type { GameActionStatus } from "./actions";
@@ -100,6 +104,7 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
     { data: game, error: gameError },
     { data: profile },
     { count: participantCount },
+    { count: waitlistCount },
   ] = await Promise.all([
     supabase
       .from("game_events")
@@ -116,7 +121,12 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
     supabase
       .from("game_participants")
       .select("game_event_id", { count: "exact", head: true })
+      .eq("game_event_id", gameId),
+    supabase
+      .from("game_waitlist_entries")
+      .select("id", { count: "exact", head: true })
       .eq("game_event_id", gameId)
+      .eq("status", "active"),
   ]);
 
   if (gameError || !game) {
@@ -129,6 +139,7 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
 
   const isAdmin = profile?.role === "admin";
   const occupiedSlots = participantCount ?? 0;
+  const activeWaitlistCount = waitlistCount ?? 0;
   const isFull = occupiedSlots >= game.max_participants;
   const isCancelled = game.status === "cancelled";
 
@@ -137,6 +148,7 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
   }
 
   const isRecurring = Boolean(game.recurring_series_id);
+  const gameDate = formatGameDateParts(new Date(game.starts_at));
 
   const cancelGameAction = cancelGame.bind(null, game.id);
   const deleteGameAction = deleteGame.bind(null, game.id);
@@ -161,14 +173,30 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
   };
 
   return (
-    <main className="min-h-screen bg-[#f5f7fa] px-4 pt-24 pb-12 text-[#101828] sm:px-6 lg:px-8">
+    <main className="min-h-screen bg-[#f5f7fa] px-4 pt-28 pb-12 text-[#101828] sm:px-6 lg:px-8">
       <section className="mx-auto grid w-full max-w-[1120px] gap-5">
-        <Card variant="featured">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <Link
+            className="flex min-h-11 items-center gap-2 rounded-[10px] px-2 text-sm font-bold text-[#0737a8] transition-colors hover:bg-[#0737a8]/5 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-[#0737a8]/20"
+            href="/dashboard"
+          >
+            <span aria-hidden="true">←</span>
+            {t("backToGames")}
+          </Link>
+          <p className="text-xs font-bold tracking-[0.1em] text-[#667085] uppercase">
+            {t("pageLabel")}
+          </p>
+        </div>
+
+        <Card variant="matchSheet">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <h1 className="font-matchday text-4xl leading-[38px] font-bold text-white sm:text-5xl sm:leading-none">
-                {formatGameDateTitle(new Date(game.starts_at))}
+                {gameDate.date}
               </h1>
+              <p className="font-matchday mt-1 text-5xl leading-none font-bold text-[#ffd21a] sm:text-6xl">
+                {gameDate.time}
+              </p>
             </div>
 
             {isCancelled ? (
@@ -180,8 +208,16 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
             ) : null}
           </div>
 
-          <dl className={`mt-6 grid grid-cols-2 gap-5 ${isRecurring ? "sm:grid-cols-3" : ""}`}>
-            <div>
+          <dl
+            className={`mt-6 grid grid-cols-2 gap-5 border-t border-white/20 pt-5 ${activeWaitlistCount > 0 ? (isRecurring ? "sm:grid-cols-4" : "sm:grid-cols-3") : isRecurring ? "sm:grid-cols-3" : ""}`}
+          >
+            <div
+              className={
+                activeWaitlistCount > 0 && !isRecurring
+                  ? "col-span-2 sm:col-span-1"
+                  : undefined
+              }
+            >
               <dt className="text-xs font-bold tracking-[0.08em] text-white/70 uppercase">{t("durationLabel")}</dt>
               <dd className="mt-1 font-semibold">{formatDuration(game.duration_minutes)}</dd>
             </div>
@@ -195,6 +231,14 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
               <dt className="text-xs font-bold tracking-[0.08em] text-white/70 uppercase">{t("slotsLabel")}</dt>
               <dd className="mt-1 font-semibold">{occupiedSlots}/{game.max_participants}</dd>
             </div>
+            {activeWaitlistCount > 0 ? (
+              <div>
+                <dt className="text-xs font-bold tracking-[0.08em] text-white/70 uppercase">
+                  {t("waitlistCountLabel")}
+                </dt>
+                <dd className="mt-1 font-semibold">{activeWaitlistCount}</dd>
+              </div>
+            ) : null}
           </dl>
         </Card>
 

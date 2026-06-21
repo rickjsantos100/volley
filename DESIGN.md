@@ -70,6 +70,10 @@ game day.
 - Focus uses a blue border and a 3px low-opacity blue ring. Errors use the same
   treatment in danger red.
 - Checkbox labels provide a 44px touch target.
+- Avatar cropping uses direct manipulation: drag to position and wheel or
+  two-finger pinch to zoom. Keep keyboard arrow and +/- controls available.
+- On fine-pointer devices, avatar capture uses an in-app mirrored camera
+  preview. Coarse-pointer-only devices retain the native camera picker.
 
 ### Shell And Overlays
 
@@ -85,10 +89,14 @@ game day.
 ## Page Hierarchy
 
 - Feature the earliest non-cancelled upcoming match on the dashboard. Render
-  later matches as compact event cards. If only cancelled events remain, show
+  it beneath a visible "Next game" heading, then group later matches beneath
+  "More games" as compact event cards. If only cancelled events remain, show
   compact cancelled cards and no featured card.
-- Game detail leads with a navy match summary, followed immediately by the
-  user's participation action, then participant and waitlist rows.
+- Game detail begins with a back link and explicit page label, then a navy
+  match sheet with a yellow left edge and separate date and time. This static
+  summary must remain visually distinct from the dashboard's interactive
+  featured card. Follow it with the user's participation action, then
+  participant and waitlist rows.
 - Authentication and profile screens use narrow standard cards with clear,
   persistent labels.
 
