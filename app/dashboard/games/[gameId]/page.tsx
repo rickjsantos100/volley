@@ -92,7 +92,8 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect("/");
+    const gamePath = `/dashboard/games/${gameId}`;
+    redirect(`/?next=${encodeURIComponent(gamePath)}`);
   }
 
   const [
@@ -292,6 +293,7 @@ async function GameDetailContent({
   const joinGameAction = joinGame.bind(null, game.id);
   const joinWaitlistAction = joinWaitlist.bind(null, game.id);
   const leaveGameAction = leaveGame.bind(null, game.id);
+  const gameDateTitle = formatGameDateTitle(new Date(game.starts_at));
   const statusLabels: Record<GameActionStatus, string> = {
     "joined-game": t("joinedGameMessage"),
     "joined-waitlist": t("joinedWaitlistMessage"),
@@ -327,6 +329,19 @@ async function GameDetailContent({
           joinWaitlistLabel={t("joinWaitlistButton")}
           leaveGameAction={leaveGameAction}
           leaveGameLabel={t("leaveGameButton")}
+          share={{
+            gamePath: `/dashboard/games/${game.id}`,
+            labels: {
+              button: t("shareGameButton"),
+              copied: t("shareCopiedMessage"),
+              copyButton: t("shareCopyButton"),
+              fallbackIntro: t("shareFallbackIntro"),
+              fallbackLabel: t("shareFallbackLabel"),
+              fallbackTitle: t("shareFallbackTitle"),
+            },
+            text: t("shareText", { date: gameDateTitle }),
+            title: t("shareTitle", { date: gameDateTitle }),
+          }}
           statusLabels={statusLabels}
         />
       ) : null}

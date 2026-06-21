@@ -62,7 +62,7 @@ function PendingFieldset({ children }: { children: ReactNode }) {
   );
 }
 
-export function AuthPanel() {
+export function AuthPanel({ nextPath }: { nextPath?: string }) {
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [loginValues, setLoginValues] =
     useState<LoginValues>(emptyLoginValues);
@@ -246,6 +246,9 @@ export function AuthPanel() {
           onSubmit={handleLoginSubmit}
         >
           <PendingFieldset>
+            {nextPath ? (
+              <input name="next" type="hidden" value={nextPath} />
+            ) : null}
             <Field
               autoComplete="email"
               error={getLoginError("email")}
@@ -291,6 +294,9 @@ export function AuthPanel() {
           onSubmit={handleSignupSubmit}
         >
           <PendingFieldset>
+            {nextPath ? (
+              <input name="next" type="hidden" value={nextPath} />
+            ) : null}
             <div className="grid gap-4 sm:grid-cols-2">
               <Field
                 autoComplete="given-name"

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { getSafeAuthRedirectPath } from "@/lib/safe-auth-redirect";
 import { createClient } from "@/lib/supabase/server";
 
 const MIN_PASSWORD_LENGTH = 8;
@@ -54,6 +55,8 @@ export async function signIn(
 ): Promise<AuthActionState> {
   const email = getEmail(formData);
   const password = getPassword(formData);
+  const redirectPath =
+    getSafeAuthRedirectPath(formData.get("next")) ?? "/dashboard";
 
   if (!email) {
     return { error: "invalid-email" };
@@ -74,7 +77,7 @@ export async function signIn(
   }
 
   revalidatePath("/", "layout");
-  redirect("/dashboard");
+  redirect(redirectPath);
 }
 
 export async function signUp(
@@ -85,6 +88,8 @@ export async function signUp(
   const firstName = getRequiredText(formData, "firstName");
   const lastName = getRequiredText(formData, "lastName");
   const password = getPassword(formData);
+  const redirectPath =
+    getSafeAuthRedirectPath(formData.get("next")) ?? "/dashboard";
 
   if (!email) {
     return { error: "invalid-email" };
@@ -120,7 +125,7 @@ export async function signUp(
   revalidatePath("/", "layout");
 
   if (data.session) {
-    redirect("/dashboard");
+    redirect(redirectPath);
   }
 
   return { error: "email-confirmation-enabled" };

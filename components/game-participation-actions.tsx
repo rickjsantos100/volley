@@ -6,6 +6,10 @@ import type {
   GameActionState,
   GameActionStatus,
 } from "@/app/dashboard/games/[gameId]/actions";
+import {
+  GameShareButton,
+  type GameShareProps,
+} from "@/components/game-share-button";
 import { Button, SubmitButton } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Modal } from "@/components/ui/modal";
@@ -32,6 +36,7 @@ type GameParticipationActionsProps = {
     formData: FormData,
   ) => Promise<GameActionState>;
   leaveGameLabel: string;
+  share: GameShareProps;
   statusLabels: Record<GameActionStatus, string>;
 };
 
@@ -54,6 +59,7 @@ export function GameParticipationActions({
   joinWaitlistLabel,
   leaveGameAction,
   leaveGameLabel,
+  share,
   statusLabels,
 }: GameParticipationActionsProps) {
   const router = useRouter();
@@ -116,41 +122,44 @@ export function GameParticipationActions({
       ) : null}
 
       <Card>
-        {isParticipant ? (
-          <Button
-            fullWidth
-            variant="dangerOutline"
-            className="sm:w-auto"
-            type="button"
-            onClick={() => {
-              setLeaveConfirmOpen(true);
-            }}
-          >
-            {leaveGameLabel}
-          </Button>
-        ) : isWaitlisted ? (
-          <Button
-            disabled
-            fullWidth
-            type="button"
-            variant="outline"
-            className="border-[#dde2ea] bg-[#eef1f5] text-[#475467] sm:w-auto"
-          >
-            {alreadyWaitlistedLabel}
-          </Button>
-        ) : isFull ? (
-          <form action={submitAction}>
-            <SubmitButton fullWidth className="sm:w-auto">
-              {joinWaitlistLabel}
-            </SubmitButton>
-          </form>
-        ) : (
-          <form action={submitAction}>
-            <SubmitButton fullWidth className="sm:w-auto">
-              {joinGameLabel}
-            </SubmitButton>
-          </form>
-        )}
+        <div className="flex flex-col gap-3 sm:flex-row">
+          {isParticipant ? (
+            <Button
+              fullWidth
+              variant="dangerOutline"
+              className="sm:w-auto"
+              type="button"
+              onClick={() => {
+                setLeaveConfirmOpen(true);
+              }}
+            >
+              {leaveGameLabel}
+            </Button>
+          ) : isWaitlisted ? (
+            <Button
+              disabled
+              fullWidth
+              type="button"
+              variant="outline"
+              className="border-[#dde2ea] bg-[#eef1f5] text-[#475467] sm:w-auto"
+            >
+              {alreadyWaitlistedLabel}
+            </Button>
+          ) : isFull ? (
+            <form action={submitAction}>
+              <SubmitButton fullWidth className="sm:w-auto">
+                {joinWaitlistLabel}
+              </SubmitButton>
+            </form>
+          ) : (
+            <form action={submitAction}>
+              <SubmitButton fullWidth className="sm:w-auto">
+                {joinGameLabel}
+              </SubmitButton>
+            </form>
+          )}
+          <GameShareButton {...share} />
+        </div>
       </Card>
 
       <Modal

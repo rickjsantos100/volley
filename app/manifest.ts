@@ -2,13 +2,14 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
+    id: "/",
     name: "Voley Lisboa",
     short_name: "Voley",
     description: "Organiza e participa nos jogos do Voley Lisboa.",
     start_url: "/dashboard",
     scope: "/",
     display: "standalone",
-    background_color: "#fff8d8",
+    background_color: "#f5f7fa",
     theme_color: "#061b6b",
     icons: [
       {

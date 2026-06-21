@@ -9,4 +9,7 @@ Use this file to collect future work items.
       credentials in environment variables and verifying delivery.
 - [ ] Add web push notifications, including permission handling, subscription
       storage, notification delivery, and user controls for opting in or out.
-- [ ] Fix up Portuguese translations
+- [x] Refresh the Portuguese translations and product voice.
+- [x] Configure installed Android PWAs to open shared in-scope links.
+- [x] Add native sharing support for games.
+- it might be good to have some footage of games in the banner

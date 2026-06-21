@@ -67,6 +67,28 @@ The application should include the core PWA assets and configuration needed for 
 
 Authentication, game data, waitlist data, and payment status should continue to treat Supabase as the source of truth. Offline support should not allow users to make conflicting game participation or payment-status changes without a successful server round trip.
 
+### 4.1 Opening Shared Links In The Installed App
+
+The manifest should use a stable root identity (`id: "/"`) and keep the full
+application in scope (`scope: "/"`). Shared links must use the exact production
+HTTPS origin and direct application paths, for example
+`/dashboard/games/<game-id>`.
+
+On Android, install the app through Chrome's **Install app** prompt. A Chrome
+WebAPK can register in-scope links with Android; a simple home-screen shortcut
+cannot. If links continue to open in the browser:
+
+1. Open Android **Settings > Apps > Voley Lisboa > Open by default** and enable
+   supported links.
+2. Remove and reinstall the PWA after manifest identity or scope changes.
+3. Test a production link from WhatsApp, Messages, email, or Notes. Typing the
+   URL in the browser is not a link-capture test.
+
+Safari-installed PWAs on iPhone and iPad cannot capture external HTTPS links.
+Those links will continue to open in the browser. Reliable iOS link capture
+would require publishing a native wrapper and configuring Universal Links;
+that work is outside the web PWA scope.
+
 ## 5. Supabase Schema Workflow
 
 The project should use Option A: SQL-first migrations.
