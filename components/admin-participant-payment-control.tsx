@@ -5,7 +5,7 @@ import type {
   GameActionState,
   GameActionStatus,
 } from "@/app/dashboard/games/[gameId]/actions";
-import { cx } from "@/components/ui/class-name";
+import { Button } from "@/components/ui/button";
 import { Toast } from "@/components/ui/toast";
 import { useFormStatus } from "react-dom";
 
@@ -66,17 +66,20 @@ function PaymentStatusButton({
   const { pending } = useFormStatus();
 
   return (
-    <button
-      className={cx(
-        "min-h-11 w-fit shrink-0 rounded-[10px] border px-3 py-2 text-xs font-bold transition focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-[#0737a8]/20 active:translate-y-px disabled:cursor-default disabled:opacity-50",
+    <Button
+      className={
         isPaid
-          ? "border-[#138a5b]/25 bg-[#ecf8f3] text-[#0d6b46] hover:bg-[#dff2e9]"
-          : "border-[#dde2ea] bg-white text-[#475467] hover:border-[#0737a8] hover:bg-[#eef3ff]",
-      )}
+          ? "w-fit shrink-0 border-[#138a5b]/25 bg-[#ecf8f3] px-3 py-2 text-xs text-[#0d6b46] hover:bg-[#dff2e9]"
+          : "w-fit shrink-0 border-[#dde2ea] bg-white px-3 py-2 text-xs text-[#475467] hover:border-[#0737a8] hover:bg-[#eef3ff]"
+      }
       disabled={pending || disabled}
+      loading={pending}
+      size="compact"
       title="Toggle payment status"
+      type="submit"
+      variant="outline"
     >
-      {pending ? "..." : children}
-    </button>
+      {pending ? "" : children}
+    </Button>
   );
 }

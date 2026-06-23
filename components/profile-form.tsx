@@ -908,22 +908,23 @@ export function ProfileForm({
               </p>
             </div>
             <div className="flex flex-col gap-2 sm:flex-row">
-              <button
-                className="min-h-11 rounded-[10px] border border-[#0737a8] bg-white px-4 py-2 text-sm font-bold text-[#0737a8] transition hover:bg-[#eef3ff] focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-[#0737a8]/20 disabled:cursor-default disabled:opacity-50"
+              <Button
                 disabled={isSaving}
                 onClick={() => chooseInputRef.current?.click()}
+                size="compact"
                 type="button"
+                variant="outline"
               >
                 {t("chooseImageButton")}
-              </button>
-              <button
-                className="min-h-11 rounded-[10px] border border-[#ffd21a] bg-[#ffd21a] px-4 py-2 text-sm font-bold text-[#061b6b] transition hover:bg-[#f2c600] focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-[#0737a8]/20 disabled:cursor-default disabled:opacity-50"
+              </Button>
+              <Button
                 disabled={isSaving}
                 onClick={handleTakePhoto}
+                size="compact"
                 type="button"
               >
                 {t("takePhotoButton")}
-              </button>
+              </Button>
             </div>
           </div>
         </div>

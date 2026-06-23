@@ -5,7 +5,7 @@ import type {
   GameActionState,
   GameActionStatus,
 } from "@/app/dashboard/games/[gameId]/actions";
-import { cx } from "@/components/ui/class-name";
+import { Button } from "@/components/ui/button";
 import { Toast } from "@/components/ui/toast";
 import { useFormStatus } from "react-dom";
 
@@ -68,20 +68,15 @@ function TrashSubmitButton({
   const isLoading = pending || isPending;
 
   return (
-    <button
+    <Button
       aria-label={label}
-      className={cx(
-        "flex size-11 items-center justify-center rounded-[10px] border border-[#c73a3a] bg-white text-[#c73a3a] transition hover:bg-[#fff1f1] focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-[#c73a3a]/20 active:translate-y-px disabled:cursor-default disabled:opacity-50",
-      )}
+      className="size-11 justify-center p-0 focus-visible:ring-[#c73a3a]/20"
       disabled={isLoading}
+      loading={isLoading}
       type="submit"
+      variant="dangerOutline"
     >
-      {isLoading ? (
-        <span
-          aria-hidden="true"
-          className="size-4 animate-spin rounded-full border-2 border-current/30 border-t-current"
-        />
-      ) : (
+      {isLoading ? null : (
         <svg
           aria-hidden="true"
           className="size-4"
@@ -99,6 +94,6 @@ function TrashSubmitButton({
           <path d="M14 11v5" />
         </svg>
       )}
-    </button>
+    </Button>
   );
 }

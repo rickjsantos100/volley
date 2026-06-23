@@ -33,13 +33,14 @@ export function AccountMenu({
 
   return (
     <>
-      <button
-        type="button"
+      <Button
         aria-expanded={isOpen}
         aria-haspopup="dialog"
         aria-label={accountT("openProfile", { name: label })}
+        className="size-11 rounded-full border-[#dde2ea] p-0 text-sm shadow-sm hover:border-[#0737a8] [&>span:last-child]:size-full [&>span:last-child]:overflow-hidden [&>span:last-child]:rounded-full"
         onClick={() => setIsOpen(true)}
-        className="flex size-11 items-center justify-center rounded-full border border-[#dde2ea] bg-white text-sm font-bold text-[#061b6b] shadow-sm transition hover:border-[#0737a8] focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-[#0737a8]/20"
+        type="button"
+        variant="outline"
       >
         {avatarUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -51,7 +52,7 @@ export function AccountMenu({
         ) : (
           initials
         )}
-      </button>
+      </Button>
 
       <Modal
         onClose={() => setIsOpen(false)}

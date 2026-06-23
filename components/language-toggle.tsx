@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
 
 type Locale = "pt" | "en";
 
@@ -40,17 +41,18 @@ export function LanguageToggle() {
   }
 
   return (
-    <button
-      type="button"
+    <Button
       aria-label={t(
         nextLocale === "pt" ? "switchToPortuguese" : "switchToEnglish",
       )}
+      className="size-11 border-[#dde2ea] bg-white p-0 text-xl hover:border-[#0737a8] hover:bg-[#eef3ff]"
       onClick={() => handleLocaleChange(nextLocale)}
-      className="flex size-11 items-center justify-center rounded-[10px] border border-[#dde2ea] bg-white text-xl transition hover:border-[#0737a8] hover:bg-[#eef3ff] focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-[#0737a8]/20"
+      type="button"
+      variant="outline"
     >
       <span aria-hidden="true" className="mt-[2px]">
         {flag}
       </span>
-    </button>
+    </Button>
   );
 }
