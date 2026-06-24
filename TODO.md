@@ -19,3 +19,4 @@ Use this file to collect future work items.
 - Add the possibility for the admin to add a user to a game by a search that lists out posible players 
 - Add google calendar support, where a player can add the game to his calendar 
 - Right now there is no support for an admin to edit and already existing game and or series of games 
+- Remove the temporary admin test push button once push notifications are verified. Also remove the related `sendPushTest` server action and all-users test push helper so admins can no longer broadcast test notifications to every subscribed device.

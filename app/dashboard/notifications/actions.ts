@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { getCurrentProfile, getCurrentUser } from "@/lib/auth/server";
-import { sendTestNotification } from "@/lib/notifications/push";
+import { sendTestNotificationToAllSubscribedUsers } from "@/lib/notifications/push";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export type PushSubscriptionInput = {
@@ -112,7 +112,7 @@ export async function sendPushTest(): Promise<{ status: PushActionStatus }> {
   }
 
   try {
-    const result = await sendTestNotification(user.id);
+    const result = await sendTestNotificationToAllSubscribedUsers();
 
     if (result.sent === 0) {
       return { status: "send-error" };
