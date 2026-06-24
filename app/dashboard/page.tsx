@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { AdminCreateGameButton } from "@/components/admin-create-game-button";
-import { PwaInstallPrompt } from "@/components/pwa-install-prompt";
+import { StartupPrompts } from "@/components/startup-prompts";
 import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Card, cardClassName } from "@/components/ui/card";
@@ -261,8 +261,8 @@ export default async function DashboardPage() {
         />
       ) : null}
 
-      <PwaInstallPrompt
-        labels={{
+      <StartupPrompts
+        installLabels={{
           close: t("installClose"),
           install: t("installButton"),
           intro: t("installIntro"),
@@ -272,6 +272,14 @@ export default async function DashboardPage() {
           notNow: t("installDismiss"),
           title: t("installTitle"),
         }}
+        notificationLabels={{
+          enable: t("notificationEnableButton"),
+          intro: t("notificationIntro"),
+          notNow: t("notificationDismiss"),
+          saveError: t("notificationSaveError"),
+          title: t("notificationTitle"),
+        }}
+        publicKey={process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? ""}
       />
     </main>
   );

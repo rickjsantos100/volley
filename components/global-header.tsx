@@ -80,8 +80,10 @@ export async function GlobalHeader() {
               avatarUrl={avatarUrl}
               firstName={profile?.first_name ?? ""}
               initials={getInitials(profile, user.email)}
+              isAdmin={profile?.role === "admin"}
               label={getLabel(profile, user.email)}
               lastName={profile?.last_name ?? ""}
+              publicVapidKey={process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? ""}
               userId={user.id}
             />
           ) : null}

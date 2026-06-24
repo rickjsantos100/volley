@@ -16,3 +16,4 @@ Use this file to collect future work items.
 - [x] Fix scrolling behind open modals.
 - [x] Replace the avatar zoom slider with direct gestures.
 - we need to support reseting password
+- Add the possibility for the admin to add a user to a game by a search that lists out posible players 

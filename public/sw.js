@@ -1,4 +1,4 @@
-const CACHE_NAME = "voley-lisboa-static-v3";
+const CACHE_NAME = "voley-lisboa-static-v4";
 const CACHE_PREFIX = "voley-lisboa-static-";
 const PRECACHE_URLS = [
   "/offline.html",
@@ -82,5 +82,68 @@ self.addEventListener("fetch", (event) => {
         return networkResponse;
       });
     }),
+  );
+});
+
+self.addEventListener("push", (event) => {
+  let payload = {
+    body: "Tens uma nova atualização do Voley Lisboa.",
+    title: "Voley Lisboa",
+    url: "/dashboard",
+  };
+
+  if (event.data) {
+    try {
+      payload = {
+        ...payload,
+        ...event.data.json(),
+      };
+    } catch {
+      payload.body = event.data.text();
+    }
+  }
+
+  const notificationOptions = {
+    badge: "/icons/icon-192.png",
+    body: payload.body,
+    data: {
+      url: payload.url || "/dashboard",
+    },
+    icon: "/icons/icon-192.png",
+    tag: payload.tag,
+  };
+
+  event.waitUntil(
+    self.registration.showNotification(payload.title, notificationOptions),
+  );
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+
+  const targetUrl = new URL(
+    event.notification.data?.url || "/dashboard",
+    self.location.origin,
+  ).href;
+
+  event.waitUntil(
+    self.clients
+      .matchAll({
+        includeUncontrolled: true,
+        type: "window",
+      })
+      .then((clientList) => {
+        for (const client of clientList) {
+          if (client.url === targetUrl && "focus" in client) {
+            return client.focus();
+          }
+        }
+
+        if (self.clients.openWindow) {
+          return self.clients.openWindow(targetUrl);
+        }
+
+        return undefined;
+      }),
   );
 });

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 
@@ -25,6 +25,7 @@ type PwaInstallPromptProps = {
     notNow: string;
     title: string;
   };
+  onComplete?: () => void;
 };
 
 function isIOSDevice() {
@@ -41,13 +42,25 @@ function isStandaloneMode() {
   );
 }
 
-export function PwaInstallPrompt({ labels }: PwaInstallPromptProps) {
+export function PwaInstallPrompt({ labels, onComplete }: PwaInstallPromptProps) {
   const [deferredPrompt, setDeferredPrompt] =
     useState<BeforeInstallPromptEvent | null>(null);
+  const [completed, setCompleted] = useState(false);
   const [dismissed, setDismissed] = useState(true);
+  const [initialized, setInitialized] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
   const [isStandalone, setIsStandalone] = useState(true);
   const [showIOSInstructions, setShowIOSInstructions] = useState(false);
+  const completedRef = useRef(false);
+  const completePrompt = useCallback(() => {
+    if (completedRef.current) {
+      return;
+    }
+
+    completedRef.current = true;
+    setCompleted(true);
+    onComplete?.();
+  }, [onComplete]);
 
   useEffect(() => {
     const initializeTimeout = window.setTimeout(() => {
@@ -57,6 +70,7 @@ export function PwaInstallPrompt({ labels }: PwaInstallPromptProps) {
       setDismissed(wasDismissed);
       setIsIOS(isIOSDevice());
       setIsStandalone(isStandaloneMode());
+      setInitialized(true);
     }, 0);
 
     function handleBeforeInstallPrompt(event: Event) {
@@ -87,6 +101,7 @@ export function PwaInstallPrompt({ labels }: PwaInstallPromptProps) {
     window.localStorage.setItem(DISMISSED_STORAGE_KEY, "true");
     setDismissed(true);
     setShowIOSInstructions(false);
+    completePrompt();
   }
 
   async function installApp() {
@@ -102,55 +117,53 @@ export function PwaInstallPrompt({ labels }: PwaInstallPromptProps) {
     await deferredPrompt.prompt();
     await deferredPrompt.userChoice;
     setDeferredPrompt(null);
+    completePrompt();
   }
 
   const canOfferInstall = isIOS || Boolean(deferredPrompt);
 
-  if (dismissed || isStandalone || !canOfferInstall) {
+  useEffect(() => {
+    if (initialized && (dismissed || isStandalone || !canOfferInstall)) {
+      completePrompt();
+    }
+  }, [canOfferInstall, completePrompt, dismissed, initialized, isStandalone]);
+
+  if (!initialized || completed || dismissed || isStandalone || !canOfferInstall) {
     return null;
   }
 
   return (
-    <>
-      <aside
-        aria-labelledby="pwa-install-title"
-        className="fixed inset-x-4 bottom-4 z-[55] mx-auto max-w-md rounded-xl border border-[#dde2ea] bg-white p-5 shadow-[0_16px_40px_rgba(16,24,40,0.18)] sm:bottom-6 sm:p-6"
-      >
-        <h2
-          className="font-matchday text-[26px] leading-7 font-bold text-[#061b6b]"
-          id="pwa-install-title"
-        >
-          {labels.title}
-        </h2>
-        <p className="mt-2 text-sm leading-6 text-[#667085]">{labels.intro}</p>
-        <div className="mt-4 grid gap-3 sm:grid-cols-2">
-          <Button onClick={installApp} type="button">
-            {isIOS ? labels.iosAction : labels.install}
-          </Button>
-          <Button onClick={dismissPrompt} type="button" variant="outline">
-            {labels.notNow}
-          </Button>
-        </div>
-      </aside>
-
-      <Modal
-        onClose={() => setShowIOSInstructions(false)}
-        open={showIOSInstructions}
-        title={labels.iosTitle}
-      >
+    <Modal
+      onClose={dismissPrompt}
+      open
+      title={showIOSInstructions ? labels.iosTitle : labels.title}
+    >
+      {showIOSInstructions ? (
+        <>
         <p className="mt-5 text-base leading-7 text-[#667085]">
           {labels.iosInstructions}
         </p>
         <div className="mt-6">
-          <Button
-            fullWidth
-            onClick={() => setShowIOSInstructions(false)}
-            type="button"
-          >
+          <Button fullWidth onClick={dismissPrompt} type="button">
             {labels.close}
           </Button>
         </div>
-      </Modal>
-    </>
+        </>
+      ) : (
+        <>
+          <p className="mt-5 text-base leading-7 text-[#667085]">
+            {labels.intro}
+          </p>
+          <div className="mt-6 grid gap-3 sm:grid-cols-2">
+            <Button onClick={installApp} type="button">
+              {isIOS ? labels.iosAction : labels.install}
+            </Button>
+            <Button onClick={dismissPrompt} type="button" variant="outline">
+              {labels.notNow}
+            </Button>
+          </div>
+        </>
+      )}
+    </Modal>
   );
 }

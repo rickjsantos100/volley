@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { logOut } from "@/app/dashboard/actions";
 import { ProfileForm } from "@/components/profile-form";
+import { PushNotificationControls } from "@/components/push-notification-controls";
 import { Button, SubmitButton } from "@/components/ui/button";
 import { cx, pressedSurfaceClassName } from "@/components/ui/class-name";
 import { Modal } from "@/components/ui/modal";
@@ -13,8 +14,10 @@ type AccountMenuProps = {
   avatarUrl: string;
   firstName: string;
   initials: string;
+  isAdmin: boolean;
   label: string;
   lastName: string;
+  publicVapidKey: string;
   userId: string;
 };
 
@@ -23,8 +26,10 @@ export function AccountMenu({
   avatarUrl,
   firstName,
   initials,
+  isAdmin,
   label,
   lastName,
+  publicVapidKey,
   userId,
 }: AccountMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
@@ -70,6 +75,23 @@ export function AccountMenu({
             lastName={lastName}
             onSaved={() => setIsOpen(false)}
             userId={userId}
+          />
+          <PushNotificationControls
+            isAdmin={isAdmin}
+            labels={{
+              denied: profileT("notificationsDenied"),
+              disabled: profileT("notificationsDisabled"),
+              enable: profileT("notificationsEnableButton"),
+              enabled: profileT("notificationsEnabled"),
+              notSupported: profileT("notificationsNotSupported"),
+              saveError: profileT("notificationsSaveError"),
+              saved: profileT("notificationsSaved"),
+              sendError: profileT("notificationsSendError"),
+              sent: profileT("notificationsSent"),
+              test: profileT("notificationsTestButton"),
+              title: profileT("notificationsTitle"),
+            }}
+            publicKey={publicVapidKey}
           />
           <Button
             fullWidth

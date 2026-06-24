@@ -3,6 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getCurrentProfile, getCurrentUser } from "@/lib/auth/server";
+import {
+  enqueueNotification,
+  processPendingNotifications,
+} from "@/lib/notifications/push";
 import { createClient } from "@/lib/supabase/server";
 
 export type GameActionStatus =
@@ -37,6 +41,12 @@ type AdminGameRow = {
 
 type RecurrenceScope = "occurrence" | "series";
 
+type ParticipantPaymentRow = {
+  id: string;
+  payment_status: "paid" | "unpaid" | null;
+  user_id: string;
+};
+
 function getRecurrenceScope(formData: FormData): RecurrenceScope {
   return formData.get("scope") === "series" ? "series" : "occurrence";
 }
@@ -49,6 +59,14 @@ async function getUserRole() {
   ]);
 
   return { role: profile?.role ?? null, supabase, user };
+}
+
+async function processNotificationsAfterMutation() {
+  try {
+    await processPendingNotifications();
+  } catch (error) {
+    console.error("Failed to process push notifications", error);
+  }
 }
 
 async function getAdminGame(gameId: string) {
@@ -169,6 +187,8 @@ export async function leaveGame(
     return { status: "leave-error" };
   }
 
+  await processNotificationsAfterMutation();
+
   return { status: "left-game" };
 }
 
@@ -193,6 +213,12 @@ export async function updateParticipantPaymentStatus(
 
   const paymentStatus =
     formData.get("paymentStatus") === "paid" ? "paid" : "unpaid";
+  const { data: participantBeforeUpdate } = await supabase
+    .from("game_participants")
+    .select("id, user_id, payment_status")
+    .eq("id", participantId)
+    .eq("game_event_id", gameId)
+    .maybeSingle<ParticipantPaymentRow>();
 
   const { error } = await supabase
     .from("game_participants")
@@ -208,6 +234,33 @@ export async function updateParticipantPaymentStatus(
 
   if (error) {
     return { status: "payment-error" };
+  }
+
+  if (
+    paymentStatus === "paid" &&
+    participantBeforeUpdate &&
+    participantBeforeUpdate.payment_status !== "paid"
+  ) {
+    try {
+      await enqueueNotification({
+        dedupeKey: `payment_marked_paid:${gameId}:${participantBeforeUpdate.user_id}`,
+        gameEventId: gameId,
+        kind: "payment_marked_paid",
+        payload: {
+          body: "Já estás marcado como pago para o jogo.",
+          tag: `payment-paid-${gameId}`,
+          title: "Pagamento confirmado",
+          url: `/dashboard/games/${gameId}`,
+        },
+        userId: participantBeforeUpdate.user_id,
+      });
+      await processPendingNotifications();
+    } catch (notificationError) {
+      console.error(
+        "Failed to send payment push notification",
+        notificationError,
+      );
+    }
   }
 
   return { status: "payment-updated" };
@@ -295,6 +348,8 @@ export async function removeParticipantFromGame(
   if (error) {
     return { status: "remove-player-error" };
   }
+
+  await processNotificationsAfterMutation();
 
   return { status: "removed-player" };
 }
