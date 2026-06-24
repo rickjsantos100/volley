@@ -87,6 +87,15 @@ game day.
 - Alerts and toasts include explicit text, border, and a low-opacity semantic
   background. Loading placeholders mirror final layouts.
 
+### Loading States
+
+- Any route, card, list, or component waiting on data before it can render
+  should show a skeleton instead of an empty space or delayed blank state.
+- Skeletons should mirror the final layout closely enough that page structure
+  and hierarchy are clear while data loads.
+- Use compact pulsing blocks with the standard card surfaces, spacing, and
+  MATCHDAY hierarchy. Avoid spinner-only loading states for page or list data.
+
 ## Page Hierarchy
 
 - Feature the earliest non-cancelled upcoming match on the dashboard. Render
