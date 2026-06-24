@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { getCurrentProfile, getCurrentUser } from "@/lib/auth/server";
 import { createClient } from "@/lib/supabase/server";
 
 export type CreateGameActionStatus =
@@ -72,20 +73,11 @@ function getDurationMinutes(startsAt: Date, endsAt: Date) {
 }
 
 async function getUserRole() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return { role: null, supabase, user };
-  }
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .maybeSingle<{ role: "user" | "admin" }>();
+  const [supabase, user, profile] = await Promise.all([
+    createClient(),
+    getCurrentUser(),
+    getCurrentProfile(),
+  ]);
 
   return { role: profile?.role ?? null, supabase, user };
 }

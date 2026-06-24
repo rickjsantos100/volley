@@ -38,7 +38,7 @@ function SkeletonListCard() {
 
 export default function Loading() {
   return (
-    <main className="min-h-screen bg-[#f5f7fa] px-4 pt-28 pb-12 text-[#101828] sm:px-6 lg:px-8">
+    <main className="min-h-screen bg-[#f5f7fa] px-4 pt-24 pb-12 text-[#101828] sm:px-6 lg:px-8">
       <section className="mx-auto grid w-full max-w-[1120px] gap-5">
         <div className="flex items-center justify-between gap-4">
           <SkeletonLine className="h-11 w-36" />

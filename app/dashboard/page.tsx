@@ -10,6 +10,7 @@ import { getTranslations } from "next-intl/server";
 import { formatGameDateTitle } from "@/lib/format-game-date-title";
 import { createClient } from "@/lib/supabase/server";
 import { formatDuration } from "@/lib/format-duration";
+import { getCurrentProfile, getCurrentUser } from "@/lib/auth/server";
 import { createGame } from "./actions";
 
 type GameEvent = {
@@ -25,18 +26,13 @@ type GameParticipantCountRow = {
   game_event_id: string;
 };
 
-type ProfileRoleRow = {
-  role: "user" | "admin";
-};
-
 export default async function DashboardPage() {
-  const [t, supabase] = await Promise.all([
+  const [t, supabase, user, profile] = await Promise.all([
     getTranslations("DashboardPage"),
     createClient(),
+    getCurrentUser(),
+    getCurrentProfile(),
   ]);
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
 
   if (!user) {
     redirect("/");
@@ -46,25 +42,15 @@ export default async function DashboardPage() {
   const horizon = new Date(now);
   horizon.setDate(horizon.getDate() + 30);
 
-  const [
-    { data: profile },
-    { data: gameRows, error: gamesError },
-  ] = await Promise.all([
-    supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .maybeSingle<ProfileRoleRow>(),
-    supabase
-      .from("game_events")
-      .select(
-        "id, starts_at, duration_minutes, max_participants, is_repeatable, status",
-      )
-      .in("status", ["scheduled", "cancelled"])
-      .gte("starts_at", now.toISOString())
-      .lte("starts_at", horizon.toISOString())
-      .order("starts_at", { ascending: true }),
-  ]);
+  const { data: gameRows, error: gamesError } = await supabase
+    .from("game_events")
+    .select(
+      "id, starts_at, duration_minutes, max_participants, is_repeatable, status",
+    )
+    .in("status", ["scheduled", "cancelled"])
+    .gte("starts_at", now.toISOString())
+    .lte("starts_at", horizon.toISOString())
+    .order("starts_at", { ascending: true });
   const games = (gameRows ?? []) as GameEvent[];
   const isAdmin = profile?.role === "admin";
   const gameIds = games.map((game) => game.id);

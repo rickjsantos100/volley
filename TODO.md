@@ -15,3 +15,4 @@ Use this file to collect future work items.
 - it might be good to have some footage of games in the banner
 - [x] Fix scrolling behind open modals.
 - [x] Replace the avatar zoom slider with direct gestures.
+- we need to support reseting password

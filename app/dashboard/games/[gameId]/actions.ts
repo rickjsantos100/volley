@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { getCurrentProfile, getCurrentUser } from "@/lib/auth/server";
 import { createClient } from "@/lib/supabase/server";
 
 export type GameActionStatus =
@@ -41,20 +42,11 @@ function getRecurrenceScope(formData: FormData): RecurrenceScope {
 }
 
 async function getUserRole() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return { role: null, supabase, user };
-  }
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .maybeSingle<{ role: "user" | "admin" }>();
+  const [supabase, user, profile] = await Promise.all([
+    createClient(),
+    getCurrentUser(),
+    getCurrentProfile(),
+  ]);
 
   return { role: profile?.role ?? null, supabase, user };
 }
@@ -91,10 +83,10 @@ export async function joinGame(
   void previousState;
   void formData;
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const [supabase, user] = await Promise.all([
+    createClient(),
+    getCurrentUser(),
+  ]);
 
   if (!user) {
     redirect("/");
@@ -123,10 +115,10 @@ export async function joinWaitlist(
   void previousState;
   void formData;
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const [supabase, user] = await Promise.all([
+    createClient(),
+    getCurrentUser(),
+  ]);
 
   if (!user) {
     redirect("/");
@@ -155,10 +147,10 @@ export async function leaveGame(
   void previousState;
   void formData;
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const [supabase, user] = await Promise.all([
+    createClient(),
+    getCurrentUser(),
+  ]);
 
   if (!user) {
     redirect("/");

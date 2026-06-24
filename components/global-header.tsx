@@ -3,19 +3,12 @@ import Image from "next/image";
 import { AccountMenu } from "@/components/account-menu";
 import { LanguageToggle } from "@/components/language-toggle";
 import { cx, pressedSurfaceClassName } from "@/components/ui/class-name";
+import { getCurrentProfile, getCurrentUser } from "@/lib/auth/server";
 import { createClient } from "@/lib/supabase/server";
-
-type Profile = {
-  avatar_path: string | null;
-  avatar_updated_at: string | null;
-  display_name: string | null;
-  first_name: string | null;
-  last_name: string | null;
-};
 
 function getAvatarUrl(
   supabase: Awaited<ReturnType<typeof createClient>>,
-  profile: Profile | null,
+  profile: Awaited<ReturnType<typeof getCurrentProfile>>,
 ) {
   if (!profile?.avatar_path) {
     return "";
@@ -31,7 +24,10 @@ function getAvatarUrl(
   return `${data.publicUrl}${version}`;
 }
 
-function getInitials(profile: Profile | null, email: string | undefined) {
+function getInitials(
+  profile: Awaited<ReturnType<typeof getCurrentProfile>>,
+  email: string | undefined,
+) {
   const nameParts = [profile?.first_name, profile?.last_name].filter(Boolean);
 
   if (nameParts.length > 0) {
@@ -55,7 +51,10 @@ function getInitials(profile: Profile | null, email: string | undefined) {
   return (email?.charAt(0) || "?").toUpperCase();
 }
 
-function getLabel(profile: Profile | null, email: string | undefined) {
+function getLabel(
+  profile: Awaited<ReturnType<typeof getCurrentProfile>>,
+  email: string | undefined,
+) {
   const name =
     profile?.display_name ||
     [profile?.first_name, profile?.last_name].filter(Boolean).join(" ");
@@ -64,18 +63,11 @@ function getLabel(profile: Profile | null, email: string | undefined) {
 }
 
 export async function GlobalHeader() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  const { data: profile } = user
-    ? await supabase
-        .from("profiles")
-        .select("avatar_path, avatar_updated_at, display_name, first_name, last_name")
-        .eq("id", user.id)
-        .maybeSingle<Profile>()
-    : { data: null };
+  const [supabase, user, profile] = await Promise.all([
+    createClient(),
+    getCurrentUser(),
+    getCurrentProfile(),
+  ]);
   const avatarUrl = getAvatarUrl(supabase, profile);
 
   return (

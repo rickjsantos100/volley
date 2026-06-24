@@ -1,23 +1,20 @@
 import { getTranslations } from "next-intl/server";
 import { redirect } from "next/navigation";
 import { AuthPanel } from "@/components/auth-panel";
+import { getCurrentUser } from "@/lib/auth/server";
 import { getSafeAuthRedirectPath } from "@/lib/safe-auth-redirect";
-import { createClient } from "@/lib/supabase/server";
 
 type HomeProps = {
   searchParams: Promise<{ next?: string | string[] }>;
 };
 
 export default async function Home({ searchParams }: HomeProps) {
-  const [t, supabase, resolvedSearchParams] = await Promise.all([
+  const [t, user, resolvedSearchParams] = await Promise.all([
     getTranslations("HomePage"),
-    createClient(),
+    getCurrentUser(),
     searchParams,
   ]);
   const nextPath = getSafeAuthRedirectPath(resolvedSearchParams.next);
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
 
   if (user) {
     redirect(nextPath ?? "/dashboard");

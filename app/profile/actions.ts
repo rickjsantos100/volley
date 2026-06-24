@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getCurrentUser } from "@/lib/auth/server";
 import { createClient } from "@/lib/supabase/server";
 
 type UpdateProfileState = {
@@ -42,10 +43,10 @@ export async function updateProfile(
     };
   }
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const [supabase, user] = await Promise.all([
+    createClient(),
+    getCurrentUser(),
+  ]);
 
   if (!user) {
     return {

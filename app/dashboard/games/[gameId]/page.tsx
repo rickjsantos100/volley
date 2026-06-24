@@ -16,6 +16,7 @@ import {
   formatGameDateTitle,
 } from "@/lib/format-game-date-title";
 import { formatDuration } from "@/lib/format-duration";
+import { getCurrentProfile, getCurrentUser } from "@/lib/auth/server";
 import { createClient } from "@/lib/supabase/server";
 import type { GameActionStatus } from "./actions";
 import {
@@ -39,10 +40,6 @@ type GameEvent = {
   status: "scheduled" | "cancelled" | "completed" | "deleted";
   recurring_series_id: string | null;
   recurring_starts_at: string | null;
-};
-
-type ProfileRoleRow = {
-  role: "user" | "admin";
 };
 
 type ParticipantDetail = {
@@ -87,14 +84,12 @@ function getDisplayName(player: {
 }
 
 export default async function GameDetailPage({ params }: GameDetailPageProps) {
-  const [{ gameId }, t, supabase] = await Promise.all([
+  const [{ gameId }, t, supabase, user] = await Promise.all([
     params,
     getTranslations("GameDetailPage"),
     createClient(),
+    getCurrentUser(),
   ]);
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
 
   if (!user) {
     const gamePath = `/dashboard/games/${gameId}`;
@@ -103,7 +98,7 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
 
   const [
     { data: game, error: gameError },
-    { data: profile },
+    profile,
     { count: participantCount },
     { count: waitlistCount },
   ] = await Promise.all([
@@ -114,11 +109,7 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
       )
       .eq("id", gameId)
       .maybeSingle<GameEvent>(),
-    supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .maybeSingle<ProfileRoleRow>(),
+    getCurrentProfile(),
     supabase
       .from("game_participants")
       .select("game_event_id", { count: "exact", head: true })
@@ -174,7 +165,7 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
   };
 
   return (
-    <main className="min-h-screen bg-[#f5f7fa] px-4 pt-28 pb-12 text-[#101828] sm:px-6 lg:px-8">
+    <main className="min-h-screen bg-[#f5f7fa] px-4 pt-24 pb-12 text-[#101828] sm:px-6 lg:px-8">
       <section className="mx-auto grid w-full max-w-[1120px] gap-5">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <Link
