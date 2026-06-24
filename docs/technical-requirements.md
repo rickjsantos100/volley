@@ -268,6 +268,16 @@ Vercel should store application environment variables, including:
 
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
+- `SUPABASE_SECRET_KEY`
+- `NEXT_PUBLIC_VAPID_PUBLIC_KEY`
+- `VAPID_PRIVATE_KEY`
+- `VAPID_SUBJECT`
+- `CRON_SECRET`
+
+Supabase Vault should store secrets used by database-scheduled jobs:
+
+- `notification_reminder_app_url`: the production HTTPS application origin, without a trailing slash.
+- `notification_reminder_cron_secret`: the same value as Vercel's `CRON_SECRET`.
 
 New projects should use Supabase publishable keys instead of legacy anon keys.
 
