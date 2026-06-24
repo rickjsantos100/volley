@@ -2,7 +2,11 @@
 
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 import { useFormStatus } from "react-dom";
-import { cx, pressedSurfaceClassName } from "./class-name";
+import {
+  cx,
+  pressedSurfaceClassName,
+  pressedSurfaceOverlayClassName,
+} from "./class-name";
 
 type ButtonVariant =
   | "dangerOutline"
@@ -48,7 +52,7 @@ export function buttonClassName({
   "className" | "fixed" | "fullWidth" | "size" | "variant"
 > = {}) {
   return cx(
-    pressedSurfaceClassName,
+    fixed ? pressedSurfaceOverlayClassName : pressedSurfaceClassName,
     fixed && "fixed",
     "flex min-h-11 items-center justify-center gap-2 rounded-[10px] border text-sm font-bold transition-[background-color,border-color,box-shadow,transform] focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-[#0737a8]/20 active:translate-y-px disabled:cursor-default disabled:opacity-50 disabled:active:translate-y-0",
     variantClasses[variant],
