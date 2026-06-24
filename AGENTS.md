@@ -13,6 +13,12 @@ Treat `DESIGN.md` as the source of truth for design and user experience decision
 
 When technical and design guidance both apply, satisfy both. If they appear to conflict, ask the user before making a change that would violate either document.
 
+## CLI Connections
+
+The Supabase CLI and Vercel CLI are already installed, authenticated, and linked for this repository. Prefer those CLIs for Supabase and Vercel project operations before asking the user to perform dashboard steps manually.
+
+Do not force a Vercel deployment after pushing to `main`. Vercel is connected to the GitHub repository and automatically deploys pushes to `main`.
+
 ## Supabase Migration Publishing
 
 When creating a new Supabase migration, also publish/apply that migration to the Supabase project used by the app before considering the task complete.

@@ -1,4 +1,4 @@
-const CACHE_NAME = "voley-lisboa-static-v4";
+const CACHE_NAME = "voley-lisboa-static-v5";
 const CACHE_PREFIX = "voley-lisboa-static-";
 const PRECACHE_URLS = [
   "/offline.html",
@@ -7,6 +7,7 @@ const PRECACHE_URLS = [
   "/icons/icon-512.png",
   "/icons/maskable-512.png",
   "/icons/apple-touch-icon.png",
+  "/icons/notification-badge-96.png",
 ];
 
 self.addEventListener("install", (event) => {
@@ -104,7 +105,7 @@ self.addEventListener("push", (event) => {
   }
 
   const notificationOptions = {
-    badge: "/icons/icon-192.png",
+    badge: "/icons/notification-badge-96.png",
     body: payload.body,
     data: {
       url: payload.url || "/dashboard",
