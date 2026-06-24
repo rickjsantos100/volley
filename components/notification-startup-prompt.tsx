@@ -8,6 +8,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 import { Toast } from "@/components/ui/toast";
+import { isInstalledPwaDisplayMode } from "@/lib/pwa/display-mode";
 
 const DISMISSED_STORAGE_KEY = "voley-lisboa:push-startup-dismissed:v1";
 
@@ -72,7 +73,7 @@ export function NotificationStartupPrompt({
   const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
-    if (!active || !isPushSupported(publicKey)) {
+    if (!active || !isInstalledPwaDisplayMode() || !isPushSupported(publicKey)) {
       return;
     }
 

@@ -7,6 +7,8 @@ import webPush, {
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export type PushNotificationKind =
+  | "game_cancelled"
+  | "game_deleted"
   | "game_reminder_4h"
   | "payment_marked_paid"
   | "test"
@@ -32,6 +34,24 @@ type PushOutboxRow = {
   attempts: number;
   payload: PushPayload;
   user_id: string;
+};
+
+type GameNotificationAudience = {
+  gameId: string;
+  userIds: string[];
+};
+
+type GameAudienceRow = {
+  game_event_id: string;
+  user_id: string;
+};
+
+type GameLifecycleNotificationKind = "game_cancelled" | "game_deleted";
+
+const gameLifecycleNotificationPayload = {
+  body: "Este jogo já não vai avançar. Vê os próximos jogos no painel.",
+  title: "Jogo sem efeito",
+  url: "/dashboard",
 };
 
 let webPushConfigured = false;
@@ -112,6 +132,83 @@ export async function enqueueNotification({
 
   if (error) {
     throw error;
+  }
+}
+
+export async function getGameNotificationAudiences(
+  gameIds: string[],
+): Promise<GameNotificationAudience[]> {
+  if (gameIds.length === 0) {
+    return [];
+  }
+
+  const supabase = createAdminClient();
+  const audienceByGameId = new Map<string, Set<string>>();
+
+  for (const gameId of gameIds) {
+    audienceByGameId.set(gameId, new Set<string>());
+  }
+
+  const [
+    { data: participants, error: participantsError },
+    { data: waitlist, error: waitlistError },
+  ] = await Promise.all([
+    supabase
+      .from("game_participants")
+      .select("game_event_id, user_id")
+      .in("game_event_id", gameIds)
+      .returns<GameAudienceRow[]>(),
+    supabase
+      .from("game_waitlist_entries")
+      .select("game_event_id, user_id")
+      .in("game_event_id", gameIds)
+      .eq("status", "active")
+      .returns<GameAudienceRow[]>(),
+  ]);
+
+  if (participantsError) {
+    throw participantsError;
+  }
+
+  if (waitlistError) {
+    throw waitlistError;
+  }
+
+  for (const row of [...(participants ?? []), ...(waitlist ?? [])]) {
+    audienceByGameId.get(row.game_event_id)?.add(row.user_id);
+  }
+
+  return [...audienceByGameId.entries()].map(([gameId, userIds]) => ({
+    gameId,
+    userIds: [...userIds],
+  }));
+}
+
+export async function enqueueGameLifecycleNotifications({
+  audiences,
+  includeGameEventId = true,
+  kind,
+}: {
+  audiences: GameNotificationAudience[];
+  includeGameEventId?: boolean;
+  kind: GameLifecycleNotificationKind;
+}) {
+  const tagPrefix =
+    kind === "game_cancelled" ? "game-cancelled" : "game-deleted";
+
+  for (const audience of audiences) {
+    for (const userId of audience.userIds) {
+      await enqueueNotification({
+        dedupeKey: `${kind}:${audience.gameId}:${userId}`,
+        gameEventId: includeGameEventId ? audience.gameId : undefined,
+        kind,
+        payload: {
+          ...gameLifecycleNotificationPayload,
+          tag: `${tagPrefix}-${audience.gameId}`,
+        },
+        userId,
+      });
+    }
   }
 }
 

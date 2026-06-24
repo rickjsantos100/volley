@@ -358,6 +358,10 @@ async function GameDetailContent({
       {!isCancelled ? (
         <GameParticipationActions
           alreadyWaitlistedLabel={t("alreadyWaitlistedButton")}
+          calendar={{
+            href: `/api/games/${game.id}/calendar`,
+            label: t("addToCalendarButton"),
+          }}
           confirmLeaveMessage={t("leaveGameConfirmMessage")}
           isFull={isFull}
           isParticipant={isParticipant}

@@ -18,3 +18,4 @@ Use this file to collect future work items.
 - we need to support reseting password
 - Add the possibility for the admin to add a user to a game by a search that lists out posible players 
 - Add google calendar support, where a player can add the game to his calendar 
+- Right now there is no support for an admin to edit and already existing game and or series of games 

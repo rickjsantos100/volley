@@ -131,6 +131,7 @@
     "shareFallbackTitle": "Share this game",
     "shareFallbackIntro": "Copy this link and send it to the players you want to invite.",
     "shareFallbackLabel": "Game link",
+    "addToCalendarButton": "Add to calendar",
     "cancelGameButton": "Cancel game",
     "uncancelGameButton": "Uncancel game",
     "cancelOccurrenceButton": "Cancel occurrence",

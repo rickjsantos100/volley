@@ -9,6 +9,7 @@ import {
 } from "@/app/dashboard/notifications/actions";
 import { Button } from "@/components/ui/button";
 import { Toast } from "@/components/ui/toast";
+import { isInstalledPwaDisplayMode } from "@/lib/pwa/display-mode";
 
 type PushNotificationControlsProps = {
   isAdmin: boolean;
@@ -33,6 +34,7 @@ type BrowserPushState =
   | "denied"
   | "disabled"
   | "enabled"
+  | "hidden"
   | "not-supported";
 
 function base64UrlToUint8Array(base64String: string) {
@@ -104,6 +106,11 @@ export function PushNotificationControls({
 
   useEffect(() => {
     async function checkSubscription() {
+      if (!isInstalledPwaDisplayMode()) {
+        setState("hidden");
+        return;
+      }
+
       if (!isPushSupported(publicKey)) {
         setState("not-supported");
         return;
@@ -188,6 +195,10 @@ export function PushNotificationControls({
     message === "save-error" ||
     message === "send-error" ||
     message === "not-authorized";
+
+  if (state === "checking" || state === "hidden") {
+    return null;
+  }
 
   return (
     <>

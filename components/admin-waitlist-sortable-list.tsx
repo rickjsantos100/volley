@@ -5,7 +5,8 @@ import {
   closestCenter,
   DndContext,
   KeyboardSensor,
-  PointerSensor,
+  MouseSensor,
+  TouchSensor,
   useSensor,
   useSensors,
   type DragEndEvent,
@@ -67,9 +68,15 @@ export function AdminWaitlistSortableList({
   const formRef = useRef<HTMLFormElement>(null);
   const orderedEntryIdsRef = useRef<HTMLInputElement>(null);
   const sensors = useSensors(
-    useSensor(PointerSensor, {
+    useSensor(MouseSensor, {
       activationConstraint: {
         distance: 8,
+      },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 300,
+        tolerance: 8,
       },
     }),
     useSensor(KeyboardSensor, {
@@ -185,7 +192,7 @@ function SortableWaitlistItem({
       aria-label={dragHandleLabel}
       aria-busy={isDeleting}
       className={cx(
-        "flex min-h-14 touch-none cursor-grab items-center justify-between gap-3 border-b border-[#dde2ea] py-3 active:cursor-grabbing",
+        "flex min-h-14 touch-pan-y cursor-grab items-center justify-between gap-3 border-b border-[#dde2ea] py-3 active:cursor-grabbing",
         isDeleting && "pointer-events-none cursor-not-allowed opacity-60",
         isDragging && "z-10 rounded-xl border bg-white px-3 opacity-90 shadow-[0_8px_24px_rgba(16,24,40,0.14)]",
       )}

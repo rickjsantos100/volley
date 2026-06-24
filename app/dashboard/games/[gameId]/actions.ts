@@ -5,6 +5,8 @@ import { redirect } from "next/navigation";
 import { getCurrentProfile, getCurrentUser } from "@/lib/auth/server";
 import {
   enqueueNotification,
+  enqueueGameLifecycleNotifications,
+  getGameNotificationAudiences,
   processPendingNotifications,
 } from "@/lib/notifications/push";
 import { createClient } from "@/lib/supabase/server";
@@ -47,6 +49,10 @@ type ParticipantPaymentRow = {
   user_id: string;
 };
 
+type GameIdRow = {
+  id: string;
+};
+
 function getRecurrenceScope(formData: FormData): RecurrenceScope {
   return formData.get("scope") === "series" ? "series" : "occurrence";
 }
@@ -66,6 +72,31 @@ async function processNotificationsAfterMutation() {
     await processPendingNotifications();
   } catch (error) {
     console.error("Failed to process push notifications", error);
+  }
+}
+
+async function notifyGameLifecycleChange({
+  gameIds,
+  includeGameEventId = true,
+  kind,
+  preparedAudiences,
+}: {
+  gameIds: string[];
+  includeGameEventId?: boolean;
+  kind: "game_cancelled" | "game_deleted";
+  preparedAudiences?: Awaited<ReturnType<typeof getGameNotificationAudiences>>;
+}) {
+  try {
+    const audiences =
+      preparedAudiences ?? (await getGameNotificationAudiences(gameIds));
+    await enqueueGameLifecycleNotifications({
+      audiences,
+      includeGameEventId,
+      kind,
+    });
+    await processPendingNotifications();
+  } catch (error) {
+    console.error("Failed to send game lifecycle push notifications", error);
   }
 }
 
@@ -405,6 +436,27 @@ export async function cancelGame(
   const scope = getRecurrenceScope(formData);
   const isSeriesAction =
     scope === "series" && game.recurring_series_id && game.recurring_starts_at;
+
+  let affectedGameIds = [game.id];
+
+  if (isSeriesAction) {
+    const { data: affectedGames, error: affectedGamesError } = await supabase
+      .from("game_events")
+      .select("id")
+      .eq("recurring_series_id", game.recurring_series_id)
+      .gte("recurring_starts_at", game.recurring_starts_at)
+      .eq("status", "scheduled")
+      .returns<GameIdRow[]>();
+
+    if (affectedGamesError) {
+      return { status: "cancel-error" };
+    }
+
+    affectedGameIds = (affectedGames ?? []).map(
+      (affectedGame) => affectedGame.id,
+    );
+  }
+
   const { error } = isSeriesAction
     ? await supabase
         .from("game_events")
@@ -436,6 +488,11 @@ export async function cancelGame(
   if (error) {
     return { status: "cancel-error" };
   }
+
+  await notifyGameLifecycleChange({
+    gameIds: affectedGameIds,
+    kind: "game_cancelled",
+  });
 
   return { status: isSeriesAction ? "cancelled-series" : "cancelled-game" };
 }
@@ -488,6 +545,34 @@ export async function deleteGame(
     game.recurring_series_id && game.recurring_starts_at,
   );
   const isSeriesAction = scope === "series" && isRecurringGame;
+  let affectedGameIds = [game.id];
+  let physicalDeleteAudiences:
+    | Awaited<ReturnType<typeof getGameNotificationAudiences>>
+    | undefined;
+
+  if (isSeriesAction) {
+    const { data: affectedGames, error: affectedGamesError } = await supabase
+      .from("game_events")
+      .select("id")
+      .eq("recurring_series_id", game.recurring_series_id)
+      .gte("recurring_starts_at", game.recurring_starts_at)
+      .neq("status", "deleted")
+      .returns<GameIdRow[]>();
+
+    if (affectedGamesError) {
+      return { status: "delete-error" };
+    }
+
+    affectedGameIds = (affectedGames ?? []).map(
+      (affectedGame) => affectedGame.id,
+    );
+  } else if (!isRecurringGame) {
+    try {
+      physicalDeleteAudiences = await getGameNotificationAudiences([game.id]);
+    } catch (error) {
+      console.error("Failed to prepare game delete push notifications", error);
+    }
+  }
 
   if (isSeriesAction) {
     const { error: seriesError } = await supabase
@@ -521,6 +606,13 @@ export async function deleteGame(
   if (error) {
     return { status: "delete-error" };
   }
+
+  await notifyGameLifecycleChange({
+    gameIds: affectedGameIds,
+    includeGameEventId: isRecurringGame,
+    kind: "game_deleted",
+    preparedAudiences: physicalDeleteAudiences,
+  });
 
   redirect("/dashboard");
 }
