@@ -59,9 +59,8 @@ game day.
 - Destructive: white background, danger border, and danger text; reserve solid
   danger for final destructive confirmation.
 - Disabled controls retain their border and readable label at 50% opacity.
-- Buttons use a quick, subtle ripple from the press point for touch and pointer
-  feedback. Keep the ripple lightweight and variant-colored; do not use scale
-  animations on the button itself.
+- Clickable controls use a subtle whole-surface grey pressed state for touch
+  and pointer feedback. Do not use ripple or scale animations.
 
 ### Forms
 

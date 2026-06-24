@@ -32,20 +32,6 @@ button:not(:disabled),
   cursor: pointer;
 }
 
-.button-ripple {
-  animation: button-ripple 420ms ease-out forwards;
-  opacity: 0.18;
-  transform: scale(0);
-  transform-origin: center;
-}
-
-@keyframes button-ripple {
-  to {
-    opacity: 0;
-    transform: scale(1);
-  }
-}
-
 .font-matchday {
   font-family: var(--font-barlow-condensed), "Arial Narrow", sans-serif;
 }

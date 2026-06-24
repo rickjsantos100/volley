@@ -9,6 +9,7 @@ import { GameParticipationActions } from "@/components/game-participation-action
 import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { cx, pressedSurfaceClassName } from "@/components/ui/class-name";
 import { InitialsAvatar } from "@/components/ui/initials-avatar";
 import {
   formatGameDateParts,
@@ -177,7 +178,10 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
       <section className="mx-auto grid w-full max-w-[1120px] gap-5">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <Link
-            className="flex min-h-11 items-center gap-2 rounded-[10px] px-2 text-sm font-bold text-[#0737a8] transition-colors hover:bg-[#0737a8]/5 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-[#0737a8]/20"
+            className={cx(
+              pressedSurfaceClassName,
+              "flex min-h-11 items-center gap-2 rounded-[10px] px-2 text-sm font-bold text-[#0737a8] transition-colors hover:bg-[#0737a8]/5 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-[#0737a8]/20",
+            )}
             href="/dashboard"
           >
             <span aria-hidden="true">←</span>

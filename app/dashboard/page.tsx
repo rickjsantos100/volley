@@ -5,6 +5,7 @@ import { PwaInstallPrompt } from "@/components/pwa-install-prompt";
 import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Card, cardClassName } from "@/components/ui/card";
+import { cx, pressedSurfaceClassName } from "@/components/ui/class-name";
 import { getTranslations } from "next-intl/server";
 import { formatGameDateTitle } from "@/lib/format-game-date-title";
 import { createClient } from "@/lib/supabase/server";
@@ -181,7 +182,10 @@ export default async function DashboardPage() {
     return (
       <Link
         className={cardClassName({
-          className: `block ${statusEdge} transition-[border-color,box-shadow,transform] hover:border-[#0737a8] hover:shadow-[0_12px_28px_rgba(16,24,40,0.11)] focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-[#0737a8]/20 active:translate-y-px`,
+          className: cx(
+            pressedSurfaceClassName,
+            `block ${statusEdge} transition-[border-color,box-shadow,transform] hover:border-[#0737a8] hover:shadow-[0_12px_28px_rgba(16,24,40,0.11)] focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-[#0737a8]/20 active:translate-y-px`,
+          ),
           variant,
         })}
         href={`/dashboard/games/${game.id}`}

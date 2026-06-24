@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { logOut } from "@/app/dashboard/actions";
 import { ProfileForm } from "@/components/profile-form";
 import { Button, SubmitButton } from "@/components/ui/button";
+import { cx, pressedSurfaceClassName } from "@/components/ui/class-name";
 import { Modal } from "@/components/ui/modal";
 
 type AccountMenuProps = {
@@ -33,14 +34,16 @@ export function AccountMenu({
 
   return (
     <>
-      <Button
+      <button
+        type="button"
         aria-expanded={isOpen}
         aria-haspopup="dialog"
         aria-label={accountT("openProfile", { name: label })}
-        className="size-11 rounded-full border-[#dde2ea] p-0 text-sm shadow-sm hover:border-[#0737a8] [&>span:last-child]:size-full [&>span:last-child]:overflow-hidden [&>span:last-child]:rounded-full"
         onClick={() => setIsOpen(true)}
-        type="button"
-        variant="outline"
+        className={cx(
+          pressedSurfaceClassName,
+          "flex size-11 items-center justify-center rounded-full border border-[#dde2ea] bg-white text-sm font-bold text-[#061b6b] shadow-sm transition hover:border-[#0737a8] focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-[#0737a8]/20 active:translate-y-px",
+        )}
       >
         {avatarUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -52,7 +55,7 @@ export function AccountMenu({
         ) : (
           initials
         )}
-      </Button>
+      </button>
 
       <Modal
         onClose={() => setIsOpen(false)}

@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { AccountMenu } from "@/components/account-menu";
 import { LanguageToggle } from "@/components/language-toggle";
+import { cx, pressedSurfaceClassName } from "@/components/ui/class-name";
 import { createClient } from "@/lib/supabase/server";
 
 type Profile = {
@@ -96,7 +97,10 @@ export async function GlobalHeader() {
 
         <Link
           href="/dashboard"
-          className="flex items-center gap-2 justify-self-center font-bold text-[#061b6b] transition-colors hover:text-[#0737a8] focus-visible:rounded-lg focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-[#0737a8]/20 sm:gap-3"
+          className={cx(
+            pressedSurfaceClassName,
+            "flex items-center gap-2 rounded-lg px-2 py-1 font-bold text-[#061b6b] transition-colors hover:text-[#0737a8] focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-[#0737a8]/20 sm:gap-3",
+          )}
         >
           <span className="font-matchday text-xl sm:text-2xl">Voley Lisboa</span>
           <Image

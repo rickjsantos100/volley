@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
+import { cx, pressedSurfaceClassName } from "@/components/ui/class-name";
 
 export default async function GameNotFound() {
   const t = await getTranslations("GameDetailPage");
@@ -15,7 +16,10 @@ export default async function GameNotFound() {
         </p>
         <Link
           href="/dashboard"
-          className="mt-6 inline-flex min-h-11 items-center rounded-[10px] border border-[#0737a8] bg-white px-5 py-3 text-sm font-bold text-[#0737a8] transition hover:bg-[#eef3ff] focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-[#0737a8]/20"
+          className={cx(
+            pressedSurfaceClassName,
+            "mt-6 inline-flex min-h-11 items-center rounded-[10px] border border-[#0737a8] bg-white px-5 py-3 text-sm font-bold text-[#0737a8] transition hover:bg-[#eef3ff] focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-[#0737a8]/20 active:translate-y-px",
+          )}
         >
           {t("backToGames")}
         </Link>
