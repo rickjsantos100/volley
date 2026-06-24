@@ -383,12 +383,7 @@ async function GameDetailContent({
         <GameParticipationActions
           alreadyWaitlistedLabel={t("alreadyWaitlistedButton")}
           calendar={{
-            fallbackDownloadLabel: t("calendarFallbackDownload"),
-            fallbackGoogleLabel: t("calendarFallbackGoogle"),
-            fallbackIntro: t("calendarFallbackIntro"),
-            fallbackTitle: t("calendarFallbackTitle"),
             googleCalendarUrl: getGoogleCalendarUrl(game),
-            href: `/api/games/${game.id}/calendar`,
             label: t("addToCalendarButton"),
           }}
           confirmLeaveMessage={t("leaveGameConfirmMessage")}
