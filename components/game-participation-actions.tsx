@@ -10,7 +10,8 @@ import {
   GameShareButton,
   type GameShareProps,
 } from "@/components/game-share-button";
-import { Button, buttonClassName, SubmitButton } from "@/components/ui/button";
+import { GameCalendarButton } from "@/components/game-calendar-button";
+import { Button, SubmitButton } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Modal } from "@/components/ui/modal";
 import { Toast } from "@/components/ui/toast";
@@ -18,6 +19,11 @@ import { Toast } from "@/components/ui/toast";
 type GameParticipationActionsProps = {
   alreadyWaitlistedLabel: string;
   calendar: {
+    fallbackDownloadLabel: string;
+    fallbackGoogleLabel: string;
+    fallbackIntro: string;
+    fallbackTitle: string;
+    googleCalendarUrl: string;
     href: string;
     label: string;
   };
@@ -164,35 +170,7 @@ export function GameParticipationActions({
             </form>
           )}
           <GameShareButton {...share} />
-          <a
-            className={buttonClassName({
-              className: "sm:w-auto",
-              fullWidth: true,
-              variant: "outline",
-            })}
-            href={calendar.href}
-          >
-            <span className="inline-flex items-center gap-2">
-              <svg
-                aria-hidden="true"
-                className="size-4"
-                fill="none"
-                stroke="currentColor"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                viewBox="0 0 24 24"
-              >
-                <path d="M8 2v4" />
-                <path d="M16 2v4" />
-                <rect height="18" rx="2" width="18" x="3" y="4" />
-                <path d="M3 10h18" />
-                <path d="M12 14v4" />
-                <path d="M10 16h4" />
-              </svg>
-              {calendar.label}
-            </span>
-          </a>
+          <GameCalendarButton {...calendar} />
         </div>
       </Card>
 

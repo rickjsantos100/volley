@@ -70,6 +70,10 @@ type GameDetailPageProps = {
   params: Promise<{ gameId: string }>;
 };
 
+const calendarLocation = "ACM/YMCA Lisboa";
+const calendarMapsUrl =
+  "https://www.google.com/maps/place/ACM%2FYMCA+Lisboa/@38.7182879,-9.1582447,17z/data=!3m1!4b1!4m6!3m5!1s0xd19337b46b17f9d:0x655114031277fde9!8m2!3d38.7182879!4d-9.1556698!16s%2Fg%2F11c1yj7g8h";
+
 function getDisplayName(player: {
   display_name: string | null;
   first_name: string | null;
@@ -81,6 +85,26 @@ function getDisplayName(player: {
     .join(" ");
 
   return player.display_name || fullName || player.email || "Player";
+}
+
+function formatGoogleCalendarDate(date: Date) {
+  return date.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}Z$/, "Z");
+}
+
+function getGoogleCalendarUrl(game: GameEvent) {
+  const startsAt = new Date(game.starts_at);
+  const endsAt = new Date(startsAt.getTime() + game.duration_minutes * 60_000);
+  const params = new URLSearchParams({
+    action: "TEMPLATE",
+    dates: `${formatGoogleCalendarDate(startsAt)}/${formatGoogleCalendarDate(endsAt)}`,
+    details: ["Jogo do Voley Lisboa.", `Localização: ${calendarMapsUrl}`].join(
+      "\n",
+    ),
+    location: calendarLocation,
+    text: "Voley Lisboa",
+  });
+
+  return `https://calendar.google.com/calendar/render?${params.toString()}`;
 }
 
 export default async function GameDetailPage({ params }: GameDetailPageProps) {
@@ -359,6 +383,11 @@ async function GameDetailContent({
         <GameParticipationActions
           alreadyWaitlistedLabel={t("alreadyWaitlistedButton")}
           calendar={{
+            fallbackDownloadLabel: t("calendarFallbackDownload"),
+            fallbackGoogleLabel: t("calendarFallbackGoogle"),
+            fallbackIntro: t("calendarFallbackIntro"),
+            fallbackTitle: t("calendarFallbackTitle"),
+            googleCalendarUrl: getGoogleCalendarUrl(game),
             href: `/api/games/${game.id}/calendar`,
             label: t("addToCalendarButton"),
           }}
