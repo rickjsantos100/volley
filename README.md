@@ -13,7 +13,7 @@ Early implementation. The app has a basic Next.js setup, language toggle, and Su
 - Next.js with TypeScript
 - Tailwind CSS
 - shadcn/ui
-- Supabase Auth with email magic-link login
+- Supabase Auth with email OTP login
 - Supabase Postgres
 - Supabase Row Level Security
 - Vercel
@@ -28,7 +28,7 @@ Early implementation. The app has a basic Next.js setup, language toggle, and Su
 ## Notes
 
 - Database changes should use Supabase SQL migrations.
-- Magic-link auth requires a configured Supabase SMTP provider.
+- Email OTP auth requires a configured Supabase SMTP provider.
 - Secrets and credentials should not be committed.
 - Design work should follow `DESIGN.md`.
 - Technical decisions should follow `docs/technical-requirements.md`.

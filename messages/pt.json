@@ -25,32 +25,38 @@
   "AuthPage": {
     "eyebrow": "Conta",
     "title": "Entrar ou criar conta",
-    "intro": "Usa o teu email para receberes um link seguro de entrada.",
+    "intro": "Usa o teu email para receberes um código de entrada.",
     "loginTitle": "Entrar",
-    "loginIntro": "Já tens conta? Enviamos-te um link seguro para entrares.",
+    "loginIntro": "Já tens conta? Enviamos-te um código para entrares.",
     "signupTitle": "Criar conta",
-    "signupIntro": "Cria a tua conta de jogador e recebe o primeiro link de entrada.",
+    "signupIntro": "Cria a tua conta de jogador e recebe o primeiro código de entrada.",
     "firstNameLabel": "Primeiro nome",
     "firstNamePlaceholder": "Primeiro nome",
     "lastNameLabel": "Último nome",
     "lastNamePlaceholder": "Último nome",
     "emailLabel": "Email",
     "emailPlaceholder": "tu@exemplo.com",
-    "loginButton": "Enviar link de entrada",
+    "loginButton": "Enviar código",
+    "otpBackButton": "Voltar",
+    "otpIntro": "Introduz o código de 6 dígitos que enviámos para o teu email.",
+    "otpLabel": "Código",
+    "otpPlaceholder": "000000",
+    "otpSubmitButton": "Entrar",
+    "otpTitle": "Confirma o código",
     "signupButton": "Criar conta",
     "validation": {
       "firstNameRequired": "Introduz o teu primeiro nome.",
       "lastNameRequired": "Introduz o teu último nome.",
-      "emailInvalid": "Introduz um email válido."
+      "emailInvalid": "Introduz um email válido.",
+      "otpInvalid": "Introduz o código de 6 dígitos."
     },
     "errors": {
       "invalid-email": "Introduz um email válido.",
-      "magic-link-failed": "Não conseguimos enviar o link de entrada. Confirma o email e tenta outra vez.",
+      "invalid-otp": "Introduz o código de 6 dígitos.",
       "missing-name": "Introduz o primeiro e o último nome para criares conta.",
+      "otp-send-failed": "Não conseguimos enviar o código. Confirma o email e tenta outra vez.",
+      "otp-verification-failed": "O código está errado ou expirou. Confirma o email e tenta outra vez.",
       "signup-failed": "Não conseguimos criar a tua conta. Confirma os dados e tenta outra vez."
-    },
-    "success": {
-      "magic-link-sent": "Vê o teu email e usa o link seguro para entrar."
     }
   },
   "DashboardPage": {

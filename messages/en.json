@@ -25,32 +25,38 @@
   "AuthPage": {
     "eyebrow": "Account",
     "title": "Log in or sign up",
-    "intro": "Use your email to get a secure sign-in link.",
+    "intro": "Use your email to get a sign-in code.",
     "loginTitle": "Log in",
-    "loginIntro": "Already have an account? We will send a secure sign-in link.",
+    "loginIntro": "Already have an account? We will send a sign-in code.",
     "signupTitle": "Create account",
-    "signupIntro": "Create your player account and we will send your first sign-in link.",
+    "signupIntro": "Create your player account and we will send your first sign-in code.",
     "firstNameLabel": "First name",
     "firstNamePlaceholder": "First name",
     "lastNameLabel": "Last name",
     "lastNamePlaceholder": "Last name",
     "emailLabel": "Email",
     "emailPlaceholder": "you@example.com",
-    "loginButton": "Send sign-in link",
+    "loginButton": "Send code",
+    "otpBackButton": "Back",
+    "otpIntro": "Enter the 6-digit code we sent to your email.",
+    "otpLabel": "Code",
+    "otpPlaceholder": "000000",
+    "otpSubmitButton": "Log in",
+    "otpTitle": "Confirm code",
     "signupButton": "Sign up",
     "validation": {
       "firstNameRequired": "Enter your first name.",
       "lastNameRequired": "Enter your last name.",
-      "emailInvalid": "Enter a valid email address."
+      "emailInvalid": "Enter a valid email address.",
+      "otpInvalid": "Enter the 6-digit code."
     },
     "errors": {
       "invalid-email": "Enter a valid email address.",
-      "magic-link-failed": "We could not send the sign-in link. Check the email and try again.",
+      "invalid-otp": "Enter the 6-digit code.",
       "missing-name": "Enter both first and last name to sign up.",
+      "otp-send-failed": "We could not send the code. Check the email and try again.",
+      "otp-verification-failed": "The code is wrong or expired. Check the email and try again.",
       "signup-failed": "We could not create an account with those details."
-    },
-    "success": {
-      "magic-link-sent": "Check your email for the secure sign-in link."
     }
   },
   "DashboardPage": {

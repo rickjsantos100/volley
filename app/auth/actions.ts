@@ -1,19 +1,29 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { headers } from "next/headers";
+import { redirect } from "next/navigation";
 import { getSafeAuthRedirectPath } from "@/lib/safe-auth-redirect";
 import { createClient } from "@/lib/supabase/server";
 
 export type AuthErrorKey =
   | "invalid-email"
-  | "magic-link-failed"
+  | "otp-send-failed"
   | "missing-name"
   | "signup-failed";
 
 export type AuthActionState = {
   error?: AuthErrorKey;
-  success?: "magic-link-sent";
+  email?: string;
+  success?: "otp-sent";
+};
+
+export type VerifyOtpErrorKey =
+  | "invalid-email"
+  | "invalid-otp"
+  | "otp-verification-failed";
+
+export type VerifyOtpActionState = {
+  error?: VerifyOtpErrorKey;
 };
 
 function getEmail(formData: FormData) {
@@ -36,22 +46,20 @@ function getRequiredText(formData: FormData, field: string) {
   return value.trim();
 }
 
-async function getAuthCallbackUrl(formData: FormData) {
-  const redirectPath =
-    getSafeAuthRedirectPath(formData.get("next")) ?? "/dashboard";
-  const headerStore = await headers();
-  const host = headerStore.get("x-forwarded-host") ?? headerStore.get("host");
-  const protocol =
-    headerStore.get("x-forwarded-proto") ??
-    (host?.startsWith("localhost") || host?.startsWith("127.0.0.1")
-      ? "http"
-      : "https");
-  const origin = host ? `${protocol}://${host}` : "http://127.0.0.1:3000";
-  const callbackUrl = new URL("/auth/callback", origin);
+function getOtpToken(formData: FormData) {
+  const token = formData.get("token");
 
-  callbackUrl.searchParams.set("next", redirectPath);
+  if (typeof token !== "string") {
+    return null;
+  }
 
-  return callbackUrl.toString();
+  const normalizedToken = token.replace(/\D/g, "");
+
+  if (normalizedToken.length !== 6) {
+    return null;
+  }
+
+  return normalizedToken;
 }
 
 export async function signIn(
@@ -68,17 +76,16 @@ export async function signIn(
   const { error } = await supabase.auth.signInWithOtp({
     email,
     options: {
-      emailRedirectTo: await getAuthCallbackUrl(formData),
       shouldCreateUser: false,
     },
   });
 
   if (error) {
-    return { error: "magic-link-failed" };
+    return { error: "otp-send-failed" };
   }
 
   revalidatePath("/", "layout");
-  return { success: "magic-link-sent" };
+  return { email, success: "otp-sent" };
 }
 
 export async function signUp(
@@ -102,7 +109,6 @@ export async function signUp(
   const { error } = await supabase.auth.signInWithOtp({
     email,
     options: {
-      emailRedirectTo: await getAuthCallbackUrl(formData),
       shouldCreateUser: true,
       data: {
         display_name: displayName,
@@ -118,5 +124,37 @@ export async function signUp(
   }
 
   revalidatePath("/", "layout");
-  return { success: "magic-link-sent" };
+  return { email, success: "otp-sent" };
+}
+
+export async function verifyEmailOtp(
+  _previousState: VerifyOtpActionState,
+  formData: FormData,
+): Promise<VerifyOtpActionState> {
+  const email = getEmail(formData);
+  const token = getOtpToken(formData);
+  const redirectPath =
+    getSafeAuthRedirectPath(formData.get("next")) ?? "/dashboard";
+
+  if (!email) {
+    return { error: "invalid-email" };
+  }
+
+  if (!token) {
+    return { error: "invalid-otp" };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.auth.verifyOtp({
+    email,
+    token,
+    type: "email",
+  });
+
+  if (error) {
+    return { error: "otp-verification-failed" };
+  }
+
+  revalidatePath("/", "layout");
+  redirect(redirectPath);
 }

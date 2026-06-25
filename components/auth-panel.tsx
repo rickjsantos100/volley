@@ -6,7 +6,9 @@ import { useActionState, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useFormStatus } from "react-dom";
 import type { AuthActionState } from "@/app/auth/actions";
-import { signIn, signUp } from "@/app/auth/actions";
+import type { VerifyOtpErrorKey } from "@/app/auth/actions";
+import type { VerifyOtpActionState } from "@/app/auth/actions";
+import { signIn, signUp, verifyEmailOtp } from "@/app/auth/actions";
 import { Alert } from "@/components/ui/alert";
 import { Button, SubmitButton } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -24,7 +26,25 @@ type SignupValues = Record<SignupField, string>;
 
 type SignupTouched = Record<SignupField, boolean>;
 
+type OtpPanelProps = {
+  email: string;
+  labels: {
+    back: string;
+    emailLabel: string;
+    intro: string;
+    otpErrors: Record<VerifyOtpErrorKey, string>;
+    otpInvalid: string;
+    otpLabel: string;
+    otpPlaceholder: string;
+    submit: string;
+    title: string;
+  };
+  nextPath?: string;
+  onBack: () => void;
+};
+
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const OTP_PATTERN = /^\d{6}$/;
 
 const emptyLoginValues: LoginValues = {
   email: "",
@@ -47,6 +67,7 @@ const emptySignupTouched: SignupTouched = {
 };
 
 const initialAuthActionState: AuthActionState = {};
+const initialVerifyOtpActionState: VerifyOtpActionState = {};
 
 function PendingFieldset({ children }: { children: ReactNode }) {
   const { pending } = useFormStatus();
@@ -58,8 +79,91 @@ function PendingFieldset({ children }: { children: ReactNode }) {
   );
 }
 
+function OtpPanel({ email, labels, nextPath, onBack }: OtpPanelProps) {
+  const [otpValue, setOtpValue] = useState("");
+  const [otpTouched, setOtpTouched] = useState(false);
+  const otpError =
+    OTP_PATTERN.test(otpValue) || !otpTouched ? null : labels.otpInvalid;
+  const isOtpValid = OTP_PATTERN.test(otpValue);
+  const [verifyState, verifyAction] = useActionState(
+    verifyEmailOtp,
+    initialVerifyOtpActionState,
+  );
+
+  function handleOtpSubmit(event: FormEvent<HTMLFormElement>) {
+    if (isOtpValid) {
+      return;
+    }
+
+    event.preventDefault();
+    setOtpTouched(true);
+  }
+
+  return (
+    <form
+      action={verifyAction}
+      className="mt-7 space-y-5"
+      noValidate
+      onSubmit={handleOtpSubmit}
+    >
+      <PendingFieldset>
+        {nextPath ? <input name="next" type="hidden" value={nextPath} /> : null}
+        <input name="email" type="hidden" value={email} />
+
+        <div className="space-y-2">
+          <h2 className="font-matchday text-3xl leading-8 font-bold text-[#061b6b]">
+            {labels.title}
+          </h2>
+          <p className="text-sm leading-6 text-[#667085]">
+            {labels.intro}
+          </p>
+          <p className="rounded-xl border border-[#dde2ea] bg-white px-3.5 py-3 text-sm font-semibold text-[#101828]">
+            <span className="text-[#667085]">{labels.emailLabel}: </span>
+            {email}
+          </p>
+        </div>
+
+        {verifyState.error ? (
+          <Alert>{labels.otpErrors[verifyState.error]}</Alert>
+        ) : null}
+
+        <Field
+          autoComplete="one-time-code"
+          className="text-center font-matchday text-3xl font-bold tracking-[0.2em]"
+          error={otpError}
+          id="home-email-otp"
+          inputMode="numeric"
+          label={labels.otpLabel}
+          maxLength={6}
+          name="token"
+          onBlur={() => setOtpTouched(true)}
+          onChange={(event) => {
+            setOtpValue(event.target.value.replace(/\D/g, "").slice(0, 6));
+          }}
+          pattern="[0-9]{6}"
+          placeholder={labels.otpPlaceholder}
+          required
+          type="text"
+          value={otpValue}
+        />
+
+        <div className="grid gap-3 sm:grid-cols-2">
+          <SubmitButton disabled={!isOtpValid} fullWidth>
+            {labels.submit}
+          </SubmitButton>
+          <Button fullWidth onClick={onBack} type="button" variant="outline">
+            {labels.back}
+          </Button>
+        </div>
+      </PendingFieldset>
+    </form>
+  );
+}
+
 export function AuthPanel({ nextPath }: { nextPath?: string }) {
   const [mode, setMode] = useState<"login" | "signup">("login");
+  const [otpEmail, setOtpEmail] = useState<string | null>(null);
+  const [otpPanelKey, setOtpPanelKey] = useState(0);
   const [loginValues, setLoginValues] =
     useState<LoginValues>(emptyLoginValues);
   const [loginTouched, setLoginTouched] =
@@ -96,6 +200,9 @@ export function AuthPanel({ nextPath }: { nextPath?: string }) {
 
     if (nextState.error) {
       setLoginTouched({ email: true });
+    } else if (nextState.email) {
+      setOtpEmail(nextState.email);
+      setOtpPanelKey((currentKey) => currentKey + 1);
     }
 
     return nextState;
@@ -109,6 +216,9 @@ export function AuthPanel({ nextPath }: { nextPath?: string }) {
 
     if (nextState.error) {
       setMode("signup");
+    } else if (nextState.email) {
+      setOtpEmail(nextState.email);
+      setOtpPanelKey((currentKey) => currentKey + 1);
     }
 
     return nextState;
@@ -122,10 +232,7 @@ export function AuthPanel({ nextPath }: { nextPath?: string }) {
     handleSignupAction,
     initialAuthActionState,
   );
-  const activeError =
-    mode === "login" ? loginState.error : signupState.error;
-  const activeSuccess =
-    mode === "login" ? loginState.success : signupState.success;
+  const activeError = mode === "login" ? loginState.error : signupState.error;
 
   function updateLoginField(field: LoginField, value: string) {
     setLoginValues((currentValues) => ({
@@ -197,44 +304,63 @@ export function AuthPanel({ nextPath }: { nextPath?: string }) {
 
   return (
     <Card className="p-5" variant="muted">
-      <div className="grid grid-cols-2 rounded-xl border border-[#dde2ea] bg-[#eef1f5] p-1">
-        <Button
-          type="button"
-          onClick={() => setMode("login")}
-          data-active={mode === "login"}
-          variant="ghost"
-          className="border-transparent px-4 py-3 text-[#475467] data-[active=true]:border-[#ffd21a] data-[active=true]:bg-[#ffd21a] data-[active=true]:text-[#061b6b]"
-        >
-          {t("loginButton")}
-        </Button>
-        <Button
-          type="button"
-          onClick={() => setMode("signup")}
-          data-active={mode === "signup"}
-          variant="ghost"
-          className="border-transparent px-4 py-3 text-[#475467] data-[active=true]:border-[#ffd21a] data-[active=true]:bg-[#ffd21a] data-[active=true]:text-[#061b6b]"
-        >
-          {t("signupButton")}
-        </Button>
-      </div>
+      {otpEmail ? (
+        <OtpPanel
+          key={otpPanelKey}
+          email={otpEmail}
+          labels={{
+            back: t("otpBackButton"),
+            emailLabel: t("emailLabel"),
+            intro: t("otpIntro"),
+            otpErrors: {
+              "invalid-email": t("errors.invalid-email"),
+              "invalid-otp": t("errors.invalid-otp"),
+              "otp-verification-failed": t("errors.otp-verification-failed"),
+            },
+            otpInvalid: t("validation.otpInvalid"),
+            otpLabel: t("otpLabel"),
+            otpPlaceholder: t("otpPlaceholder"),
+            submit: t("otpSubmitButton"),
+            title: t("otpTitle"),
+          }}
+          nextPath={nextPath}
+          onBack={() => setOtpEmail(null)}
+        />
+      ) : (
+        <>
+          <div className="grid grid-cols-2 rounded-xl border border-[#dde2ea] bg-[#eef1f5] p-1">
+            <Button
+              type="button"
+              onClick={() => setMode("login")}
+              data-active={mode === "login"}
+              variant="ghost"
+              className="border-transparent px-4 py-3 text-[#475467] data-[active=true]:border-[#ffd21a] data-[active=true]:bg-[#ffd21a] data-[active=true]:text-[#061b6b]"
+            >
+              {t("loginButton")}
+            </Button>
+            <Button
+              type="button"
+              onClick={() => setMode("signup")}
+              data-active={mode === "signup"}
+              variant="ghost"
+              className="border-transparent px-4 py-3 text-[#475467] data-[active=true]:border-[#ffd21a] data-[active=true]:bg-[#ffd21a] data-[active=true]:text-[#061b6b]"
+            >
+              {t("signupButton")}
+            </Button>
+          </div>
 
-      {activeError ? (
-        <Alert className="mt-5">{t(`errors.${activeError}`)}</Alert>
-      ) : null}
-      {activeSuccess ? (
-        <Alert className="mt-5" variant="success">
-          {t(`success.${activeSuccess}`)}
-        </Alert>
-      ) : null}
+          {activeError ? (
+            <Alert className="mt-5">{t(`errors.${activeError}`)}</Alert>
+          ) : null}
 
-      {mode === "login" ? (
-        <form
-          key="login-form"
-          action={loginAction}
-          className="mt-7 space-y-5"
-          noValidate
-          onSubmit={handleLoginSubmit}
-        >
+          {mode === "login" ? (
+            <form
+              key="login-form"
+              action={loginAction}
+              className="mt-7 space-y-5"
+              noValidate
+              onSubmit={handleLoginSubmit}
+            >
           <PendingFieldset>
             {nextPath ? (
               <input name="next" type="hidden" value={nextPath} />
@@ -325,6 +451,8 @@ export function AuthPanel({ nextPath }: { nextPath?: string }) {
             </SubmitButton>
           </PendingFieldset>
         </form>
+      )}
+        </>
       )}
     </Card>
   );

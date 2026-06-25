@@ -45,15 +45,14 @@ Next.js should use Supabase's server-side auth pattern for the App Router:
 - Use `supabase.auth.getClaims()` or `supabase.auth.getUser()` for server-side identity checks.
 - Do not rely on `getSession()` user data for authorization decisions.
 
-Login should use Supabase Auth email magic links. The app should send magic
-links with `signInWithOtp`, route email redirects through `/auth/callback`, and
-exchange the returned code for a cookie-based server session before redirecting
-the user to the authenticated area.
+Login should use Supabase Auth email OTP codes. The app should send a 6-digit
+email code with `signInWithOtp`, keep the user in the app, and verify the code
+with `verifyOtp` before redirecting the user to the authenticated area.
 
-Supabase Auth should use a custom SMTP provider for magic-link delivery. The
-current provider is Resend with `noreply@voleylisboa.pt` as the sender address.
-The Supabase Auth Site URL and redirect URL allow-list must include the
-production app origin and `/auth/callback`.
+Supabase Auth should use a custom SMTP provider for OTP delivery. The current
+provider is Resend with `noreply@voleylisboa.pt` as the sender address. The
+OTP email template should show the code with `{{ .Token }}` and must not depend
+on email links opening the installed PWA.
 
 ## 4. Progressive Web App Requirements
 

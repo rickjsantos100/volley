@@ -249,8 +249,12 @@ sender_name = "Voley Lisboa"
 # content_path = "./supabase/templates/invite.html"
 
 [auth.email.template.magic_link]
-subject = "O teu link para entrar no Voley Lisboa"
-content_path = "./supabase/templates/magic-link.html"
+subject = "O teu código para entrar no Voley Lisboa"
+content_path = "./supabase/templates/email-otp.html"
+
+[auth.email.template.confirmation]
+subject = "O teu código para entrar no Voley Lisboa"
+content_path = "./supabase/templates/email-otp.html"
 
 # Uncomment to customize notification email template
 # [auth.email.notification.password_changed]
