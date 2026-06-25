@@ -45,16 +45,15 @@ Next.js should use Supabase's server-side auth pattern for the App Router:
 - Use `supabase.auth.getClaims()` or `supabase.auth.getUser()` for server-side identity checks.
 - Do not rely on `getSession()` user data for authorization decisions.
 
-Login should use Supabase Auth email/password authentication.
+Login should use Supabase Auth email magic links. The app should send magic
+links with `signInWithOtp`, route email redirects through `/auth/callback`, and
+exchange the returned code for a cookie-based server session before redirecting
+the user to the authenticated area.
 
-Password requirements should stay intentionally light for the initial version:
-
-- Minimum length: 8 characters.
-- No required uppercase, number, or symbol rules.
-
-The app should enforce the minimum length before submitting auth requests, and the Supabase Auth provider settings should also be configured with an 8-character minimum password length. Email/password login should not depend on magic links.
-
-Supabase email confirmations should be disabled in the Auth email provider settings. Signup should create a session immediately and redirect the user to the authenticated area without requiring a confirmation email.
+Supabase Auth should use a custom SMTP provider for magic-link delivery. The
+current provider is Resend with `noreply@voleylisboa.pt` as the sender address.
+The Supabase Auth Site URL and redirect URL allow-list must include the
+production app origin and `/auth/callback`.
 
 ## 4. Progressive Web App Requirements
 

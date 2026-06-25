@@ -25,36 +25,32 @@
   "AuthPage": {
     "eyebrow": "Account",
     "title": "Log in or sign up",
-    "intro": "Use your email and password to access your account.",
+    "intro": "Use your email to get a secure sign-in link.",
     "loginTitle": "Log in",
-    "loginIntro": "Already have an account? Enter your details to continue.",
+    "loginIntro": "Already have an account? We will send a secure sign-in link.",
     "signupTitle": "Create account",
-    "signupIntro": "New players start as regular users. Admins can be promoted later in Supabase.",
+    "signupIntro": "Create your player account and we will send your first sign-in link.",
     "firstNameLabel": "First name",
     "firstNamePlaceholder": "First name",
     "lastNameLabel": "Last name",
     "lastNamePlaceholder": "Last name",
     "emailLabel": "Email",
     "emailPlaceholder": "you@example.com",
-    "passwordLabel": "Password",
-    "loginPasswordPlaceholder": "Password",
-    "signupPasswordPlaceholder": "At least 8 characters",
-    "passwordHint": "Use at least 8 characters.",
-    "loginButton": "Log in",
+    "loginButton": "Send sign-in link",
     "signupButton": "Sign up",
     "validation": {
       "firstNameRequired": "Enter your first name.",
       "lastNameRequired": "Enter your last name.",
-      "emailInvalid": "Enter a valid email address.",
-      "passwordShort": "Password must have at least 8 characters."
+      "emailInvalid": "Enter a valid email address."
     },
     "errors": {
       "invalid-email": "Enter a valid email address.",
-      "invalid-password": "Password must have at least 8 characters.",
-      "login-failed": "We could not log you in with those details.",
+      "magic-link-failed": "We could not send the sign-in link. Check the email and try again.",
       "missing-name": "Enter both first and last name to sign up.",
-      "email-confirmation-enabled": "Signup is still requiring email confirmation. Disable email confirmations in Supabase Auth settings.",
       "signup-failed": "We could not create an account with those details."
+    },
+    "success": {
+      "magic-link-sent": "Check your email for the secure sign-in link."
     }
   },
   "DashboardPage": {

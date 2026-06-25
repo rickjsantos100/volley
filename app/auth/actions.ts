@@ -1,22 +1,19 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import { getSafeAuthRedirectPath } from "@/lib/safe-auth-redirect";
 import { createClient } from "@/lib/supabase/server";
 
-const MIN_PASSWORD_LENGTH = 8;
-
 export type AuthErrorKey =
   | "invalid-email"
-  | "invalid-password"
-  | "login-failed"
+  | "magic-link-failed"
   | "missing-name"
-  | "email-confirmation-enabled"
   | "signup-failed";
 
 export type AuthActionState = {
   error?: AuthErrorKey;
+  success?: "magic-link-sent";
 };
 
 function getEmail(formData: FormData) {
@@ -39,14 +36,22 @@ function getRequiredText(formData: FormData, field: string) {
   return value.trim();
 }
 
-function getPassword(formData: FormData) {
-  const password = formData.get("password");
+async function getAuthCallbackUrl(formData: FormData) {
+  const redirectPath =
+    getSafeAuthRedirectPath(formData.get("next")) ?? "/dashboard";
+  const headerStore = await headers();
+  const host = headerStore.get("x-forwarded-host") ?? headerStore.get("host");
+  const protocol =
+    headerStore.get("x-forwarded-proto") ??
+    (host?.startsWith("localhost") || host?.startsWith("127.0.0.1")
+      ? "http"
+      : "https");
+  const origin = host ? `${protocol}://${host}` : "http://127.0.0.1:3000";
+  const callbackUrl = new URL("/auth/callback", origin);
 
-  if (typeof password !== "string") {
-    return null;
-  }
+  callbackUrl.searchParams.set("next", redirectPath);
 
-  return password;
+  return callbackUrl.toString();
 }
 
 export async function signIn(
@@ -54,30 +59,26 @@ export async function signIn(
   formData: FormData,
 ): Promise<AuthActionState> {
   const email = getEmail(formData);
-  const password = getPassword(formData);
-  const redirectPath =
-    getSafeAuthRedirectPath(formData.get("next")) ?? "/dashboard";
 
   if (!email) {
     return { error: "invalid-email" };
   }
 
-  if (!password || password.length < MIN_PASSWORD_LENGTH) {
-    return { error: "invalid-password" };
-  }
-
   const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword({
+  const { error } = await supabase.auth.signInWithOtp({
     email,
-    password,
+    options: {
+      emailRedirectTo: await getAuthCallbackUrl(formData),
+      shouldCreateUser: false,
+    },
   });
 
   if (error) {
-    return { error: "login-failed" };
+    return { error: "magic-link-failed" };
   }
 
   revalidatePath("/", "layout");
-  redirect(redirectPath);
+  return { success: "magic-link-sent" };
 }
 
 export async function signUp(
@@ -87,9 +88,6 @@ export async function signUp(
   const email = getEmail(formData);
   const firstName = getRequiredText(formData, "firstName");
   const lastName = getRequiredText(formData, "lastName");
-  const password = getPassword(formData);
-  const redirectPath =
-    getSafeAuthRedirectPath(formData.get("next")) ?? "/dashboard";
 
   if (!email) {
     return { error: "invalid-email" };
@@ -99,16 +97,13 @@ export async function signUp(
     return { error: "missing-name" };
   }
 
-  if (!password || password.length < MIN_PASSWORD_LENGTH) {
-    return { error: "invalid-password" };
-  }
-
   const displayName = `${firstName} ${lastName}`;
   const supabase = await createClient();
-  const { data, error } = await supabase.auth.signUp({
+  const { error } = await supabase.auth.signInWithOtp({
     email,
-    password,
     options: {
+      emailRedirectTo: await getAuthCallbackUrl(formData),
+      shouldCreateUser: true,
       data: {
         display_name: displayName,
         first_name: firstName,
@@ -123,10 +118,5 @@ export async function signUp(
   }
 
   revalidatePath("/", "layout");
-
-  if (data.session) {
-    redirect(redirectPath);
-  }
-
-  return { error: "email-confirmation-enabled" };
+  return { success: "magic-link-sent" };
 }

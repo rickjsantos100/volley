@@ -12,13 +12,13 @@ import { Button, SubmitButton } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Field } from "@/components/ui/field";
 
-type LoginField = "email" | "password";
+type LoginField = "email";
 
 type LoginValues = Record<LoginField, string>;
 
 type LoginTouched = Record<LoginField, boolean>;
 
-type SignupField = "firstName" | "lastName" | "email" | "password";
+type SignupField = "firstName" | "lastName" | "email";
 
 type SignupValues = Record<SignupField, string>;
 
@@ -28,26 +28,22 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const emptyLoginValues: LoginValues = {
   email: "",
-  password: "",
 };
 
 const emptyLoginTouched: LoginTouched = {
   email: false,
-  password: false,
 };
 
 const emptySignupValues: SignupValues = {
   firstName: "",
   lastName: "",
   email: "",
-  password: "",
 };
 
 const emptySignupTouched: SignupTouched = {
   firstName: false,
   lastName: false,
   email: false,
-  password: false,
 };
 
 const initialAuthActionState: AuthActionState = {};
@@ -77,8 +73,6 @@ export function AuthPanel({ nextPath }: { nextPath?: string }) {
     email: EMAIL_PATTERN.test(loginValues.email.trim())
       ? null
       : t("validation.emailInvalid"),
-    password:
-      loginValues.password.length >= 8 ? null : t("validation.passwordShort"),
   };
   const signupErrors = {
     firstName: signupValues.firstName.trim()
@@ -90,8 +84,6 @@ export function AuthPanel({ nextPath }: { nextPath?: string }) {
     email: EMAIL_PATTERN.test(signupValues.email.trim())
       ? null
       : t("validation.emailInvalid"),
-    password:
-      signupValues.password.length >= 8 ? null : t("validation.passwordShort"),
   };
   const isLoginValid = Object.values(loginErrors).every((error) => !error);
   const isSignupValid = Object.values(signupErrors).every((error) => !error);
@@ -103,10 +95,7 @@ export function AuthPanel({ nextPath }: { nextPath?: string }) {
     const nextState = await signIn(previousState, formData);
 
     if (nextState.error) {
-      setLoginValues((currentValues) => ({
-        ...currentValues,
-        password: "",
-      }));
+      setLoginTouched({ email: true });
     }
 
     return nextState;
@@ -120,10 +109,6 @@ export function AuthPanel({ nextPath }: { nextPath?: string }) {
 
     if (nextState.error) {
       setMode("signup");
-      setSignupValues((currentValues) => ({
-        ...currentValues,
-        password: "",
-      }));
     }
 
     return nextState;
@@ -139,6 +124,8 @@ export function AuthPanel({ nextPath }: { nextPath?: string }) {
   );
   const activeError =
     mode === "login" ? loginState.error : signupState.error;
+  const activeSuccess =
+    mode === "login" ? loginState.success : signupState.success;
 
   function updateLoginField(field: LoginField, value: string) {
     setLoginValues((currentValues) => ({
@@ -194,7 +181,6 @@ export function AuthPanel({ nextPath }: { nextPath?: string }) {
       firstName: true,
       lastName: true,
       email: true,
-      password: true,
     });
   }
 
@@ -206,7 +192,6 @@ export function AuthPanel({ nextPath }: { nextPath?: string }) {
     event.preventDefault();
     setLoginTouched({
       email: true,
-      password: true,
     });
   }
 
@@ -236,6 +221,11 @@ export function AuthPanel({ nextPath }: { nextPath?: string }) {
       {activeError ? (
         <Alert className="mt-5">{t(`errors.${activeError}`)}</Alert>
       ) : null}
+      {activeSuccess ? (
+        <Alert className="mt-5" variant="success">
+          {t(`success.${activeSuccess}`)}
+        </Alert>
+      ) : null}
 
       {mode === "login" ? (
         <form
@@ -261,23 +251,6 @@ export function AuthPanel({ nextPath }: { nextPath?: string }) {
               required
               type="email"
               value={loginValues.email}
-            />
-
-            <Field
-              autoComplete="current-password"
-              error={getLoginError("password")}
-              id="home-login-password"
-              label={t("passwordLabel")}
-              minLength={8}
-              name="password"
-              onBlur={() => markLoginFieldTouched("password")}
-              onChange={(event) =>
-                updateLoginField("password", event.target.value)
-              }
-              placeholder={t("loginPasswordPlaceholder")}
-              required
-              type="password"
-              value={loginValues.password}
             />
 
             <SubmitButton disabled={!isLoginValid} fullWidth>
@@ -346,38 +319,6 @@ export function AuthPanel({ nextPath }: { nextPath?: string }) {
               type="email"
               value={signupValues.email}
             />
-
-            <div>
-              <Field
-                aria-describedby={
-                  getSignupError("password")
-                    ? "home-signup-password-error"
-                    : "home-signup-password-hint"
-                }
-                autoComplete="new-password"
-                error={getSignupError("password")}
-                id="home-signup-password"
-                label={t("passwordLabel")}
-                minLength={8}
-                name="password"
-                onBlur={() => markSignupFieldTouched("password")}
-                onChange={(event) =>
-                  updateSignupField("password", event.target.value)
-                }
-                placeholder={t("signupPasswordPlaceholder")}
-                required
-                type="password"
-                value={signupValues.password}
-              />
-              {!getSignupError("password") ? (
-                <p
-                  id="home-signup-password-hint"
-                  className="mt-2 text-sm leading-6 text-[#667085]"
-                >
-                  {t("passwordHint")}
-                </p>
-              ) : null}
-            </div>
 
             <SubmitButton disabled={!isSignupValid}>
               {t("signupButton")}

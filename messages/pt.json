@@ -25,36 +25,32 @@
   "AuthPage": {
     "eyebrow": "Conta",
     "title": "Entrar ou criar conta",
-    "intro": "Entra na tua conta e vê o que está marcado.",
+    "intro": "Usa o teu email para receberes um link seguro de entrada.",
     "loginTitle": "Entrar",
-    "loginIntro": "Já tens conta? Entra e vê o próximo jogo.",
+    "loginIntro": "Já tens conta? Enviamos-te um link seguro para entrares.",
     "signupTitle": "Criar conta",
-    "signupIntro": "Cria a tua conta de jogador e fica pronto para entrar em campo.",
+    "signupIntro": "Cria a tua conta de jogador e recebe o primeiro link de entrada.",
     "firstNameLabel": "Primeiro nome",
     "firstNamePlaceholder": "Primeiro nome",
     "lastNameLabel": "Último nome",
     "lastNamePlaceholder": "Último nome",
     "emailLabel": "Email",
     "emailPlaceholder": "tu@exemplo.com",
-    "passwordLabel": "Palavra-passe",
-    "loginPasswordPlaceholder": "Palavra-passe",
-    "signupPasswordPlaceholder": "Pelo menos 8 caracteres",
-    "passwordHint": "Usa pelo menos 8 caracteres.",
-    "loginButton": "Entrar",
+    "loginButton": "Enviar link de entrada",
     "signupButton": "Criar conta",
     "validation": {
       "firstNameRequired": "Introduz o teu primeiro nome.",
       "lastNameRequired": "Introduz o teu último nome.",
-      "emailInvalid": "Introduz um email válido.",
-      "passwordShort": "A palavra-passe deve ter pelo menos 8 caracteres."
+      "emailInvalid": "Introduz um email válido."
     },
     "errors": {
       "invalid-email": "Introduz um email válido.",
-      "invalid-password": "A palavra-passe deve ter pelo menos 8 caracteres.",
-      "login-failed": "Não conseguimos iniciar sessão com esses dados. Confirma e tenta outra vez.",
+      "magic-link-failed": "Não conseguimos enviar o link de entrada. Confirma o email e tenta outra vez.",
       "missing-name": "Introduz o primeiro e o último nome para criares conta.",
-      "email-confirmation-enabled": "A conta foi criada, mas ainda precisa de confirmação por email. Confirma a mensagem que recebeste ou fala com a equipa do Voley Lisboa.",
       "signup-failed": "Não conseguimos criar a tua conta. Confirma os dados e tenta outra vez."
+    },
+    "success": {
+      "magic-link-sent": "Vê o teu email e usa o link seguro para entrar."
     }
   },
   "DashboardPage": {

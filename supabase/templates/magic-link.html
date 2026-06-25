@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="pt">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light" />
+    <meta name="supported-color-schemes" content="light" />
+    <title>Entra no Voley Lisboa</title>
+  </head>
+  <body
+    style="
+      margin: 0;
+      padding: 0;
+      background: #f5f7fa;
+      color: #101828;
+      font-family:
+        Inter, Helvetica Neue, Arial, sans-serif;
+    "
+  >
+    <table
+      role="presentation"
+      width="100%"
+      cellspacing="0"
+      cellpadding="0"
+      style="background: #f5f7fa; border-collapse: collapse; width: 100%"
+    >
+      <tr>
+        <td align="center" style="padding: 32px 16px">
+          <table
+            role="presentation"
+            width="100%"
+            cellspacing="0"
+            cellpadding="0"
+            style="
+              background: #ffffff;
+              border: 1px solid #dde2ea;
+              border-collapse: separate;
+              border-radius: 12px;
+              box-shadow: 0 8px 24px rgba(16, 24, 40, 0.07);
+              max-width: 520px;
+              overflow: hidden;
+              width: 100%;
+            "
+          >
+            <tr>
+              <td
+                style="
+                  background: #061b6b;
+                  border-top: 4px solid #ffd21a;
+                  padding: 28px 28px 24px;
+                "
+              >
+                <p
+                  style="
+                    color: #ffd21a;
+                    font-size: 13px;
+                    font-weight: 700;
+                    letter-spacing: 0;
+                    line-height: 20px;
+                    margin: 0 0 8px;
+                    text-transform: uppercase;
+                  "
+                >
+                  Voley Lisboa
+                </p>
+                <h1
+                  style="
+                    color: #ffffff;
+                    font-family:
+                      Barlow Condensed, Arial Narrow, Arial, sans-serif;
+                    font-size: 34px;
+                    font-weight: 700;
+                    line-height: 36px;
+                    margin: 0;
+                  "
+                >
+                  Entra em campo
+                </h1>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 28px">
+                <p
+                  style="
+                    color: #101828;
+                    font-size: 16px;
+                    line-height: 24px;
+                    margin: 0 0 16px;
+                  "
+                >
+                  Recebemos um pedido para entrar na tua conta do Voley Lisboa.
+                  Usa o link abaixo para abrir a app e ver os próximos jogos.
+                </p>
+                <table
+                  role="presentation"
+                  width="100%"
+                  cellspacing="0"
+                  cellpadding="0"
+                  style="border-collapse: collapse; margin: 24px 0"
+                >
+                  <tr>
+                    <td align="center">
+                      <a
+                        href="{{ .ConfirmationURL }}"
+                        style="
+                          background: #ffd21a;
+                          border: 1px solid #ffd21a;
+                          border-radius: 10px;
+                          color: #061b6b;
+                          display: inline-block;
+                          font-size: 14px;
+                          font-weight: 700;
+                          line-height: 20px;
+                          padding: 13px 24px;
+                          text-decoration: none;
+                        "
+                      >
+                        Entrar no Voley Lisboa
+                      </a>
+                    </td>
+                  </tr>
+                </table>
+                <p
+                  style="
+                    color: #667085;
+                    font-size: 14px;
+                    line-height: 22px;
+                    margin: 0 0 16px;
+                  "
+                >
+                  Este link é temporário e só pode ser usado uma vez. Se não
+                  foste tu a pedir este email, podes ignorá-lo.
+                </p>
+                <table
+                  role="presentation"
+                  width="100%"
+                  cellspacing="0"
+                  cellpadding="0"
+                  style="
+                    border-collapse: collapse;
+                    border-top: 1px solid #dde2ea;
+                    margin-top: 24px;
+                  "
+                >
+                  <tr>
+                    <td style="padding-top: 18px">
+                      <p
+                        style="
+                          color: #667085;
+                          font-size: 12px;
+                          line-height: 18px;
+                          margin: 0;
+                          word-break: break-word;
+                        "
+                      >
+                        Se o botão não funcionar, copia e cola este link no
+                        navegador:<br />
+                        <a
+                          href="{{ .ConfirmationURL }}"
+                          style="color: #0737a8; text-decoration: underline"
+                          >{{ .ConfirmationURL }}</a
+                        >
+                      </p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
