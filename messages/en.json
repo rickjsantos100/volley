@@ -213,9 +213,6 @@
     "notificationsNotSupported": "This browser does not support notifications for this app yet. On iPhone, install the app to your Home Screen and open it from there.",
     "notificationsSaved": "Notifications enabled.",
     "notificationsSaveError": "We could not enable notifications. Please try again.",
-    "notificationsTestButton": "Test push",
-    "notificationsSent": "Test notification sent.",
-    "notificationsSendError": "We could not send the test notification.",
     "validation": {
       "firstNameRequired": "Enter your first name.",
       "lastNameRequired": "Enter your last name."

@@ -29,10 +29,6 @@ type PushSubscriptionRow = {
   auth: string;
 };
 
-type PushSubscriptionUserRow = {
-  user_id: string;
-};
-
 type PushOutboxRow = {
   id: string;
   attempts: number;
@@ -338,37 +334,4 @@ export async function sendTestNotification(userId: string) {
   });
 
   return processPendingNotifications(10);
-}
-
-export async function sendTestNotificationToAllSubscribedUsers() {
-  const supabase = createAdminClient();
-  const { data: subscriptions, error } = await supabase
-    .from("push_subscriptions")
-    .select("user_id")
-    .returns<PushSubscriptionUserRow[]>();
-
-  if (error) {
-    throw error;
-  }
-
-  const userIds = [
-    ...new Set((subscriptions ?? []).map(({ user_id }) => user_id)),
-  ];
-  const batchId = Date.now();
-
-  for (const userId of userIds) {
-    await enqueueNotification({
-      dedupeKey: `test:${batchId}:${userId}`,
-      kind: "test",
-      payload: {
-        body: "As notificações do Voley Lisboa estão a funcionar.",
-        tag: "test-notification",
-        title: "Teste de notificações",
-        url: "/dashboard",
-      },
-      userId,
-    });
-  }
-
-  return processPendingNotifications(Math.max(userIds.length, 1));
 }

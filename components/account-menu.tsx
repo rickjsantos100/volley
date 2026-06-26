@@ -14,7 +14,6 @@ type AccountMenuProps = {
   avatarUrl: string;
   firstName: string;
   initials: string;
-  isAdmin: boolean;
   label: string;
   lastName: string;
   publicVapidKey: string;
@@ -26,7 +25,6 @@ export function AccountMenu({
   avatarUrl,
   firstName,
   initials,
-  isAdmin,
   label,
   lastName,
   publicVapidKey,
@@ -77,7 +75,6 @@ export function AccountMenu({
             userId={userId}
           />
           <PushNotificationControls
-            isAdmin={isAdmin}
             labels={{
               denied: profileT("notificationsDenied"),
               disabled: profileT("notificationsDisabled"),
@@ -86,9 +83,6 @@ export function AccountMenu({
               notSupported: profileT("notificationsNotSupported"),
               saveError: profileT("notificationsSaveError"),
               saved: profileT("notificationsSaved"),
-              sendError: profileT("notificationsSendError"),
-              sent: profileT("notificationsSent"),
-              test: profileT("notificationsTestButton"),
               title: profileT("notificationsTitle"),
             }}
             publicKey={publicVapidKey}

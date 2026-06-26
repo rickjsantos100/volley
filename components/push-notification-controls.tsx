@@ -3,7 +3,6 @@
 import { useEffect, useState, useTransition } from "react";
 import {
   savePushSubscription,
-  sendPushTest,
   type PushActionStatus,
   type PushSubscriptionInput,
 } from "@/app/dashboard/notifications/actions";
@@ -12,7 +11,6 @@ import { Toast } from "@/components/ui/toast";
 import { isInstalledPwaDisplayMode } from "@/lib/pwa/display-mode";
 
 type PushNotificationControlsProps = {
-  isAdmin: boolean;
   labels: {
     denied: string;
     disabled: string;
@@ -21,9 +19,6 @@ type PushNotificationControlsProps = {
     notSupported: string;
     saveError: string;
     saved: string;
-    sendError: string;
-    sent: string;
-    test: string;
     title: string;
   };
   publicKey: string;
@@ -96,7 +91,6 @@ async function saveBrowserSubscription(publicKey: string) {
 }
 
 export function PushNotificationControls({
-  isAdmin,
   labels,
   publicKey,
 }: PushNotificationControlsProps) {
@@ -158,17 +152,6 @@ export function PushNotificationControls({
     });
   }
 
-  function sendTestNotification() {
-    startTransition(async () => {
-      if (state !== "enabled") {
-        return;
-      }
-
-      const result = await sendPushTest();
-      setMessage(result.status);
-    });
-  }
-
   const description =
     state === "checking"
       ? labels.disabled
@@ -181,20 +164,14 @@ export function PushNotificationControls({
             : labels.disabled;
   const messageLabel = message
     ? {
-        "not-authorized": labels.sendError,
         disabled: labels.disabled,
         saved: labels.saved,
         "save-error": labels.saveError,
-        sent: labels.sent,
-        "send-error": labels.sendError,
         unsubscribed: labels.disabled,
         "unsubscribe-error": labels.saveError,
       }[message]
     : null;
-  const isError =
-    message === "save-error" ||
-    message === "send-error" ||
-    message === "not-authorized";
+  const isError = message === "save-error";
 
   if (state === "checking" || state === "hidden") {
     return null;
@@ -220,17 +197,6 @@ export function PushNotificationControls({
               type="button"
             >
               {labels.enable}
-            </Button>
-          ) : null}
-          {isAdmin && state === "enabled" ? (
-            <Button
-              disabled={isPending}
-              loading={isPending}
-              onClick={sendTestNotification}
-              type="button"
-              variant="outline"
-            >
-              {labels.test}
             </Button>
           ) : null}
         </div>

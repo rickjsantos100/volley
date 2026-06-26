@@ -213,9 +213,6 @@
     "notificationsNotSupported": "Este navegador ainda não suporta notificações para esta app. No iPhone, instala a app no ecrã principal e abre-a por lá.",
     "notificationsSaved": "Notificações ativadas.",
     "notificationsSaveError": "Não conseguimos ativar as notificações. Tenta outra vez.",
-    "notificationsTestButton": "Teste push",
-    "notificationsSent": "Notificação de teste enviada.",
-    "notificationsSendError": "Não conseguimos enviar a notificação de teste.",
     "validation": {
       "firstNameRequired": "Introduz o teu primeiro nome.",
       "lastNameRequired": "Introduz o teu último nome."

@@ -1,8 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { getCurrentProfile, getCurrentUser } from "@/lib/auth/server";
-import { sendTestNotificationToAllSubscribedUsers } from "@/lib/notifications/push";
+import { getCurrentUser } from "@/lib/auth/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export type PushSubscriptionInput = {
@@ -14,11 +13,8 @@ export type PushSubscriptionInput = {
 
 export type PushActionStatus =
   | "disabled"
-  | "not-authorized"
   | "saved"
   | "save-error"
-  | "sent"
-  | "send-error"
   | "unsubscribed"
   | "unsubscribe-error";
 
@@ -94,32 +90,5 @@ export async function deletePushSubscription(
     return { status: "unsubscribed" };
   } catch {
     return { status: "unsubscribe-error" };
-  }
-}
-
-export async function sendPushTest(): Promise<{ status: PushActionStatus }> {
-  const [user, profile] = await Promise.all([
-    getCurrentUser(),
-    getCurrentProfile(),
-  ]);
-
-  if (!user) {
-    redirect("/");
-  }
-
-  if (profile?.role !== "admin") {
-    return { status: "not-authorized" };
-  }
-
-  try {
-    const result = await sendTestNotificationToAllSubscribedUsers();
-
-    if (result.sent === 0) {
-      return { status: "send-error" };
-    }
-
-    return { status: "sent" };
-  } catch {
-    return { status: "send-error" };
   }
 }
