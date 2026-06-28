@@ -28,6 +28,7 @@ import {
   addParticipantToGame,
   cancelGame,
   deleteGame,
+  editGame,
   finalizePaymentProof,
   joinGame,
   joinWaitlist,
@@ -221,6 +222,10 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
     "cancelled-game": t("cancelledGameMessage"),
     "cancelled-series": t("cancelledSeriesMessage"),
     "uncancelled-game": t("uncancelledGameMessage"),
+    "edited-game": t("editedGameMessage"),
+    "edited-series": t("editedSeriesMessage"),
+    "edit-error": t("editGameError"),
+    "edit-not-authorized": t("editGameNotAuthorized"),
     "proof-uploaded": t("proofUploadedMessage"),
     "proof-upload-error": t("proofUploadErrorMessage"),
     "proof-requested": t("proofRequestedMessage"),
@@ -329,6 +334,28 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
             deleteScopeIntro={t("deleteScopeIntro")}
             deleteScopeTitle={t("deleteScopeTitle")}
             deleteSeriesLabel={t("deleteSeriesButton")}
+            editAction={editGame.bind(null, game.id)}
+            editDurationMinutes={game.duration_minutes}
+            editLabels={{
+              button: t("editGameButton"),
+              date: t("editGameDateLabel"),
+              endsAt: t("editGameEndsAtLabel"),
+              error: t("editGameError"),
+              maxParticipants: t("editGameCapacityLabel"),
+              notAuthorized: t("editGameNotAuthorized"),
+              scopeIntro: t("editGameScopeIntro"),
+              scopeOccurrence: t("editOccurrenceButton"),
+              scopeSeries: t("editSeriesButton"),
+              scopeTitle: t("editGameScopeTitle"),
+              seriesSuccess: t("editedSeriesMessage"),
+              startsAt: t("editGameStartsAtLabel"),
+              submit: t("editGameSubmit"),
+              success: t("editedGameMessage"),
+              title: t("editGameTitle"),
+              validationError: t("editGameValidationError"),
+            }}
+            editMaxParticipants={game.max_participants}
+            editStartsAt={game.starts_at}
             isCancelled={isCancelled}
             isRecurring={isRecurring}
             statusLabels={statusLabels}
@@ -337,7 +364,7 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
           />
         ) : null}
 
-        <Suspense fallback={<GameDetailContentSkeleton />}>
+		<Suspense fallback={<GameDetailContentSkeleton />}>
           <GameDetailContent
             game={game}
             isAdmin={isAdmin}
@@ -461,6 +488,10 @@ async function GameDetailContent({
     "cancelled-game": t("cancelledGameMessage"),
     "cancelled-series": t("cancelledSeriesMessage"),
     "uncancelled-game": t("uncancelledGameMessage"),
+    "edited-game": t("editedGameMessage"),
+    "edited-series": t("editedSeriesMessage"),
+    "edit-error": t("editGameError"),
+    "edit-not-authorized": t("editGameNotAuthorized"),
     "proof-uploaded": t("proofUploadedMessage"),
     "proof-upload-error": t("proofUploadErrorMessage"),
     "proof-requested": t("proofRequestedMessage"),

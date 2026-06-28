@@ -11,6 +11,7 @@ import {
 } from "@/lib/notifications/push";
 import {
   sendAdminAddedToGameEmail,
+  sendGameUpdatedEmail,
   sendPaymentProofRequestEmail,
 } from "@/lib/notifications/email";
 import { getPaymentProofRequestAvailableAt } from "@/lib/payment-proof-policy";
@@ -35,6 +36,10 @@ export type GameActionStatus =
   | "cancelled-game"
   | "cancelled-series"
   | "uncancelled-game"
+  | "edited-game"
+  | "edited-series"
+  | "edit-error"
+  | "edit-not-authorized"
   | "proof-uploaded"
   | "proof-upload-error"
   | "proof-requested"
@@ -100,6 +105,63 @@ async function getUserRole() {
   ]);
 
   return { role: profile?.role ?? null, supabase, user };
+}
+
+function parsePositiveInteger(value: FormDataEntryValue | null) {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const parsed = Number.parseInt(value, 10);
+
+  if (!Number.isInteger(parsed) || parsed <= 0) {
+    return null;
+  }
+
+  return parsed;
+}
+
+function parseLocalDateTime(value: FormDataEntryValue | null, offset: number) {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const match = value.match(
+    /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/,
+  );
+
+  if (!match) {
+    return null;
+  }
+
+  const [, year, month, day, hour, minute] = match;
+  const utcMilliseconds =
+    Date.UTC(
+      Number(year),
+      Number(month) - 1,
+      Number(day),
+      Number(hour),
+      Number(minute),
+    ) +
+    offset * 60 * 1000;
+  const date = new Date(utcMilliseconds);
+
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+
+  return date;
+}
+
+function getDurationMinutes(startsAt: Date, endsAt: Date) {
+  const durationMilliseconds = endsAt.getTime() - startsAt.getTime();
+  const durationMinutes = Math.round(durationMilliseconds / 60000);
+
+  if (!Number.isInteger(durationMinutes) || durationMinutes <= 0) {
+    return null;
+  }
+
+  return durationMinutes;
 }
 
 async function processNotificationsAfterMutation() {
@@ -932,4 +994,165 @@ export async function deleteGame(
   });
 
   redirect("/dashboard");
+}
+
+export async function editGame(
+  gameId: string,
+  previousState: GameActionState,
+  formData: FormData,
+): Promise<GameActionState> {
+  void previousState;
+
+  const { game, supabase, status } = await getAdminGame(gameId);
+  if (status) {
+    return { status: status === "delete-error" ? "edit-error" : status };
+  }
+
+  const scope = getRecurrenceScope(formData);
+  const isRecurringGame = Boolean(game.recurring_series_id && game.recurring_starts_at);
+  const isSeriesAction = scope === "series" && isRecurringGame;
+
+  // Parse form fields
+  const maxParticipants = parsePositiveInteger(formData.get("maxParticipants"));
+  const offset = Number.parseInt(String(formData.get("timezoneOffsetMinutes") ?? "0"), 10);
+  const newStartsAt = parseLocalDateTime(formData.get("startsAt"), Number.isFinite(offset) ? offset : 0);
+  const newEndsAt = parseLocalDateTime(formData.get("endsAt"), Number.isFinite(offset) ? offset : 0);
+  const durationMinutes = newStartsAt && newEndsAt ? getDurationMinutes(newStartsAt, newEndsAt) : null;
+
+  if (!durationMinutes || !maxParticipants || !newStartsAt || !newEndsAt || newStartsAt.getTime() < Date.now()) {
+    return { status: "edit-error" };
+  }
+
+  const oldStartsAt = new Date(game.starts_at);
+  let affectedGameIds = [game.id];
+
+  if (isSeriesAction) {
+    // Update the series template
+    const delta = newStartsAt.getTime() - oldStartsAt.getTime();
+    const { error: seriesError } = await supabase
+      .from("recurring_game_series")
+      .update({
+        duration_minutes: durationMinutes,
+        max_participants: maxParticipants,
+        starts_at: newStartsAt.toISOString(),
+      })
+      .eq("id", game.recurring_series_id);
+
+    if (seriesError) {
+      return { status: "edit-error" };
+    }
+
+    // Get all future occurrences to update
+    const { data: affectedGames, error: affectedGamesError } = await supabase
+      .from("game_events")
+      .select("id, starts_at")
+      .eq("recurring_series_id", game.recurring_series_id)
+      .gte("recurring_starts_at", game.recurring_starts_at)
+      .eq("status", "scheduled")
+      .returns<{ id: string; starts_at: string }[]>();
+
+    if (affectedGamesError) {
+      return { status: "edit-error" };
+    }
+
+    affectedGameIds = (affectedGames ?? []).map((g) => g.id);
+
+    // Update each future game_event - apply the time delta to starts_at
+    for (const affectedGame of affectedGames ?? []) {
+      const gameStartsAt = new Date(affectedGame.starts_at);
+      const updatedStartsAt = new Date(gameStartsAt.getTime() + delta);
+      
+      const { error: updateError } = await supabase
+        .from("game_events")
+        .update({
+          duration_minutes: durationMinutes,
+          max_participants: maxParticipants,
+          starts_at: updatedStartsAt.toISOString(),
+        })
+        .eq("id", affectedGame.id);
+
+      if (updateError) {
+        return { status: "edit-error" };
+      }
+    }
+  } else {
+    // Update single game
+    const { error } = await supabase
+      .from("game_events")
+      .update({
+        duration_minutes: durationMinutes,
+        max_participants: maxParticipants,
+        starts_at: newStartsAt.toISOString(),
+      })
+      .eq("id", gameId)
+      .eq("status", "scheduled");
+
+    if (error) {
+      return { status: "edit-error" };
+    }
+  }
+
+  revalidatePath("/dashboard");
+  revalidatePath(`/dashboard/games/${gameId}`);
+
+  // Send email + push notifications to all participants
+  try {
+    const audiences = await getGameNotificationAudiences(affectedGameIds);
+    await enqueueGameLifecycleNotifications({
+      audiences,
+      includeGameEventId: true,
+      kind: "game_updated",
+    });
+    await processPendingNotifications();
+  } catch (pushError) {
+    console.error("Failed to send game update push notifications", pushError);
+  }
+
+  // Send emails to all participants
+  try {
+    const adminClient = createAdminClient();
+    for (const gameIdToNotify of affectedGameIds) {
+      const { data: participants } = await adminClient
+        .from("game_participants")
+        .select("id, user_id")
+        .eq("game_event_id", gameIdToNotify);
+
+      const { data: gameData } = await adminClient
+        .from("game_events")
+        .select("starts_at")
+        .eq("id", gameIdToNotify)
+        .maybeSingle<{ starts_at: string }>();
+
+      if (!gameData || !participants) continue;
+
+      for (const participant of participants ?? []) {
+        const { data: profile } = await adminClient
+          .from("profiles")
+          .select("email")
+          .eq("id", participant.user_id)
+          .maybeSingle<{ email: string }>();
+
+        if (!profile?.email) continue;
+
+        try {
+          await sendGameUpdatedEmail({
+            email: profile.email,
+            gameId: gameIdToNotify,
+            participantId: participant.id,
+            startsAt: gameData.starts_at,
+          });
+        } catch (emailError) {
+          console.error("Failed to send game updated email", {
+            emailError,
+            gameId: gameIdToNotify,
+            participantId: participant.id,
+          });
+        }
+      }
+    }
+  } catch (emailError) {
+    console.error("Failed to send game update emails", emailError);
+  }
+
+  return { status: isSeriesAction ? "edited-series" : "edited-game" };
 }

@@ -10,6 +10,7 @@ export type PushNotificationKind =
   | "game_cancelled"
   | "game_deleted"
   | "game_reminder_4h"
+  | "game_updated"
   | "payment_marked_paid"
   | "payment_proof_requested"
   | "test"
@@ -47,13 +48,22 @@ type GameAudienceRow = {
   user_id: string;
 };
 
-type GameLifecycleNotificationKind = "game_cancelled" | "game_deleted";
+type GameLifecycleNotificationKind = "game_cancelled" | "game_deleted" | "game_updated";
 
-const gameLifecycleNotificationPayload = {
-  body: "Este jogo já não vai avançar. Vê os próximos jogos no painel.",
-  title: "Jogo sem efeito",
-  url: "/dashboard",
-};
+function getGameLifecycleNotificationPayload(kind: GameLifecycleNotificationKind) {
+  if (kind === "game_updated") {
+    return {
+      body: "Um jogo em que estás inscrito foi alterado. Vê as novas informações no painel.",
+      title: "Jogo atualizado",
+      url: "/dashboard",
+    };
+  }
+  return {
+    body: "Este jogo já não vai avançar. Vê os próximos jogos no painel.",
+    title: "Jogo sem efeito",
+    url: "/dashboard",
+  };
+}
 
 let webPushConfigured = false;
 
@@ -195,7 +205,11 @@ export async function enqueueGameLifecycleNotifications({
   kind: GameLifecycleNotificationKind;
 }) {
   const tagPrefix =
-    kind === "game_cancelled" ? "game-cancelled" : "game-deleted";
+    kind === "game_cancelled"
+      ? "game-cancelled"
+      : kind === "game_updated"
+        ? "game-updated"
+        : "game-deleted";
 
   for (const audience of audiences) {
     for (const userId of audience.userIds) {
@@ -204,7 +218,7 @@ export async function enqueueGameLifecycleNotifications({
         gameEventId: includeGameEventId ? audience.gameId : undefined,
         kind,
         payload: {
-          ...gameLifecycleNotificationPayload,
+          ...getGameLifecycleNotificationPayload(kind),
           tag: `${tagPrefix}-${audience.gameId}`,
         },
         userId,

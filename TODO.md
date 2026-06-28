@@ -16,5 +16,9 @@ Use this file to collect future work items.
 
 - instead of a proof of payment system we could set a system where users would pay for x amount of tokens (this would be managed by admins, no actual pay portal) and then the user could use a token per game
 
+- Check places where send emails without push notifications 
+- add the option to opt out of email notifications 
+
 Test: 
 - payment proof handling when a player moves up from a wait list
+
