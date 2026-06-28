@@ -2,7 +2,7 @@
 
 ## 1. Purpose
 
-Build an application for managing volleyball game events at a rental venue. The application should let users see upcoming games and add themselves to available events, while admins manage the game schedule, participant lists, payment status, and waitlists.
+Build an application for managing volleyball game events at a rental venue. The application should let users see upcoming games, add themselves to available events, and optionally submit payment proof, while admins manage the game schedule, participant lists, payment-proof requests, and waitlists.
 
 ## 2. Account Types
 
@@ -19,7 +19,7 @@ Required capabilities:
 - Add users to a game event.
 - Remove users from a game event.
 - View all game details, including participants and capacity.
-- View and update each participant's payment status.
+- View each participant's payment-proof state and request missing proof.
 - View and manage the waitlist for each game.
 - Remove users from a waitlist.
 - Reorder users in a waitlist.
@@ -82,7 +82,7 @@ Users and admins must be able to open a scheduled game event and see:
 - Maximum participant count.
 - List of users already joined.
 - Remaining available spots.
-- The current user's own payment status when they are on the participant list.
+- The current user's own payment-proof state when they are on the participant list.
 - Waitlist status, including whether the current user is on the waitlist.
 - Repeat information.
 
@@ -109,14 +109,18 @@ Admins must also be able to see:
 - Automatic waitlist promotion should preserve waitlist order.
 - Automatic waitlist promotion should use the current admin-managed waitlist order.
 
-### Payment Status
+### Payment Proof
 
-- Each participant should have a payment status for the game.
-- Payment status should indicate whether the participant has paid.
-- Users should be able to see their own payment status for games where they are on the participant list.
-- Users should not be able to see payment status for other users.
-- Admins should be able to see payment status for every participant.
-- Admins should be able to update payment status after confirming payment outside the application.
+- Joining players should be offered an optional payment-proof upload and may
+  choose to add it later.
+- Accepted files are JPEG, PNG, WebP, and PDF up to 5 MB.
+- A participant can have one proof per game and may replace it.
+- Users can see and manage only their own proof.
+- Admins can see whether proof is missing, requested, submitted, or expired and
+  can open submitted proof.
+- When proof is missing, an admin can request it once by email and push
+  notification.
+- Proof files must be deleted 14 days after the game's configured end time.
 
 ### Admin Event Management
 
@@ -128,7 +132,7 @@ Admins must be able to:
 - Delete a game from the schedule.
 - Add users to a game participant list.
 - Remove users from a game participant list.
-- Mark participants as paid or unpaid.
+- View proofs and request missing proof.
 - View the waitlist for a game.
 - Remove users from the waitlist.
 - Reorder users on the waitlist.
@@ -166,7 +170,12 @@ Admins must be able to:
 - `joined_at`
 - `added_by`
 - `source`: `self_joined`, `admin_added`, or `waitlist_promoted`
-- `payment_status`: `unpaid` or `paid`
+- `payment_proof_path`
+- `payment_proof_filename`
+- `payment_proof_mime_type`
+- `payment_proof_uploaded_at`
+- `payment_proof_requested_at`
+- `payment_proof_deleted_at`
 - `payment_updated_by`
 - `payment_updated_at`
 
@@ -186,7 +195,8 @@ Admins must be able to:
 - Admin-only actions must be protected from normal users.
 - Event capacity rules must be enforced server-side.
 - Waitlist promotion must be handled server-side when participant spots become available.
-- Payment status visibility must be enforced server-side so users can only see their own payment status.
+- Payment-proof visibility must be enforced server-side and through private
+  storage policies so users can access only their own files.
 - The interface should make upcoming games easy to scan.
 - The system should prevent accidental duplicate participants.
 - The system should prevent accidental duplicate waitlist entries.
@@ -225,10 +235,12 @@ Admins must be able to:
 - A user cannot join or waitlist for a cancelled game.
 - An admin can add a user to a game.
 - An admin can remove a user from a game.
-- An admin can see whether participants have paid.
-- A user can see their own payment status for a game they are participating in.
-- A normal user cannot see another user's payment status.
-- An admin can mark a participant as paid or unpaid.
+- A player can join with proof or choose to add it later.
+- A player can add or replace their own proof after joining.
+- A normal user cannot see another user's proof.
+- An admin can see and open submitted proof.
+- An admin can request missing proof once by email and push notification.
+- Proof files are deleted 14 days after game conclusion.
 - An admin can see the waitlist for a full game.
 - An admin can remove a user from the waitlist.
 - An admin can reorder users in the waitlist.
@@ -240,4 +252,4 @@ Admins must be able to:
 - Should repeatable events create all future game records immediately or generate them on demand?
 - Should users receive notifications when they join, leave, or are added to a game?
 - Should payment collection happen inside the application in a future version, or should the app only track externally confirmed payments?
-- Should waitlisted users have their own payment status, or only participants?
+- Should future versions require administrator approval of submitted proof?

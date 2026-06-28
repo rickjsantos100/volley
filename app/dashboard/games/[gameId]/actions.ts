@@ -9,6 +9,16 @@ import {
   getGameNotificationAudiences,
   processPendingNotifications,
 } from "@/lib/notifications/push";
+import { sendPaymentProofRequestEmail } from "@/lib/notifications/email";
+import {
+  getGamePaymentProofPaths,
+  getPaymentProofPath,
+  maxPaymentProofBytes,
+  paymentProofBucket,
+  paymentProofMimeTypes,
+  removePaymentProofs,
+} from "@/lib/payment-proofs";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
 export type GameActionStatus =
@@ -18,7 +28,10 @@ export type GameActionStatus =
   | "cancelled-game"
   | "cancelled-series"
   | "uncancelled-game"
-  | "payment-updated"
+  | "proof-uploaded"
+  | "proof-upload-error"
+  | "proof-requested"
+  | "proof-request-error"
   | "removed-player"
   | "join-error"
   | "waitlist-error"
@@ -27,7 +40,6 @@ export type GameActionStatus =
   | "remove-player-error"
   | "cancel-error"
   | "delete-error"
-  | "payment-error"
   | "not-authorized";
 
 export type GameActionState = {
@@ -43,10 +55,14 @@ type AdminGameRow = {
 
 type RecurrenceScope = "occurrence" | "series";
 
-type ParticipantPaymentRow = {
+type ParticipantProofRow = {
   id: string;
-  payment_status: "paid" | "unpaid" | null;
   user_id: string;
+};
+
+type PaymentProofRow = {
+  proof_path: string | null;
+  proof_requested_at: string | null;
 };
 
 type GameIdRow = {
@@ -218,12 +234,130 @@ export async function leaveGame(
     return { status: "leave-error" };
   }
 
+  try {
+    await removePaymentProofs([getPaymentProofPath(gameId, user.id)]);
+  } catch (proofError) {
+    console.error("Failed to delete payment proof after leaving game", {
+      gameId,
+      proofError,
+      userId: user.id,
+    });
+  }
+
   await processNotificationsAfterMutation();
 
   return { status: "left-game" };
 }
 
-export async function updateParticipantPaymentStatus(
+export async function finalizePaymentProof(
+  gameId: string,
+  previousState: GameActionState,
+  formData: FormData,
+): Promise<GameActionState> {
+  void previousState;
+
+  const [supabase, user] = await Promise.all([
+    createClient(),
+    getCurrentUser(),
+  ]);
+
+  if (!user) {
+    redirect("/");
+  }
+
+  const filename = formData.get("filename");
+  const mimeType = formData.get("mimeType");
+
+  if (
+    typeof filename !== "string" ||
+    !filename.trim() ||
+    filename.length > 255 ||
+    typeof mimeType !== "string" ||
+    !paymentProofMimeTypes.has(mimeType)
+  ) {
+    return { status: "proof-upload-error" };
+  }
+
+  const [{ data: participant }, { data: game }] = await Promise.all([
+    supabase
+      .from("game_participants")
+      .select("id")
+      .eq("game_event_id", gameId)
+      .eq("user_id", user.id)
+      .maybeSingle<{ id: string }>(),
+    supabase
+      .from("game_events")
+      .select("id, starts_at, status")
+      .eq("id", gameId)
+      .eq("status", "scheduled")
+      .gte("starts_at", new Date().toISOString())
+      .maybeSingle(),
+  ]);
+
+  if (!participant || !game) {
+    return { status: "proof-upload-error" };
+  }
+
+  const proofPath = getPaymentProofPath(gameId, user.id);
+  const { data: storedFiles, error: listError } = await supabase.storage
+    .from(paymentProofBucket)
+    .list(`${gameId}/${user.id}`, {
+      limit: 1,
+      search: "proof",
+    });
+  const storedProof = storedFiles?.find((file) => file.name === "proof");
+  const storedMimeType =
+    typeof storedProof?.metadata?.mimetype === "string"
+      ? storedProof.metadata.mimetype
+      : null;
+  const storedSize =
+    typeof storedProof?.metadata?.size === "number"
+      ? storedProof.metadata.size
+      : null;
+
+  if (
+    listError ||
+    !storedProof ||
+    storedMimeType !== mimeType ||
+    storedSize === null ||
+    storedSize > maxPaymentProofBytes
+  ) {
+    return { status: "proof-upload-error" };
+  }
+
+  const { data: existingProof } = await supabase
+    .from("game_payment_proofs")
+    .select("participant_id")
+    .eq("participant_id", participant.id)
+    .maybeSingle();
+  const proofMetadata = {
+    proof_filename: filename.trim(),
+    proof_mime_type: mimeType,
+    proof_path: proofPath,
+    proof_uploaded_at: new Date().toISOString(),
+  };
+  const { error } = existingProof
+    ? await supabase
+        .from("game_payment_proofs")
+        .update(proofMetadata)
+        .eq("participant_id", participant.id)
+    : await supabase.from("game_payment_proofs").insert({
+        ...proofMetadata,
+        game_event_id: gameId,
+        participant_id: participant.id,
+        user_id: user.id,
+      });
+
+  revalidatePath(`/dashboard/games/${gameId}`);
+
+  if (error) {
+    return { status: "proof-upload-error" };
+  }
+
+  return { status: "proof-uploaded" };
+}
+
+export async function requestPaymentProof(
   gameId: string,
   participantId: string,
   previousState: GameActionState,
@@ -232,7 +366,7 @@ export async function updateParticipantPaymentStatus(
   void previousState;
   void formData;
 
-  const { role, supabase, user } = await getUserRole();
+  const { role, user } = await getUserRole();
 
   if (!user) {
     redirect("/");
@@ -242,59 +376,93 @@ export async function updateParticipantPaymentStatus(
     return { status: "not-authorized" };
   }
 
-  const paymentStatus =
-    formData.get("paymentStatus") === "paid" ? "paid" : "unpaid";
-  const { data: participantBeforeUpdate } = await supabase
+  const supabase = createAdminClient();
+  const { data: participant, error: participantError } = await supabase
     .from("game_participants")
-    .select("id, user_id, payment_status")
+    .select("id, user_id")
     .eq("id", participantId)
     .eq("game_event_id", gameId)
-    .maybeSingle<ParticipantPaymentRow>();
+    .maybeSingle<ParticipantProofRow>();
 
-  const { error } = await supabase
-    .from("game_participants")
-    .update({
-      payment_status: paymentStatus,
-      payment_updated_at: new Date().toISOString(),
-      payment_updated_by: user.id,
-    })
-    .eq("id", participantId)
-    .eq("game_event_id", gameId);
+  if (participantError || !participant) {
+    return { status: "proof-request-error" };
+  }
+
+  const { data: proof, error: proofError } = await supabase
+    .from("game_payment_proofs")
+    .select("proof_path, proof_requested_at")
+    .eq("participant_id", participant.id)
+    .maybeSingle<PaymentProofRow>();
+
+  if (proofError || proof?.proof_path) {
+    return { status: "proof-request-error" };
+  }
+
+  if (proof?.proof_requested_at) {
+    return { status: "proof-requested" };
+  }
+
+  const [{ data: profile }, { data: game }] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("email")
+      .eq("id", participant.user_id)
+      .maybeSingle<{ email: string | null }>(),
+    supabase
+      .from("game_events")
+      .select("starts_at")
+      .eq("id", gameId)
+      .maybeSingle<{ starts_at: string }>(),
+  ]);
+
+  if (!profile?.email || !game) {
+    return { status: "proof-request-error" };
+  }
+
+  try {
+    await sendPaymentProofRequestEmail({
+      email: profile.email,
+      gameId,
+      participantId: participant.id,
+      startsAt: game.starts_at,
+    });
+    await enqueueNotification({
+      dedupeKey: `payment_proof_requested:${gameId}:${participant.user_id}`,
+      gameEventId: gameId,
+      kind: "payment_proof_requested",
+      payload: {
+        body: "Adiciona o comprovativo de pagamento na página do jogo.",
+        tag: `payment-proof-requested-${gameId}`,
+        title: "Comprovativo em falta",
+        url: `/dashboard/games/${gameId}`,
+      },
+      userId: participant.user_id,
+    });
+  } catch (notificationError) {
+    console.error("Failed to request payment proof", notificationError);
+    return { status: "proof-request-error" };
+  }
+
+  const { error: updateError } = await supabase
+    .from("game_payment_proofs")
+    .upsert(
+      {
+        game_event_id: gameId,
+        participant_id: participant.id,
+        proof_requested_at: new Date().toISOString(),
+        user_id: participant.user_id,
+      },
+      { onConflict: "participant_id" },
+    );
+
+  if (updateError) {
+    return { status: "proof-request-error" };
+  }
 
   revalidatePath(`/dashboard/games/${gameId}`);
+  await processNotificationsAfterMutation();
 
-  if (error) {
-    return { status: "payment-error" };
-  }
-
-  if (
-    paymentStatus === "paid" &&
-    participantBeforeUpdate &&
-    participantBeforeUpdate.payment_status !== "paid"
-  ) {
-    try {
-      await enqueueNotification({
-        dedupeKey: `payment_marked_paid:${gameId}:${participantBeforeUpdate.user_id}`,
-        gameEventId: gameId,
-        kind: "payment_marked_paid",
-        payload: {
-          body: "Já estás marcado como pago para o jogo.",
-          tag: `payment-paid-${gameId}`,
-          title: "Pagamento confirmado",
-          url: `/dashboard/games/${gameId}`,
-        },
-        userId: participantBeforeUpdate.user_id,
-      });
-      await processPendingNotifications();
-    } catch (notificationError) {
-      console.error(
-        "Failed to send payment push notification",
-        notificationError,
-      );
-    }
-  }
-
-  return { status: "payment-updated" };
+  return { status: "proof-requested" };
 }
 
 export async function reorderWaitlist(
@@ -367,6 +535,13 @@ export async function removeParticipantFromGame(
     return { status: "not-authorized" };
   }
 
+  const { data: participant } = await supabase
+    .from("game_participants")
+    .select("user_id")
+    .eq("id", participantId)
+    .eq("game_event_id", gameId)
+    .maybeSingle<{ user_id: string }>();
+
   const { error } = await supabase
     .from("game_participants")
     .delete()
@@ -378,6 +553,20 @@ export async function removeParticipantFromGame(
 
   if (error) {
     return { status: "remove-player-error" };
+  }
+
+  if (participant) {
+    try {
+      await removePaymentProofs([
+        getPaymentProofPath(gameId, participant.user_id),
+      ]);
+    } catch (proofError) {
+      console.error("Failed to delete removed participant payment proof", {
+        gameId,
+        proofError,
+        userId: participant.user_id,
+      });
+    }
   }
 
   await processNotificationsAfterMutation();
@@ -549,6 +738,7 @@ export async function deleteGame(
   let physicalDeleteAudiences:
     | Awaited<ReturnType<typeof getGameNotificationAudiences>>
     | undefined;
+  let paymentProofPaths: string[] = [];
 
   if (isSeriesAction) {
     const { data: affectedGames, error: affectedGamesError } = await supabase
@@ -572,6 +762,12 @@ export async function deleteGame(
     } catch (error) {
       console.error("Failed to prepare game delete push notifications", error);
     }
+  }
+
+  try {
+    paymentProofPaths = await getGamePaymentProofPaths(affectedGameIds);
+  } catch (proofError) {
+    console.error("Failed to prepare game payment proof deletion", proofError);
   }
 
   if (isSeriesAction) {
@@ -605,6 +801,12 @@ export async function deleteGame(
 
   if (error) {
     return { status: "delete-error" };
+  }
+
+  try {
+    await removePaymentProofs(paymentProofPaths);
+  } catch (proofError) {
+    console.error("Failed to delete game payment proofs", proofError);
   }
 
   await notifyGameLifecycleChange({

@@ -11,6 +11,7 @@ export type PushNotificationKind =
   | "game_deleted"
   | "game_reminder_4h"
   | "payment_marked_paid"
+  | "payment_proof_requested"
   | "test"
   | "waitlist_promoted";
 

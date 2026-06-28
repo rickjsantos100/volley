@@ -54,6 +54,15 @@ provider is Resend with `noreply@voleylisboa.pt` as the sender address. The
 OTP email template should show the code with `{{ .Token }}` and must not depend
 on email links opening the installed PWA.
 
+The Next.js application should also use the Resend API for transactional
+application emails, beginning with payment-proof requests. This is separate
+from Supabase Auth's SMTP integration. Application email must be sent only from
+server code using `RESEND_API_KEY`, with `noreply@voleylisboa.pt` on a verified
+Resend domain. `APP_URL` must contain the canonical application origin used in
+email links. Transactional emails must use the reusable branded templates in
+`lib/notifications/templates`, include an HTML body built with email-compatible
+tables and inline styles, and provide a plain-text fallback.
+
 ## 4. Progressive Web App Requirements
 
 The application should include the core PWA assets and configuration needed for installability:
@@ -63,7 +72,7 @@ The application should include the core PWA assets and configuration needed for 
 - Service worker support for caching static application assets.
 - Offline fallback behavior for unavailable network requests where practical.
 
-Authentication, game data, waitlist data, and payment status should continue to treat Supabase as the source of truth. Offline support should not allow users to make conflicting game participation or payment-status changes without a successful server round trip.
+Authentication, game data, waitlist data, and payment-proof metadata should continue to treat Supabase as the source of truth. Offline support should not allow users to make conflicting game participation or payment-proof changes without a successful server round trip.
 
 ### 4.1 Opening Shared Links In The Installed App
 
@@ -166,7 +175,7 @@ Database schema should be defined in migrations for:
 - Game events.
 - Game participants.
 - Game waitlist entries.
-- Payment status tracking.
+- Payment-proof metadata and private file storage.
 - Admin roles or permissions.
 
 Database migrations should also define:
@@ -200,9 +209,10 @@ Required access rules include:
 - Authenticated users can join available games.
 - Authenticated users can remove themselves from participant lists.
 - Authenticated users can join and leave waitlists.
-- Users can see only their own payment status.
-- Users cannot see other users' payment status.
-- Admins can see and update all participant payment statuses.
+- Users can see and replace only their own payment proof.
+- Users cannot see other users' payment-proof metadata or files.
+- Admins can see all participant proof states, open submitted proofs, and
+  request missing proof.
 - Admins can create, edit, cancel, uncancel, and delete game events.
 - Admins can remove users from participant lists.
 - Admins can remove users from waitlists.
@@ -271,6 +281,14 @@ Vercel should store application environment variables, including:
 - `VAPID_PRIVATE_KEY`
 - `VAPID_SUBJECT`
 - `CRON_SECRET`
+- `RESEND_API_KEY`
+- `APP_URL`
+
+`RESEND_API_KEY` is used both by the local Supabase Auth SMTP configuration and
+by the Next.js server for transactional application email. Configure it in
+local development and Vercel without a `NEXT_PUBLIC_` prefix. The
+`noreply@voleylisboa.pt` sender and its domain must remain verified in Resend.
+`APP_URL` must be the production HTTPS origin without a trailing slash.
 
 Supabase Vault should store secrets used by database-scheduled jobs:
 
@@ -321,8 +339,10 @@ Required test coverage should include:
 
 - RLS policies for normal users.
 - RLS policies for admins.
-- Users seeing only their own payment status.
-- Users being unable to see other participants' payment status.
+- Users seeing only their own payment-proof metadata and files.
+- Users being unable to see other participants' payment proofs.
+- Admin-only proof viewing and proof requests.
+- Payment-proof file type, size, and 14-day retention enforcement.
 - Users joining and leaving participant lists.
 - Users joining and leaving waitlists.
 - Admin-only game creation, cancellation, uncancellation, and deletion.

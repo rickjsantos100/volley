@@ -5,37 +5,49 @@ import type {
   GameActionState,
   GameActionStatus,
 } from "@/app/dashboard/games/[gameId]/actions";
-import { AdminParticipantPaymentControl } from "@/components/admin-participant-payment-control";
-import { AdminRemovePlayerButton } from "@/components/admin-remove-player-button";
+import { AdminParticipantMenu } from "@/components/admin-participant-menu";
 import { InitialsAvatar } from "@/components/ui/initials-avatar";
 import { cx } from "@/components/ui/class-name";
 
 type AdminParticipantListItemProps = {
+  actionsLabel: string;
   name: string;
-  paidLabel: string;
-  paymentAction: (
+  participantId: string;
+  proofAction: (
     previousState: GameActionState,
     formData: FormData,
   ) => Promise<GameActionState>;
-  paymentStatus: "paid" | "unpaid" | null;
+  proofDeletedAt: string | null;
+  proofLabels: {
+    expired: string;
+    request: string;
+    requested: string;
+    view: string;
+  };
+  proofPath: string | null;
+  proofRequestedAt: string | null;
+  proofUploadedAt: string | null;
   removeAction: (
     previousState: GameActionState,
     formData: FormData,
   ) => Promise<GameActionState>;
   removeLabel: string;
   statusLabels: Partial<Record<GameActionStatus, string>>;
-  unpaidLabel: string;
 };
 
 export function AdminParticipantListItem({
+  actionsLabel,
   name,
-  paidLabel,
-  paymentAction,
-  paymentStatus,
+  participantId,
+  proofAction,
+  proofDeletedAt,
+  proofLabels,
+  proofPath,
+  proofRequestedAt,
+  proofUploadedAt,
   removeAction,
   removeLabel,
   statusLabels,
-  unpaidLabel,
 }: AdminParticipantListItemProps) {
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -52,22 +64,21 @@ export function AdminParticipantListItem({
         <p className="min-w-0 text-sm font-semibold text-[#101828] break-words">{name}</p>
       </div>
 
-      <div className="flex shrink-0 items-center gap-2">
-        <AdminParticipantPaymentControl
-          action={paymentAction}
-          disabled={isDeleting}
-          paidLabel={paidLabel}
-          paymentStatus={paymentStatus}
-          statusLabels={statusLabels}
-          unpaidLabel={unpaidLabel}
-        />
-        <AdminRemovePlayerButton
-          action={removeAction}
-          label={removeLabel}
-          onPendingChange={setIsDeleting}
-          statusLabels={statusLabels}
-        />
-      </div>
+      <AdminParticipantMenu
+        actionsLabel={actionsLabel}
+        disabled={isDeleting}
+        onPendingChange={setIsDeleting}
+        participantId={participantId}
+        proofAction={proofAction}
+        proofDeletedAt={proofDeletedAt}
+        proofLabels={proofLabels}
+        proofPath={proofPath}
+        proofRequestedAt={proofRequestedAt}
+        proofUploadedAt={proofUploadedAt}
+        removeAction={removeAction}
+        removeLabel={removeLabel}
+        statusLabels={statusLabels}
+      />
     </li>
   );
 }

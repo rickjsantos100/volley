@@ -17,18 +17,20 @@ import {
 } from "@/lib/format-game-date-title";
 import { formatDuration } from "@/lib/format-duration";
 import { getCurrentProfile, getCurrentUser } from "@/lib/auth/server";
+import { getPaymentProofPath } from "@/lib/payment-proofs";
 import { createClient } from "@/lib/supabase/server";
 import type { GameActionStatus } from "./actions";
 import {
   cancelGame,
   deleteGame,
+  finalizePaymentProof,
   joinGame,
   joinWaitlist,
   leaveGame,
   removeParticipantFromGame,
   removeWaitlistEntryFromGame,
   reorderWaitlist,
-  updateParticipantPaymentStatus,
+  requestPaymentProof,
   uncancelGame,
 } from "./actions";
 
@@ -47,7 +49,12 @@ type ParticipantDetail = {
   game_event_id: string;
   user_id: string;
   joined_at: string;
-  payment_status: "unpaid" | "paid" | null;
+  payment_proof_path: string | null;
+  payment_proof_filename: string | null;
+  payment_proof_mime_type: string | null;
+  payment_proof_uploaded_at: string | null;
+  payment_proof_requested_at: string | null;
+  payment_proof_deleted_at: string | null;
   display_name: string | null;
   first_name: string | null;
   last_name: string | null;
@@ -175,7 +182,10 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
     "cancelled-game": t("cancelledGameMessage"),
     "cancelled-series": t("cancelledSeriesMessage"),
     "uncancelled-game": t("uncancelledGameMessage"),
-    "payment-updated": t("paymentUpdatedMessage"),
+    "proof-uploaded": t("proofUploadedMessage"),
+    "proof-upload-error": t("proofUploadErrorMessage"),
+    "proof-requested": t("proofRequestedMessage"),
+    "proof-request-error": t("proofRequestErrorMessage"),
     "removed-player": t("removedPlayerMessage"),
     "join-error": t("joinErrorMessage"),
     "waitlist-error": t("waitlistErrorMessage"),
@@ -184,7 +194,6 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
     "remove-player-error": t("removePlayerErrorMessage"),
     "cancel-error": t("cancelErrorMessage"),
     "delete-error": t("deleteErrorMessage"),
-    "payment-error": t("paymentErrorMessage"),
     "not-authorized": t("notAuthorizedMessage"),
   };
 
@@ -324,7 +333,7 @@ async function GameDetailContent({
     supabase
       .from("game_participant_details")
       .select(
-        "id, game_event_id, user_id, joined_at, payment_status, display_name, first_name, last_name, email",
+        "id, game_event_id, user_id, joined_at, payment_proof_path, payment_proof_filename, payment_proof_mime_type, payment_proof_uploaded_at, payment_proof_requested_at, payment_proof_deleted_at, display_name, first_name, last_name, email",
       )
       .eq("game_event_id", game.id)
       .order("joined_at", { ascending: true }),
@@ -348,9 +357,10 @@ async function GameDetailContent({
   }
   const occupiedSlots = participants.length;
   const isFull = occupiedSlots >= game.max_participants;
-  const isParticipant = participants.some(
+  const currentParticipant = participants.find(
     (participant) => participant.user_id === userId,
   );
+  const isParticipant = Boolean(currentParticipant);
   const isWaitlisted = waitlist.some((entry) => entry.user_id === userId);
   const hasListError = Boolean(participantsError || waitlistError);
   const joinGameAction = joinGame.bind(null, game.id);
@@ -364,7 +374,10 @@ async function GameDetailContent({
     "cancelled-game": t("cancelledGameMessage"),
     "cancelled-series": t("cancelledSeriesMessage"),
     "uncancelled-game": t("uncancelledGameMessage"),
-    "payment-updated": t("paymentUpdatedMessage"),
+    "proof-uploaded": t("proofUploadedMessage"),
+    "proof-upload-error": t("proofUploadErrorMessage"),
+    "proof-requested": t("proofRequestedMessage"),
+    "proof-request-error": t("proofRequestErrorMessage"),
     "removed-player": t("removedPlayerMessage"),
     "join-error": t("joinErrorMessage"),
     "waitlist-error": t("waitlistErrorMessage"),
@@ -373,7 +386,6 @@ async function GameDetailContent({
     "remove-player-error": t("removePlayerErrorMessage"),
     "cancel-error": t("cancelErrorMessage"),
     "delete-error": t("deleteErrorMessage"),
-    "payment-error": t("paymentErrorMessage"),
     "not-authorized": t("notAuthorizedMessage"),
   };
 
@@ -387,6 +399,7 @@ async function GameDetailContent({
             label: t("addToCalendarButton"),
           }}
           confirmLeaveMessage={t("leaveGameConfirmMessage")}
+          finalizePaymentProofAction={finalizePaymentProof.bind(null, game.id)}
           isFull={isFull}
           isParticipant={isParticipant}
           isWaitlisted={isWaitlisted}
@@ -396,6 +409,25 @@ async function GameDetailContent({
           joinWaitlistLabel={t("joinWaitlistButton")}
           leaveGameAction={leaveGameAction}
           leaveGameLabel={t("leaveGameButton")}
+          paymentProof={{
+            deletedAt: currentParticipant?.payment_proof_deleted_at ?? null,
+            path: currentParticipant?.payment_proof_path ?? null,
+            requestedAt:
+              currentParticipant?.payment_proof_requested_at ?? null,
+            storagePath: getPaymentProofPath(game.id, userId),
+          }}
+          proofLabels={{
+            add: t("addProofButton"),
+            addLater: t("addProofLaterButton"),
+            added: t("proofAddedLabel"),
+            file: t("proofFileLabel"),
+            fileHelp: t("proofFileHelp"),
+            invalidFile: t("proofInvalidFileMessage"),
+            replace: t("replaceProofButton"),
+            requested: t("proofRequestedLabel"),
+            submit: t("uploadProofButton"),
+            title: t("proofModalTitle"),
+          }}
           share={{
             gamePath: `/dashboard/games/${game.id}`,
             labels: {
@@ -433,23 +465,34 @@ async function GameDetailContent({
 
                   return isAdmin ? (
                     <AdminParticipantListItem
+                      actionsLabel={t("playerActionsLabel", { name })}
                       key={participant.id}
                       name={name}
-                      paidLabel={t("paidLabel")}
-                      paymentAction={updateParticipantPaymentStatus.bind(
+                      participantId={participant.id}
+                      proofAction={requestPaymentProof.bind(
                         null,
                         game.id,
                         participant.id,
                       )}
-                      paymentStatus={participant.payment_status}
+                      proofDeletedAt={participant.payment_proof_deleted_at}
+                      proofLabels={{
+                        expired: t("proofExpiredLabel"),
+                        request: t("requestProofButton"),
+                        requested: t("proofRequestedLabel"),
+                        view: t("viewProofButton"),
+                      }}
+                      proofPath={participant.payment_proof_path}
+                      proofRequestedAt={
+                        participant.payment_proof_requested_at
+                      }
+                      proofUploadedAt={participant.payment_proof_uploaded_at}
                       removeAction={removeParticipantFromGame.bind(
                         null,
                         game.id,
                         participant.id,
                       )}
-                      removeLabel={t("removePlayerLabel", { name })}
+                      removeLabel={t("removePlayerLabel")}
                       statusLabels={statusLabels}
-                      unpaidLabel={t("unpaidLabel")}
                     />
                   ) : (
                     <li

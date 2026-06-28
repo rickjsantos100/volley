@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import type {
   GameActionState,
@@ -12,8 +12,10 @@ import {
 } from "@/components/game-share-button";
 import { Button, buttonClassName, SubmitButton } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Field } from "@/components/ui/field";
 import { Modal } from "@/components/ui/modal";
 import { Toast } from "@/components/ui/toast";
+import { createClient } from "@/lib/supabase/client";
 
 type GameParticipationActionsProps = {
   alreadyWaitlistedLabel: string;
@@ -22,6 +24,10 @@ type GameParticipationActionsProps = {
     label: string;
   };
   confirmLeaveMessage: string;
+  finalizePaymentProofAction: (
+    previousState: GameActionState,
+    formData: FormData,
+  ) => Promise<GameActionState>;
   isFull: boolean;
   isParticipant: boolean;
   isWaitlisted: boolean;
@@ -40,6 +46,24 @@ type GameParticipationActionsProps = {
     formData: FormData,
   ) => Promise<GameActionState>;
   leaveGameLabel: string;
+  paymentProof: {
+    deletedAt: string | null;
+    path: string | null;
+    requestedAt: string | null;
+    storagePath: string;
+  };
+  proofLabels: {
+    add: string;
+    addLater: string;
+    added: string;
+    file: string;
+    fileHelp: string;
+    invalidFile: string;
+    replace: string;
+    requested: string;
+    submit: string;
+    title: string;
+  };
   share: GameShareProps;
   statusLabels: Record<GameActionStatus, string>;
 };
@@ -49,12 +73,37 @@ const errorStatuses = new Set<GameActionStatus>([
   "join-error",
   "waitlist-error",
   "leave-error",
+  "proof-upload-error",
 ]);
+const allowedProofTypes = new Set([
+  "application/pdf",
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+]);
+const maxProofBytes = 5 * 1024 * 1024;
+const proofMimeTypesByExtension: Record<string, string> = {
+  jpeg: "image/jpeg",
+  jpg: "image/jpeg",
+  pdf: "application/pdf",
+  png: "image/png",
+  webp: "image/webp",
+};
+
+function getProofMimeType(file: File) {
+  if (allowedProofTypes.has(file.type)) {
+    return file.type;
+  }
+
+  const extension = file.name.split(".").pop()?.toLowerCase();
+  return extension ? proofMimeTypesByExtension[extension] ?? null : null;
+}
 
 export function GameParticipationActions({
   alreadyWaitlistedLabel,
   calendar,
   confirmLeaveMessage,
+  finalizePaymentProofAction,
   isFull,
   isParticipant,
   isWaitlisted,
@@ -64,11 +113,18 @@ export function GameParticipationActions({
   joinWaitlistLabel,
   leaveGameAction,
   leaveGameLabel,
+  paymentProof,
+  proofLabels,
   share,
   statusLabels,
 }: GameParticipationActionsProps) {
   const router = useRouter();
   const [leaveConfirmOpen, setLeaveConfirmOpen] = useState(false);
+  const [proofModalOpen, setProofModalOpen] = useState(false);
+  const [proofFile, setProofFile] = useState<File | null>(null);
+  const [proofFileError, setProofFileError] = useState<string | null>(null);
+  const [localState, setLocalState] = useState<GameActionState>({});
+  const [proofPending, startProofTransition] = useTransition();
 
   async function handleAction(
     action: (
@@ -87,13 +143,6 @@ export function GameParticipationActions({
     return nextState;
   }
 
-  async function handleJoinGame(
-    previousState: GameActionState,
-    formData: FormData,
-  ) {
-    return handleAction(joinGameAction, previousState, formData);
-  }
-
   async function handleJoinWaitlist(
     previousState: GameActionState,
     formData: FormData,
@@ -105,20 +154,125 @@ export function GameParticipationActions({
     previousState: GameActionState,
     formData: FormData,
   ) {
-    const nextState = await handleAction(leaveGameAction, previousState, formData);
+    const nextState = await handleAction(
+      leaveGameAction,
+      previousState,
+      formData,
+    );
     setLeaveConfirmOpen(false);
     return nextState;
   }
 
   const [actionState, submitAction] = useActionState(
-    isParticipant
-      ? handleLeaveGame
-      : isFull
-        ? handleJoinWaitlist
-        : handleJoinGame,
+    isParticipant ? handleLeaveGame : handleJoinWaitlist,
     initialState,
   );
-  const status = actionState.status;
+  const status = localState.status ?? actionState.status;
+
+  function closeProofModal() {
+    if (proofPending) {
+      return;
+    }
+
+    setProofModalOpen(false);
+    setProofFile(null);
+    setProofFileError(null);
+  }
+
+  function openProofModal() {
+    setLocalState({});
+    setProofFile(null);
+    setProofFileError(null);
+    setProofModalOpen(true);
+  }
+
+  function chooseProofFile(file: File | null) {
+    setProofFileError(null);
+
+    if (
+      file &&
+      (!getProofMimeType(file) || file.size > maxProofBytes)
+    ) {
+      setProofFile(null);
+      setProofFileError(proofLabels.invalidFile);
+      return;
+    }
+
+    setProofFile(file);
+  }
+
+  function addProofLater() {
+    startProofTransition(async () => {
+      const nextState = await joinGameAction(initialState, new FormData());
+      setLocalState(nextState);
+
+      if (nextState.status === "joined-game") {
+        setProofModalOpen(false);
+        setProofFile(null);
+        router.refresh();
+      }
+    });
+  }
+
+  function uploadProof() {
+    const proofMimeType = proofFile ? getProofMimeType(proofFile) : null;
+
+    if (!proofFile || !proofMimeType) {
+      setProofFileError(proofLabels.invalidFile);
+      return;
+    }
+
+    startProofTransition(async () => {
+      let joinedDuringUpload = false;
+
+      if (!isParticipant) {
+        const joinState = await joinGameAction(initialState, new FormData());
+
+        if (joinState.status !== "joined-game") {
+          setLocalState(joinState);
+          return;
+        }
+
+        joinedDuringUpload = true;
+      }
+
+      const supabase = createClient();
+      const { error: uploadError } = await supabase.storage
+        .from("payment-proofs")
+        .upload(paymentProof.storagePath, proofFile, {
+          cacheControl: "3600",
+          contentType: proofMimeType,
+          upsert: true,
+        });
+
+      if (uploadError) {
+        setLocalState({ status: "proof-upload-error" });
+
+        if (joinedDuringUpload) {
+          setProofModalOpen(false);
+          router.refresh();
+        }
+
+        return;
+      }
+
+      const proofData = new FormData();
+      proofData.set("filename", proofFile.name);
+      proofData.set("mimeType", proofMimeType);
+      const nextState = await finalizePaymentProofAction(
+        initialState,
+        proofData,
+      );
+      setLocalState(nextState);
+
+      if (nextState.status === "proof-uploaded") {
+        setProofModalOpen(false);
+        setProofFile(null);
+      }
+
+      router.refresh();
+    });
+  }
 
   return (
     <>
@@ -157,12 +311,26 @@ export function GameParticipationActions({
               </SubmitButton>
             </form>
           ) : (
-            <form action={submitAction}>
-              <SubmitButton fullWidth className="sm:w-auto">
-                {joinGameLabel}
-              </SubmitButton>
-            </form>
+            <Button
+              fullWidth
+              className="sm:w-auto"
+              onClick={openProofModal}
+              type="button"
+            >
+              {joinGameLabel}
+            </Button>
           )}
+          {isParticipant && !paymentProof.deletedAt ? (
+            <Button
+              fullWidth
+              className="sm:w-auto"
+              onClick={openProofModal}
+              type="button"
+              variant="outline"
+            >
+              {paymentProof.path ? proofLabels.replace : proofLabels.add}
+            </Button>
+          ) : null}
           <GameShareButton {...share} />
           <a
             className={buttonClassName({
@@ -214,6 +382,61 @@ export function GameParticipationActions({
               {leaveGameLabel}
             </SubmitButton>
           </form>
+        </div>
+      </Modal>
+
+      <Modal
+        onClose={closeProofModal}
+        open={proofModalOpen}
+        title={proofLabels.title}
+      >
+        <div className="mt-5 grid gap-4">
+          {paymentProof.path ? (
+            <p className="text-sm font-semibold text-[#138a5b]">
+              {proofLabels.added}
+            </p>
+          ) : paymentProof.requestedAt ? (
+            <p className="text-sm font-semibold text-[#8a6500]">
+              {proofLabels.requested}
+            </p>
+          ) : null}
+
+          <Field
+            accept=".jpg,.jpeg,.png,.webp,.pdf,image/jpeg,image/png,image/webp,application/pdf"
+            error={proofFileError}
+            id="payment-proof"
+            label={proofLabels.file}
+            onChange={(event) => {
+              chooseProofFile(event.target.files?.[0] ?? null);
+            }}
+            type="file"
+          />
+          <p className="text-[13px] leading-5 text-[#667085]">
+            {proofLabels.fileHelp}
+          </p>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Button
+              disabled={proofPending}
+              fullWidth
+              loading={proofPending}
+              onClick={uploadProof}
+              type="button"
+            >
+              {proofLabels.submit}
+            </Button>
+            {!isParticipant ? (
+              <Button
+                disabled={proofPending}
+                fullWidth
+                onClick={addProofLater}
+                type="button"
+                variant="outline"
+              >
+                {proofLabels.addLater}
+              </Button>
+            ) : null}
+          </div>
         </div>
       </Modal>
     </>
