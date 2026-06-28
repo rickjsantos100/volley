@@ -10,6 +10,7 @@ import {
   processPendingNotifications,
 } from "@/lib/notifications/push";
 import { sendPaymentProofRequestEmail } from "@/lib/notifications/email";
+import { getPaymentProofRequestAvailableAt } from "@/lib/payment-proof-policy";
 import {
   getGamePaymentProofPaths,
   getPaymentProofPath,
@@ -43,6 +44,7 @@ export type GameActionStatus =
   | "not-authorized";
 
 export type GameActionState = {
+  proofRequestedAt?: string;
   status?: GameActionStatus;
 };
 
@@ -398,10 +400,18 @@ export async function requestPaymentProof(
     return { status: "proof-request-error" };
   }
 
-  if (proof?.proof_requested_at) {
-    return { status: "proof-requested" };
+  const requestAvailableAt = getPaymentProofRequestAvailableAt(
+    proof?.proof_requested_at,
+  );
+
+  if (requestAvailableAt && requestAvailableAt > Date.now()) {
+    return {
+      proofRequestedAt: proof?.proof_requested_at ?? undefined,
+      status: "proof-requested",
+    };
   }
 
+  const requestVersion = proof?.proof_requested_at ?? "initial";
   const [{ data: profile }, { data: game }] = await Promise.all([
     supabase
       .from("profiles")
@@ -424,10 +434,11 @@ export async function requestPaymentProof(
       email: profile.email,
       gameId,
       participantId: participant.id,
+      requestVersion,
       startsAt: game.starts_at,
     });
     await enqueueNotification({
-      dedupeKey: `payment_proof_requested:${gameId}:${participant.user_id}`,
+      dedupeKey: `payment_proof_requested:${participant.id}:${requestVersion}`,
       gameEventId: gameId,
       kind: "payment_proof_requested",
       payload: {
@@ -443,13 +454,14 @@ export async function requestPaymentProof(
     return { status: "proof-request-error" };
   }
 
+  const proofRequestedAt = new Date().toISOString();
   const { error: updateError } = await supabase
     .from("game_payment_proofs")
     .upsert(
       {
         game_event_id: gameId,
         participant_id: participant.id,
-        proof_requested_at: new Date().toISOString(),
+        proof_requested_at: proofRequestedAt,
         user_id: participant.user_id,
       },
       { onConflict: "participant_id" },
@@ -462,7 +474,7 @@ export async function requestPaymentProof(
   revalidatePath(`/dashboard/games/${gameId}`);
   await processNotificationsAfterMutation();
 
-  return { status: "proof-requested" };
+  return { proofRequestedAt, status: "proof-requested" };
 }
 
 export async function reorderWaitlist(

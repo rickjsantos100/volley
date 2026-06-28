@@ -33,6 +33,7 @@ import { Toast } from "@/components/ui/toast";
 import { cx } from "@/components/ui/class-name";
 
 type WaitlistItem = {
+  avatarUrl: string;
   id: string;
   name: string;
 };
@@ -205,7 +206,7 @@ function SortableWaitlistItem({
         {...listeners}
       >
         <div className="flex min-w-0 flex-1 items-center gap-3">
-          <InitialsAvatar name={item.name} />
+          <InitialsAvatar avatarUrl={item.avatarUrl} name={item.name} />
           <p className="min-w-0 text-sm font-semibold text-[#101828] break-words">
             {item.name}
           </p>

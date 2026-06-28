@@ -23,6 +23,7 @@ type ProfileFormProps = {
   avatarUrl: string;
   firstName: string;
   lastName: string;
+  onDirtyChange?: (isDirty: boolean) => void;
   onSaved?: () => void;
   userId: string;
 };
@@ -257,6 +258,7 @@ export function ProfileForm({
   avatarUrl,
   firstName,
   lastName,
+  onDirtyChange,
   onSaved,
   userId,
 }: ProfileFormProps) {
@@ -360,6 +362,11 @@ export function ProfileForm({
     values.firstName.trim() !== savedValues.firstName ||
     values.lastName.trim() !== savedValues.lastName;
   const isChanged = isNameChanged || Boolean(draftAvatar);
+
+  useEffect(() => {
+    onDirtyChange?.(isChanged);
+  }, [isChanged, onDirtyChange]);
+
   const firstNameError =
     (touched.firstName && clientErrors.firstName) ||
     (state.errors?.firstName

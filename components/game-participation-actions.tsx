@@ -12,7 +12,7 @@ import {
 } from "@/components/game-share-button";
 import { Button, buttonClassName, SubmitButton } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Field } from "@/components/ui/field";
+import { FileField } from "@/components/ui/field";
 import { Modal } from "@/components/ui/modal";
 import { Toast } from "@/components/ui/toast";
 import { createClient } from "@/lib/supabase/client";
@@ -56,6 +56,8 @@ type GameParticipationActionsProps = {
     add: string;
     addLater: string;
     added: string;
+    chooseFile: string;
+    emptyFile: string;
     file: string;
     fileHelp: string;
     invalidFile: string;
@@ -401,15 +403,18 @@ export function GameParticipationActions({
             </p>
           ) : null}
 
-          <Field
+          <FileField
             accept=".jpg,.jpeg,.png,.webp,.pdf,image/jpeg,image/png,image/webp,application/pdf"
+            buttonLabel={proofLabels.chooseFile}
+            disabled={proofPending}
+            emptyLabel={proofLabels.emptyFile}
             error={proofFileError}
             id="payment-proof"
             label={proofLabels.file}
             onChange={(event) => {
               chooseProofFile(event.target.files?.[0] ?? null);
             }}
-            type="file"
+            selectedFileName={proofFile?.name}
           />
           <p className="text-[13px] leading-5 text-[#667085]">
             {proofLabels.fileHelp}

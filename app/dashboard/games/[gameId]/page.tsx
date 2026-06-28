@@ -58,7 +58,8 @@ type ParticipantDetail = {
   display_name: string | null;
   first_name: string | null;
   last_name: string | null;
-  email: string | null;
+  avatar_path: string | null;
+  avatar_updated_at: string | null;
 };
 
 type WaitlistDetail = {
@@ -70,7 +71,8 @@ type WaitlistDetail = {
   display_name: string | null;
   first_name: string | null;
   last_name: string | null;
-  email: string | null;
+  avatar_path: string | null;
+  avatar_updated_at: string | null;
 };
 
 type GameDetailPageProps = {
@@ -85,13 +87,33 @@ function getDisplayName(player: {
   display_name: string | null;
   first_name: string | null;
   last_name: string | null;
-  email: string | null;
 }) {
   const fullName = [player.first_name, player.last_name]
     .filter(Boolean)
     .join(" ");
 
-  return player.display_name || fullName || player.email || "Player";
+  return player.display_name || fullName || "Player";
+}
+
+function getAvatarUrl(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  player: {
+    avatar_path: string | null;
+    avatar_updated_at: string | null;
+  },
+) {
+  if (!player.avatar_path) {
+    return "";
+  }
+
+  const { data } = supabase.storage
+    .from("avatars")
+    .getPublicUrl(player.avatar_path);
+  const version = player.avatar_updated_at
+    ? `?v=${encodeURIComponent(player.avatar_updated_at)}`
+    : "";
+
+  return `${data.publicUrl}${version}`;
 }
 
 function formatGoogleCalendarDate(date: Date) {
@@ -333,14 +355,14 @@ async function GameDetailContent({
     supabase
       .from("game_participant_details")
       .select(
-        "id, game_event_id, user_id, joined_at, payment_proof_path, payment_proof_filename, payment_proof_mime_type, payment_proof_uploaded_at, payment_proof_requested_at, payment_proof_deleted_at, display_name, first_name, last_name, email",
+        "id, game_event_id, user_id, joined_at, payment_proof_path, payment_proof_filename, payment_proof_mime_type, payment_proof_uploaded_at, payment_proof_requested_at, payment_proof_deleted_at, display_name, first_name, last_name, avatar_path, avatar_updated_at",
       )
       .eq("game_event_id", game.id)
       .order("joined_at", { ascending: true }),
     supabase
       .from("game_waitlist_details")
       .select(
-        "id, game_event_id, user_id, joined_waitlist_at, position, display_name, first_name, last_name, email",
+        "id, game_event_id, user_id, joined_waitlist_at, position, display_name, first_name, last_name, avatar_path, avatar_updated_at",
       )
       .eq("game_event_id", game.id)
       .order("position", { ascending: true }),
@@ -420,6 +442,8 @@ async function GameDetailContent({
             add: t("addProofButton"),
             addLater: t("addProofLaterButton"),
             added: t("proofAddedLabel"),
+            chooseFile: t("proofChooseFileButton"),
+            emptyFile: t("proofNoFileSelected"),
             file: t("proofFileLabel"),
             fileHelp: t("proofFileHelp"),
             invalidFile: t("proofInvalidFileMessage"),
@@ -462,12 +486,15 @@ async function GameDetailContent({
               <ul className="mt-4 grid gap-3">
                 {participants.map((participant) => {
                   const name = getDisplayName(participant);
+                  const avatarUrl = getAvatarUrl(supabase, participant);
 
                   return isAdmin ? (
                     <AdminParticipantListItem
                       actionsLabel={t("playerActionsLabel", { name })}
+                      avatarUrl={avatarUrl}
                       key={participant.id}
                       name={name}
+                      paidLabel={t("paidLabel")}
                       participantId={participant.id}
                       proofAction={requestPaymentProof.bind(
                         null,
@@ -499,7 +526,7 @@ async function GameDetailContent({
                       key={participant.id}
                       className="flex min-h-14 items-center gap-3 border-b border-[#dde2ea] py-3 last:border-b-0"
                     >
-                      <InitialsAvatar name={name} />
+                      <InitialsAvatar avatarUrl={avatarUrl} name={name} />
                       <p className="min-w-0 text-sm font-semibold text-[#101828] break-words">
                         {name}
                       </p>
@@ -524,6 +551,7 @@ async function GameDetailContent({
                 action={reorderWaitlist.bind(null, game.id)}
                 dragHandleLabel={t("dragWaitlistPlayerLabel")}
                 items={waitlist.map((entry) => ({
+                  avatarUrl: getAvatarUrl(supabase, entry),
                   id: entry.id,
                   name: getDisplayName(entry),
                 }))}
@@ -536,6 +564,7 @@ async function GameDetailContent({
               <ul className="mt-4 grid gap-3">
                 {waitlist.map((entry) => {
                   const name = getDisplayName(entry);
+                  const avatarUrl = getAvatarUrl(supabase, entry);
 
                   return (
                     <li
@@ -543,7 +572,7 @@ async function GameDetailContent({
                       className="flex min-h-14 items-center justify-between gap-3 border-b border-[#dde2ea] py-3 last:border-b-0"
                     >
                       <div className="flex min-w-0 items-center gap-3">
-                        <InitialsAvatar name={name} />
+                        <InitialsAvatar avatarUrl={avatarUrl} name={name} />
                         <p className="min-w-0 text-sm font-semibold text-[#101828] break-words">
                           {name}
                         </p>

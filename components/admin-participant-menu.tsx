@@ -9,6 +9,8 @@ import type {
 import { buttonClassName } from "@/components/ui/button";
 import { cx, pressedSurfaceClassName } from "@/components/ui/class-name";
 import { Toast } from "@/components/ui/toast";
+import { getPaymentProofRequestAvailableAt } from "@/lib/payment-proof-policy";
+import { isInstalledPwaDisplayMode } from "@/lib/pwa/display-mode";
 
 type AdminParticipantMenuProps = {
   actionsLabel: string;
@@ -61,6 +63,7 @@ export function AdminParticipantMenu({
   const containerRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const [isOpen, setIsOpen] = useState(false);
+  const [requestClock, setRequestClock] = useState(0);
 
   async function runAction(
     action: (
@@ -97,8 +100,27 @@ export function AdminParticipantMenu({
       ? statusLabels["remove-player-error"]
       : null;
   const isExpired = Boolean(proofDeletedAt && proofUploadedAt && !proofPath);
-  const isRequested =
-    Boolean(proofRequestedAt) || proofState.status === "proof-requested";
+  const effectiveProofRequestedAt =
+    proofState.proofRequestedAt ?? proofRequestedAt;
+  const requestAvailableAt = getPaymentProofRequestAvailableAt(
+    effectiveProofRequestedAt,
+  );
+  const isRequested = Boolean(
+    requestAvailableAt && requestAvailableAt > requestClock,
+  );
+
+  useEffect(() => {
+    if (!requestAvailableAt) {
+      return;
+    }
+
+    const timeout = window.setTimeout(
+      () => setRequestClock(Date.now()),
+      Math.max(0, requestAvailableAt - Date.now()),
+    );
+
+    return () => window.clearTimeout(timeout);
+  }, [requestAvailableAt]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -146,7 +168,10 @@ export function AdminParticipantMenu({
             variant: "ghost",
           })}
           disabled={disabled}
-          onClick={() => setIsOpen((current) => !current)}
+          onClick={() => {
+            setRequestClock(Date.now());
+            setIsOpen((current) => !current);
+          }}
           ref={triggerRef}
           type="button"
         >
@@ -171,7 +196,14 @@ export function AdminParticipantMenu({
               <a
                 className={menuItemClassName}
                 href={`/api/payment-proofs/${participantId}`}
-                onClick={() => setIsOpen(false)}
+                onClick={(event) => {
+                  setIsOpen(false);
+
+                  if (isInstalledPwaDisplayMode()) {
+                    event.preventDefault();
+                    window.location.assign(event.currentTarget.href);
+                  }
+                }}
                 rel="noreferrer"
                 role="menuitem"
                 target="_blank"

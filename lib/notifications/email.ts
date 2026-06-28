@@ -30,11 +30,13 @@ export async function sendPaymentProofRequestEmail({
   email,
   gameId,
   participantId,
+  requestVersion,
   startsAt,
 }: {
   email: string;
   gameId: string;
   participantId: string;
+  requestVersion: string;
   startsAt: string;
 }) {
   const gameDate = new Intl.DateTimeFormat("pt-PT", {
@@ -48,6 +50,10 @@ export async function sendPaymentProofRequestEmail({
     .update(`${template.subject}\n${template.text}\n${template.html}`)
     .digest("hex")
     .slice(0, 16);
+  const requestFingerprint = createHash("sha256")
+    .update(requestVersion)
+    .digest("hex")
+    .slice(0, 16);
   const resend = getResendClient();
   const { error } = await resend.emails.send(
     {
@@ -58,7 +64,7 @@ export async function sendPaymentProofRequestEmail({
       text: template.text,
     },
     {
-      idempotencyKey: `payment-proof-request/${participantId}/${templateFingerprint}`,
+      idempotencyKey: `payment-proof-request/${participantId}/${requestFingerprint}/${templateFingerprint}`,
     },
   );
 

@@ -118,8 +118,8 @@ Admins must also be able to see:
 - Users can see and manage only their own proof.
 - Admins can see whether proof is missing, requested, submitted, or expired and
   can open submitted proof.
-- When proof is missing, an admin can request it once by email and push
-  notification.
+- When proof is missing, an admin can request it by email and push
+  notification, with at least 12 hours between requests.
 - Proof files must be deleted 14 days after the game's configured end time.
 
 ### Admin Event Management
@@ -239,7 +239,8 @@ Admins must be able to:
 - A player can add or replace their own proof after joining.
 - A normal user cannot see another user's proof.
 - An admin can see and open submitted proof.
-- An admin can request missing proof once by email and push notification.
+- An admin can request missing proof by email and push notification every 12
+  hours.
 - Proof files are deleted 14 days after game conclusion.
 - An admin can see the waitlist for a full game.
 - An admin can remove a user from the waitlist.

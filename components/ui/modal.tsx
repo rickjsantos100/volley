@@ -12,7 +12,7 @@ import { createPortal } from "react-dom";
 
 type ModalProps = {
   children: ReactNode;
-  onClose: () => void;
+  onClose: () => boolean | void;
   open: boolean;
   title: string;
 };
@@ -105,8 +105,16 @@ export function Modal({
       }
 
       pushedHistoryRef.current = false;
+      const shouldClose = closeModal();
+
+      if (shouldClose === false) {
+        window.history.pushState(modalState, "", window.location.href);
+        pushedHistoryRef.current = true;
+        closingFromPopstateRef.current = false;
+        return;
+      }
+
       closingFromPopstateRef.current = true;
-      closeModal();
     }
 
     window.addEventListener("popstate", handlePopstate);
@@ -143,6 +151,10 @@ export function Modal({
     }
   }
 
+  function handleCloseClick() {
+    onClose();
+  }
+
   return createPortal(
     <div
       onClick={handleBackdropClick}
@@ -157,7 +169,7 @@ export function Modal({
         <button
           aria-label="Fechar"
           className="absolute right-3 top-3 flex size-11 items-center justify-center rounded-[10px] border-0 bg-transparent text-[#667085] transition-[background-color,color,box-shadow,transform] hover:bg-[#eef1f5] hover:text-[#101828] focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-[#0737a8]/20 active:translate-y-px"
-          onClick={onClose}
+          onClick={handleCloseClick}
           type="button"
         >
           <svg

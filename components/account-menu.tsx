@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { logOut } from "@/app/dashboard/actions";
 import { ProfileForm } from "@/components/profile-form";
@@ -20,6 +20,8 @@ type AccountMenuProps = {
   userId: string;
 };
 
+type PendingProfileExit = "close" | "signOut" | null;
+
 export function AccountMenu({
   avatarPath,
   avatarUrl,
@@ -32,8 +34,78 @@ export function AccountMenu({
 }: AccountMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
+  const [isProfileDirty, setIsProfileDirty] = useState(false);
+  const [pendingProfileExit, setPendingProfileExit] =
+    useState<PendingProfileExit>(null);
+  const [profileFormVersion, setProfileFormVersion] = useState(0);
   const accountT = useTranslations("AccountMenu");
   const profileT = useTranslations("ProfilePage");
+
+  useEffect(() => {
+    if (!isOpen || !isProfileDirty) {
+      return;
+    }
+
+    function handleBeforeUnload(event: BeforeUnloadEvent) {
+      event.preventDefault();
+      event.returnValue = "";
+    }
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [isOpen, isProfileDirty]);
+
+  function requestProfileClose() {
+    if (pendingProfileExit) {
+      setPendingProfileExit(null);
+      return false;
+    }
+
+    if (isProfileDirty) {
+      setPendingProfileExit("close");
+      return false;
+    }
+
+    setIsOpen(false);
+    return true;
+  }
+
+  function requestSignOut() {
+    if (isProfileDirty) {
+      setPendingProfileExit("signOut");
+      return;
+    }
+
+    setIsLogoutConfirmOpen(true);
+  }
+
+  function keepEditingProfile() {
+    setPendingProfileExit(null);
+  }
+
+  function discardProfileChanges() {
+    const requestedExit = pendingProfileExit;
+
+    setPendingProfileExit(null);
+    setIsProfileDirty(false);
+
+    if (requestedExit === "signOut") {
+      setProfileFormVersion((currentVersion) => currentVersion + 1);
+      setIsLogoutConfirmOpen(true);
+      return;
+    }
+
+    setIsOpen(false);
+  }
+
+  function handleProfileSaved() {
+    setIsProfileDirty(false);
+    setPendingProfileExit(null);
+    setIsOpen(false);
+  }
 
   return (
     <>
@@ -42,7 +114,10 @@ export function AccountMenu({
         aria-expanded={isOpen}
         aria-haspopup="dialog"
         aria-label={accountT("openProfile", { name: label })}
-        onClick={() => setIsOpen(true)}
+        onClick={() => {
+          setPendingProfileExit(null);
+          setIsOpen(true);
+        }}
         className={cx(
           pressedSurfaceClassName,
           "flex size-11 items-center justify-center rounded-full border border-[#dde2ea] bg-white text-sm font-bold text-[#061b6b] shadow-sm transition hover:border-[#0737a8] focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-[#0737a8]/20 active:translate-y-px",
@@ -61,17 +136,23 @@ export function AccountMenu({
       </button>
 
       <Modal
-        onClose={() => setIsOpen(false)}
+        onClose={requestProfileClose}
         open={isOpen}
-        title={profileT("title")}
+        title={
+          pendingProfileExit
+            ? profileT("unsavedChangesTitle")
+            : profileT("title")
+        }
       >
-        <div className="mt-6 space-y-4">
+        <div className="mt-6 space-y-4" hidden={Boolean(pendingProfileExit)}>
           <ProfileForm
             avatarPath={avatarPath}
             avatarUrl={avatarUrl}
             firstName={firstName}
+            key={profileFormVersion}
             lastName={lastName}
-            onSaved={() => setIsOpen(false)}
+            onDirtyChange={setIsProfileDirty}
+            onSaved={handleProfileSaved}
             userId={userId}
           />
           <PushNotificationControls
@@ -89,13 +170,37 @@ export function AccountMenu({
           />
           <Button
             fullWidth
-            onClick={() => setIsLogoutConfirmOpen(true)}
+            onClick={requestSignOut}
             type="button"
             variant="dangerOutline"
           >
             {accountT("signOut")}
           </Button>
         </div>
+
+        {pendingProfileExit ? (
+          <div className="mt-6 space-y-5">
+            <p className="text-base leading-7 text-[#667085]">
+              {profileT("unsavedChangesMessage")}
+            </p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Button
+                onClick={keepEditingProfile}
+                type="button"
+                variant="outline"
+              >
+                {profileT("keepEditingButton")}
+              </Button>
+              <Button
+                onClick={discardProfileChanges}
+                type="button"
+                variant="dangerOutline"
+              >
+                {profileT("discardChangesButton")}
+              </Button>
+            </div>
+          </div>
+        ) : null}
       </Modal>
 
       <Modal
