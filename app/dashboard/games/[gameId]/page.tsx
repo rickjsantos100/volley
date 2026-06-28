@@ -2,6 +2,10 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
+import {
+  AdminAddPlayer,
+  type AddPlayerCandidate,
+} from "@/components/admin-add-player";
 import { AdminGameControls } from "@/components/admin-game-controls";
 import { AdminParticipantListItem } from "@/components/admin-participant-list-item";
 import { AdminWaitlistSortableList } from "@/components/admin-waitlist-sortable-list";
@@ -21,6 +25,7 @@ import { getPaymentProofPath } from "@/lib/payment-proofs";
 import { createClient } from "@/lib/supabase/server";
 import type { GameActionStatus } from "./actions";
 import {
+  addParticipantToGame,
   cancelGame,
   deleteGame,
   finalizePaymentProof,
@@ -68,6 +73,15 @@ type WaitlistDetail = {
   user_id: string;
   joined_waitlist_at: string;
   position: number;
+  display_name: string | null;
+  first_name: string | null;
+  last_name: string | null;
+  avatar_path: string | null;
+  avatar_updated_at: string | null;
+};
+
+type ProfileCandidate = {
+  id: string;
   display_name: string | null;
   first_name: string | null;
   last_name: string | null;
@@ -198,6 +212,9 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
   const cancelGameAction = cancelGame.bind(null, game.id);
   const deleteGameAction = deleteGame.bind(null, game.id);
   const statusLabels: Record<GameActionStatus, string> = {
+    "added-player": t("addedPlayerMessage"),
+    "added-player-email-error": t("addedPlayerEmailErrorMessage"),
+    "add-player-error": t("addPlayerErrorMessage"),
     "joined-game": t("joinedGameMessage"),
     "joined-waitlist": t("joinedWaitlistMessage"),
     "left-game": t("leftGameMessage"),
@@ -370,11 +387,26 @@ async function GameDetailContent({
 
   const participants = (participantRows ?? []) as ParticipantDetail[];
   const waitlist = (waitlistRows ?? []) as WaitlistDetail[];
+  const { data: profileRows, error: profilesError } = isAdmin
+    ? await supabase
+        .from("profiles")
+        .select(
+          "id, display_name, first_name, last_name, avatar_path, avatar_updated_at",
+        )
+        .order("first_name", { ascending: true })
+        .returns<ProfileCandidate[]>()
+    : { data: null, error: null };
   if (participantsError || waitlistError) {
     console.error("Failed to load game roster lists", {
       gameId: game.id,
       participantsError,
       waitlistError,
+    });
+  }
+  if (profilesError) {
+    console.error("Failed to load add-player candidates", {
+      gameId: game.id,
+      profilesError,
     });
   }
   const occupiedSlots = participants.length;
@@ -389,7 +421,40 @@ async function GameDetailContent({
   const joinWaitlistAction = joinWaitlist.bind(null, game.id);
   const leaveGameAction = leaveGame.bind(null, game.id);
   const gameDateTitle = formatGameDateTitle(new Date(game.starts_at));
+  const excludedUserIds = new Set([
+    ...participants.map((participant) => participant.user_id),
+    ...waitlist.map((entry) => entry.user_id),
+  ]);
+  const addPlayerCandidates: AddPlayerCandidate[] = (profileRows ?? [])
+    .filter((candidate) => !excludedUserIds.has(candidate.id))
+    .map((candidate) => ({
+      avatarUrl: getAvatarUrl(supabase, candidate),
+      id: candidate.id,
+      name: getDisplayName(candidate),
+      searchValue: [
+        candidate.display_name,
+        candidate.first_name,
+        candidate.last_name,
+      ]
+        .filter(Boolean)
+        .join(" "),
+    }));
+  // Server-rendered availability must reflect the request time.
+  // eslint-disable-next-line react-hooks/purity
+  const isPast = new Date(game.starts_at).getTime() <= Date.now();
+  const addPlayerDisabledReason = isCancelled
+    ? t("addPlayerCancelledReason")
+    : isPast
+      ? t("addPlayerPastReason")
+      : isFull
+        ? t("addPlayerFullReason")
+        : profilesError
+          ? t("addPlayerUnavailableReason")
+          : undefined;
   const statusLabels: Record<GameActionStatus, string> = {
+    "added-player": t("addedPlayerMessage"),
+    "added-player-email-error": t("addedPlayerEmailErrorMessage"),
+    "add-player-error": t("addPlayerErrorMessage"),
     "joined-game": t("joinedGameMessage"),
     "joined-waitlist": t("joinedWaitlistMessage"),
     "left-game": t("leftGameMessage"),
@@ -474,9 +539,25 @@ async function GameDetailContent({
       {!hasListError ? (
         <div className="grid gap-5 lg:grid-cols-2">
           <Card>
-            <h2 className="font-matchday text-[26px] leading-7 font-bold text-[#061b6b]">
-              {t("participantsTitle")}
-            </h2>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <h2 className="font-matchday text-[26px] leading-7 font-bold text-[#061b6b]">
+                {t("participantsTitle")}
+              </h2>
+              {isAdmin ? (
+                <AdminAddPlayer
+                  action={addParticipantToGame.bind(null, game.id)}
+                  candidates={addPlayerCandidates}
+                  disabledReason={addPlayerDisabledReason}
+                  labels={{
+                    button: t("addPlayerButton"),
+                    empty: t("addPlayerEmptyResults"),
+                    input: t("addPlayerSearchLabel"),
+                    placeholder: t("addPlayerSearchPlaceholder"),
+                  }}
+                  statusLabels={statusLabels}
+                />
+              ) : null}
+            </div>
 
             {participants.length === 0 ? (
               <p className="mt-4 text-sm leading-6 text-[#667085]">

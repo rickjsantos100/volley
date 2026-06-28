@@ -72,7 +72,7 @@ export function FileField({
     .join(" ");
 
   return (
-    <div className="space-y-2">
+    <div className="min-w-0 max-w-full space-y-2">
       <label
         className="block text-sm font-semibold text-[#101828]"
         htmlFor={id}
@@ -94,7 +94,7 @@ export function FileField({
         aria-describedby={errorId}
         aria-labelledby={accessibleLabelIds || undefined}
         className={cx(
-          "flex min-h-12 w-full cursor-pointer items-stretch overflow-hidden rounded-xl border bg-white text-left text-base text-[#101828] transition disabled:cursor-not-allowed disabled:bg-[#eef1f5] disabled:text-[#98a2b3]",
+          "flex min-h-12 w-full min-w-0 max-w-full cursor-pointer items-stretch overflow-hidden rounded-xl border bg-white text-left text-base text-[#101828] transition disabled:cursor-not-allowed disabled:bg-[#eef1f5] disabled:text-[#98a2b3]",
           error
             ? "border-[#c73a3a] focus-visible:border-[#c73a3a] focus-visible:ring-3 focus-visible:ring-[#c73a3a]/15 focus-visible:outline-none"
             : "border-[#b8c0cc] hover:border-[#0737a8] focus-visible:border-[#0737a8] focus-visible:ring-3 focus-visible:ring-[#0737a8]/16 focus-visible:outline-none",
@@ -112,7 +112,7 @@ export function FileField({
           {buttonLabel}
         </span>
         <span
-          className="min-w-0 flex-1 truncate px-3.5 py-3"
+          className="min-w-0 flex-1 overflow-hidden px-3.5 py-3 text-ellipsis whitespace-nowrap"
           id={fileNameId}
           title={selectedFileName ?? undefined}
         >

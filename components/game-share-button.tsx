@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
-import { Modal } from "@/components/ui/modal";
+import { Modal, ModalActions } from "@/components/ui/modal";
 import { Toast } from "@/components/ui/toast";
 
 export type GameShareProps = {
@@ -144,13 +144,11 @@ export function GameShareButton({
             readOnly
             value={shareUrl}
           />
-          <Button
-            fullWidth
-            onClick={() => copyLink(shareUrl, false)}
-            type="button"
-          >
-            {labels.copyButton}
-          </Button>
+          <ModalActions>
+            <Button onClick={() => copyLink(shareUrl, false)} type="button">
+              {labels.copyButton}
+            </Button>
+          </ModalActions>
         </div>
       </Modal>
     </>

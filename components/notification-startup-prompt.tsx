@@ -6,7 +6,7 @@ import {
   type PushSubscriptionInput,
 } from "@/app/dashboard/notifications/actions";
 import { Button } from "@/components/ui/button";
-import { Modal } from "@/components/ui/modal";
+import { Modal, ModalActions } from "@/components/ui/modal";
 import { Toast } from "@/components/ui/toast";
 import { isInstalledPwaDisplayMode } from "@/lib/pwa/display-mode";
 
@@ -139,15 +139,7 @@ export function NotificationStartupPrompt({
         <p className="mt-5 text-base leading-7 text-[#667085]">
           {labels.intro}
         </p>
-        <div className="mt-6 grid gap-3 sm:grid-cols-2">
-          <Button
-            disabled={isPending}
-            loading={isPending}
-            onClick={enableNotifications}
-            type="button"
-          >
-            {labels.enable}
-          </Button>
+        <ModalActions className="mt-6">
           <Button
             disabled={isPending}
             onClick={closePrompt}
@@ -156,7 +148,15 @@ export function NotificationStartupPrompt({
           >
             {labels.notNow}
           </Button>
-        </div>
+          <Button
+            disabled={isPending}
+            loading={isPending}
+            onClick={enableNotifications}
+            type="button"
+          >
+            {labels.enable}
+          </Button>
+        </ModalActions>
       </Modal>
     </>
   );

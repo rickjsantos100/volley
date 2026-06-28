@@ -2,6 +2,7 @@ import "server-only";
 
 import { createHash } from "node:crypto";
 import { Resend } from "resend";
+import { adminAddedToGameTemplate } from "@/lib/notifications/templates/admin-added-to-game";
 import { paymentProofRequestTemplate } from "@/lib/notifications/templates/payment-proof-request";
 
 const sender = "Voley Lisboa <noreply@voleylisboa.pt>";
@@ -24,6 +25,47 @@ function getApplicationUrl() {
   }
 
   return applicationUrl.replace(/\/+$/, "");
+}
+
+export async function sendAdminAddedToGameEmail({
+  email,
+  gameId,
+  participantId,
+  startsAt,
+}: {
+  email: string;
+  gameId: string;
+  participantId: string;
+  startsAt: string;
+}) {
+  const gameDate = new Intl.DateTimeFormat("pt-PT", {
+    dateStyle: "full",
+    timeStyle: "short",
+    timeZone: "Europe/Lisbon",
+  }).format(new Date(startsAt));
+  const gameUrl = `${getApplicationUrl()}/dashboard/games/${gameId}`;
+  const template = adminAddedToGameTemplate({ gameDate, gameUrl });
+  const templateFingerprint = createHash("sha256")
+    .update(`${template.subject}\n${template.text}\n${template.html}`)
+    .digest("hex")
+    .slice(0, 16);
+  const resend = getResendClient();
+  const { error } = await resend.emails.send(
+    {
+      from: sender,
+      html: template.html,
+      to: [email],
+      subject: template.subject,
+      text: template.text,
+    },
+    {
+      idempotencyKey: `admin-added-to-game/${participantId}/${templateFingerprint}`,
+    },
+  );
+
+  if (error) {
+    throw new Error(error.message);
+  }
 }
 
 export async function sendPaymentProofRequestEmail({

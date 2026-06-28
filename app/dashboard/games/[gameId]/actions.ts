@@ -9,7 +9,10 @@ import {
   getGameNotificationAudiences,
   processPendingNotifications,
 } from "@/lib/notifications/push";
-import { sendPaymentProofRequestEmail } from "@/lib/notifications/email";
+import {
+  sendAdminAddedToGameEmail,
+  sendPaymentProofRequestEmail,
+} from "@/lib/notifications/email";
 import { getPaymentProofRequestAvailableAt } from "@/lib/payment-proof-policy";
 import {
   getGamePaymentProofPaths,
@@ -23,6 +26,9 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
 export type GameActionStatus =
+  | "added-player"
+  | "added-player-email-error"
+  | "add-player-error"
   | "joined-game"
   | "joined-waitlist"
   | "left-game"
@@ -69,6 +75,17 @@ type PaymentProofRow = {
 
 type GameIdRow = {
   id: string;
+};
+
+type AddPlayerProfileRow = {
+  email: string | null;
+  id: string;
+};
+
+type AddPlayerGameRow = {
+  id: string;
+  starts_at: string;
+  status: "scheduled" | "cancelled" | "completed" | "deleted";
 };
 
 function getRecurrenceScope(formData: FormData): RecurrenceScope {
@@ -172,6 +189,92 @@ export async function joinGame(
   }
 
   return { status: "joined-game" };
+}
+
+export async function addParticipantToGame(
+  gameId: string,
+  previousState: GameActionState,
+  formData: FormData,
+): Promise<GameActionState> {
+  void previousState;
+
+  const { role, supabase, user } = await getUserRole();
+
+  if (!user) {
+    redirect("/");
+  }
+
+  if (role !== "admin") {
+    return { status: "not-authorized" };
+  }
+
+  const userId = formData.get("userId");
+
+  if (typeof userId !== "string" || !userId) {
+    return { status: "add-player-error" };
+  }
+
+  const [
+    { data: selectedProfile, error: profileError },
+    { data: game, error: gameError },
+  ] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("id, email")
+      .eq("id", userId)
+      .maybeSingle<AddPlayerProfileRow>(),
+    supabase
+      .from("game_events")
+      .select("id, starts_at, status")
+      .eq("id", gameId)
+      .maybeSingle<AddPlayerGameRow>(),
+  ]);
+
+  if (
+    profileError ||
+    !selectedProfile?.email ||
+    gameError ||
+    !game ||
+    game.status !== "scheduled" ||
+    new Date(game.starts_at).getTime() < Date.now()
+  ) {
+    return { status: "add-player-error" };
+  }
+
+  const { data: participant, error: insertError } = await supabase
+    .from("game_participants")
+    .insert({
+      game_event_id: gameId,
+      user_id: selectedProfile.id,
+    })
+    .select("id")
+    .single<{ id: string }>();
+
+  revalidatePath("/dashboard");
+  revalidatePath(`/dashboard/games/${gameId}`);
+
+  if (insertError || !participant) {
+    return { status: "add-player-error" };
+  }
+
+  try {
+    await sendAdminAddedToGameEmail({
+      email: selectedProfile.email,
+      gameId,
+      participantId: participant.id,
+      startsAt: game.starts_at,
+    });
+  } catch (emailError) {
+    console.error("Failed to email admin-added participant", {
+      emailError,
+      gameId,
+      participantId: participant.id,
+      userId: selectedProfile.id,
+    });
+    return { status: "added-player-email-error" };
+  }
+
+  return { status: "added-player" };
 }
 
 export async function joinWaitlist(

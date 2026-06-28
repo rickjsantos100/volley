@@ -7,7 +7,7 @@ import { ProfileForm } from "@/components/profile-form";
 import { PushNotificationControls } from "@/components/push-notification-controls";
 import { Button, SubmitButton } from "@/components/ui/button";
 import { cx, pressedSurfaceClassName } from "@/components/ui/class-name";
-import { Modal } from "@/components/ui/modal";
+import { Modal, ModalActions } from "@/components/ui/modal";
 
 type AccountMenuProps = {
   avatarPath: string;
@@ -183,7 +183,7 @@ export function AccountMenu({
             <p className="text-base leading-7 text-[#667085]">
               {profileT("unsavedChangesMessage")}
             </p>
-            <div className="grid gap-3 sm:grid-cols-2">
+            <ModalActions>
               <Button
                 onClick={keepEditingProfile}
                 type="button"
@@ -198,7 +198,7 @@ export function AccountMenu({
               >
                 {profileT("discardChangesButton")}
               </Button>
-            </div>
+            </ModalActions>
           </div>
         ) : null}
       </Modal>
@@ -212,7 +212,7 @@ export function AccountMenu({
           <p className="text-base leading-7 text-[#667085]">
             {accountT("confirmLogoutMessage")}
           </p>
-          <div className="grid gap-3 sm:grid-cols-2">
+          <ModalActions>
             <Button
               onClick={() => setIsLogoutConfirmOpen(false)}
               type="button"
@@ -225,7 +225,7 @@ export function AccountMenu({
                 {accountT("confirmLogoutButton")}
               </SubmitButton>
             </form>
-          </div>
+          </ModalActions>
         </div>
       </Modal>
     </>

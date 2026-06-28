@@ -7,7 +7,7 @@ import type {
 } from "@/app/dashboard/games/[gameId]/actions";
 import { Button, SubmitButton } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Modal } from "@/components/ui/modal";
+import { Modal, ModalActions } from "@/components/ui/modal";
 import { Toast } from "@/components/ui/toast";
 
 type AdminGameControlsProps = {
@@ -191,7 +191,7 @@ export function AdminGameControls({
         <div className="mt-5 grid gap-4">
           <p className="text-sm leading-6 text-[#667085]">{deleteScopeIntro}</p>
 
-          <div className="flex flex-wrap gap-3">
+          <ModalActions>
             <form action={deleteFormAction}>
               <input name="scope" type="hidden" value="occurrence" />
               <SubmitButton size="compact" variant="dangerOutline">
@@ -205,7 +205,7 @@ export function AdminGameControls({
                 {deleteSeriesLabel}
               </SubmitButton>
             </form>
-          </div>
+          </ModalActions>
         </div>
       </Modal>
 
@@ -221,27 +221,31 @@ export function AdminGameControls({
             <p className="text-sm leading-6 text-[#667085]">
               {pendingConfirmation.message}
             </p>
-            <form
-              action={
-                pendingConfirmation.action === "cancel"
-                  ? cancelFormAction
-                  : deleteFormAction
-              }
-            >
-              <input
-                name="scope"
-                type="hidden"
-                value={pendingConfirmation.scope}
-              />
-              <SubmitButton
-                size="compact"
-                variant={
-                  pendingConfirmation.destructive ? "dangerOutline" : "outline"
+            <ModalActions>
+              <form
+                action={
+                  pendingConfirmation.action === "cancel"
+                    ? cancelFormAction
+                    : deleteFormAction
                 }
               >
-                {pendingConfirmation.label}
-              </SubmitButton>
-            </form>
+                <input
+                  name="scope"
+                  type="hidden"
+                  value={pendingConfirmation.scope}
+                />
+                <SubmitButton
+                  size="compact"
+                  variant={
+                    pendingConfirmation.destructive
+                      ? "dangerOutline"
+                      : "outline"
+                  }
+                >
+                  {pendingConfirmation.label}
+                </SubmitButton>
+              </form>
+            </ModalActions>
           </div>
         ) : null}
       </Modal>

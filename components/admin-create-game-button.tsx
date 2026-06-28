@@ -8,7 +8,7 @@ import type {
 } from "@/app/dashboard/actions";
 import { Button, SubmitButton } from "@/components/ui/button";
 import { Field, inputClassName } from "@/components/ui/field";
-import { Modal } from "@/components/ui/modal";
+import { Modal, ModalActions } from "@/components/ui/modal";
 import { Toast } from "@/components/ui/toast";
 
 type AdminCreateGameButtonProps = {
@@ -266,9 +266,9 @@ export function AdminCreateGameButton({
             <span>{labels.repeat}</span>
           </label>
 
-          <SubmitButton className="mt-2" disabled={pending}>
-            {labels.create}
-          </SubmitButton>
+          <ModalActions className="mt-2">
+            <SubmitButton disabled={pending}>{labels.create}</SubmitButton>
+          </ModalActions>
         </form>
       </Modal>
     </>

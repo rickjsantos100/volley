@@ -13,7 +13,7 @@ import {
 import { Button, buttonClassName, SubmitButton } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { FileField } from "@/components/ui/field";
-import { Modal } from "@/components/ui/modal";
+import { Modal, ModalActions } from "@/components/ui/modal";
 import { Toast } from "@/components/ui/toast";
 import { createClient } from "@/lib/supabase/client";
 
@@ -379,11 +379,13 @@ export function GameParticipationActions({
           <p className="text-sm leading-6 text-[#667085]">
             {confirmLeaveMessage}
           </p>
-          <form action={submitAction}>
-            <SubmitButton fullWidth variant="dangerOutline">
-              {leaveGameLabel}
-            </SubmitButton>
-          </form>
+          <ModalActions>
+            <form action={submitAction}>
+              <SubmitButton variant="dangerOutline">
+                {leaveGameLabel}
+              </SubmitButton>
+            </form>
+          </ModalActions>
         </div>
       </Modal>
 
@@ -420,20 +422,10 @@ export function GameParticipationActions({
             {proofLabels.fileHelp}
           </p>
 
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Button
-              disabled={proofPending}
-              fullWidth
-              loading={proofPending}
-              onClick={uploadProof}
-              type="button"
-            >
-              {proofLabels.submit}
-            </Button>
+          <ModalActions>
             {!isParticipant ? (
               <Button
                 disabled={proofPending}
-                fullWidth
                 onClick={addProofLater}
                 type="button"
                 variant="outline"
@@ -441,7 +433,15 @@ export function GameParticipationActions({
                 {proofLabels.addLater}
               </Button>
             ) : null}
-          </div>
+            <Button
+              disabled={proofPending}
+              loading={proofPending}
+              onClick={uploadProof}
+              type="button"
+            >
+              {proofLabels.submit}
+            </Button>
+          </ModalActions>
         </div>
       </Modal>
     </>

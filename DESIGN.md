@@ -82,6 +82,14 @@ game day.
   shadow. Keep product identity central and actions easy to reach.
 - Menus, modals, PWA prompts, and confirmation dialogs follow the standard-card
   treatment. Modal actions stack on narrow screens.
+- Terminal modal actions use the shared modal-actions footer. At widths of
+  640px and above, align the action group to the right, place secondary,
+  cancel, or defer actions to the left of primary or confirm actions, and
+  align single actions to the right.
+- Below 640px, stack terminal modal actions at full width while preserving the
+  same semantic, visual, and keyboard-focus order: secondary, cancel, or defer
+  before primary or confirm. Buttons embedded within modal content are exempt
+  from the footer alignment rule.
 - Avatars remain circular because they represent people. Other icon controls
   use a 10px radius.
 - Alerts and toasts include explicit text, border, and a low-opacity semantic
@@ -114,7 +122,9 @@ game day.
 
 - Meet WCAG AA contrast and provide visible keyboard focus for every control.
 - Interactive targets are at least 44px high.
-- At widths below 640px, card and modal actions stack and become full width.
+- At widths below 640px, card and terminal modal actions stack and become full
+  width. Terminal modal actions retain their documented semantic and
+  keyboard-focus order.
 - Long match titles, translations, and player names wrap without horizontal
   scrolling.
 - Motion is limited to short color, shadow, and 1px position transitions and is

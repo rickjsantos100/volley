@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Modal } from "@/components/ui/modal";
+import { Modal, ModalActions } from "@/components/ui/modal";
 
 const DISMISSED_STORAGE_KEY = "voley-lisboa:pwa-install-dismissed:v1";
 
@@ -143,25 +143,25 @@ export function PwaInstallPrompt({ labels, onComplete }: PwaInstallPromptProps) 
         <p className="mt-5 text-base leading-7 text-[#667085]">
           {labels.iosInstructions}
         </p>
-        <div className="mt-6">
-          <Button fullWidth onClick={dismissPrompt} type="button">
+        <ModalActions className="mt-6">
+          <Button onClick={dismissPrompt} type="button">
             {labels.close}
           </Button>
-        </div>
+        </ModalActions>
         </>
       ) : (
         <>
           <p className="mt-5 text-base leading-7 text-[#667085]">
             {labels.intro}
           </p>
-          <div className="mt-6 grid gap-3 sm:grid-cols-2">
-            <Button onClick={installApp} type="button">
-              {isIOS ? labels.iosAction : labels.install}
-            </Button>
+          <ModalActions className="mt-6">
             <Button onClick={dismissPrompt} type="button" variant="outline">
               {labels.notNow}
             </Button>
-          </div>
+            <Button onClick={installApp} type="button">
+              {isIOS ? labels.iosAction : labels.install}
+            </Button>
+          </ModalActions>
         </>
       )}
     </Modal>

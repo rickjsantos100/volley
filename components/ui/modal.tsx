@@ -9,12 +9,18 @@ import {
   type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
+import { cx } from "./class-name";
 
 type ModalProps = {
   children: ReactNode;
   onClose: () => boolean | void;
   open: boolean;
   title: string;
+};
+
+type ModalActionsProps = {
+  children: ReactNode;
+  className?: string;
 };
 
 type ScrollLockState = {
@@ -29,6 +35,22 @@ type ScrollLockState = {
 
 let openModalCount = 0;
 let scrollLockState: ScrollLockState | null = null;
+
+export function ModalActions({
+  children,
+  className,
+}: ModalActionsProps) {
+  return (
+    <div
+      className={cx(
+        "flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end [&>form]:w-full [&>form>button]:w-full sm:[&>form]:w-auto sm:[&>form>button]:w-auto",
+        className,
+      )}
+    >
+      {children}
+    </div>
+  );
+}
 
 function lockPageScroll() {
   openModalCount += 1;

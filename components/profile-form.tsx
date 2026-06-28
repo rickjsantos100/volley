@@ -14,7 +14,7 @@ import { useRouter } from "next/navigation";
 import { updateProfile } from "@/app/profile/actions";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
-import { Modal } from "@/components/ui/modal";
+import { Modal, ModalActions } from "@/components/ui/modal";
 import { Toast } from "@/components/ui/toast";
 import { createClient } from "@/lib/supabase/client";
 
@@ -994,7 +994,14 @@ export function ProfileForm({
               </div>
             ) : null}
 
-            <div className="grid gap-3 sm:grid-cols-2">
+            <ModalActions>
+              <Button
+                onClick={closeCameraModal}
+                type="button"
+                variant="outline"
+              >
+                {t("cameraCancelButton")}
+              </Button>
               {cameraStatus === "error" ? (
                 <Button
                   onClick={chooseImageFromCameraModal}
@@ -1013,14 +1020,7 @@ export function ProfileForm({
                   {t("cameraCaptureButton")}
                 </Button>
               )}
-              <Button
-                onClick={closeCameraModal}
-                type="button"
-                variant="outline"
-              >
-                {t("cameraCancelButton")}
-              </Button>
-            </div>
+            </ModalActions>
           </div>
         ) : draftAvatar ? (
           <div className="mt-6 space-y-5">
@@ -1051,13 +1051,14 @@ export function ProfileForm({
                 <div className="pointer-events-none absolute inset-0 rounded-full border-2 border-white shadow-[0_0_0_999px_rgba(0,0,0,0.42)]" />
               </div>
             </div>
-            <Button
-              fullWidth
-              onClick={() => setIsCropModalOpen(false)}
-              type="button"
-            >
-              {t("avatarCropButton")}
-            </Button>
+            <ModalActions>
+              <Button
+                onClick={() => setIsCropModalOpen(false)}
+                type="button"
+              >
+                {t("avatarCropButton")}
+              </Button>
+            </ModalActions>
           </div>
         ) : null}
       </Modal>
