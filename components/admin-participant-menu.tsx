@@ -99,6 +99,10 @@ export function AdminParticipantMenu({
     removeState.status === "remove-player-error"
       ? statusLabels["remove-player-error"]
       : null;
+  const deliveryWarning =
+    proofState.deliveryWarning || removeState.deliveryWarning
+      ? statusLabels["delivery-warning"]
+      : null;
   const isExpired = Boolean(proofDeletedAt && proofUploadedAt && !proofPath);
   const effectiveProofRequestedAt =
     proofState.proofRequestedAt ?? proofRequestedAt;
@@ -156,6 +160,9 @@ export function AdminParticipantMenu({
     <>
       {proofError ? <Toast variant="error">{proofError}</Toast> : null}
       {removeError ? <Toast variant="error">{removeError}</Toast> : null}
+      {deliveryWarning ? (
+        <Toast variant="warning">{deliveryWarning}</Toast>
+      ) : null}
 
       <div className="relative shrink-0" ref={containerRef}>
         <button

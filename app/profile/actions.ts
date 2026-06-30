@@ -27,6 +27,37 @@ function getRequiredText(formData: FormData, field: string) {
   return value.trim();
 }
 
+export async function updateEmailNotifications(
+  _previousState: { success?: boolean; error?: string },
+  formData: FormData,
+): Promise<{ success?: boolean; error?: string }> {
+  const [supabase, user] = await Promise.all([
+    createClient(),
+    getCurrentUser(),
+  ]);
+
+  if (!user) {
+    return { error: "notAuthenticated" };
+  }
+
+  const enabled = formData.get("emailNotificationsEnabled") === "true";
+
+  const { error } = await supabase
+    .from("profiles")
+    .update({ email_notifications_enabled: enabled })
+    .eq("id", user.id);
+
+  if (error) {
+    return { error: "updateFailed" };
+  }
+
+  revalidatePath("/", "layout");
+  revalidatePath("/dashboard");
+  revalidatePath("/profile");
+
+  return { success: true };
+}
+
 export async function updateProfile(
   _previousState: UpdateProfileState,
   formData: FormData,

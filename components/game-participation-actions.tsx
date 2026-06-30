@@ -281,6 +281,9 @@ export function GameParticipationActions({
       {status && errorStatuses.has(status) ? (
         <Toast variant="error">{statusLabels[status]}</Toast>
       ) : null}
+      {(localState.deliveryWarning || actionState.deliveryWarning) ? (
+        <Toast variant="warning">{statusLabels["delivery-warning"]}</Toast>
+      ) : null}
 
       <Card>
         <div className="flex flex-col gap-3 sm:flex-row">

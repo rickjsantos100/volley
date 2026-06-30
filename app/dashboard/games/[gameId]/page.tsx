@@ -238,6 +238,7 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
     "remove-player-error": t("removePlayerErrorMessage"),
     "cancel-error": t("cancelErrorMessage"),
     "delete-error": t("deleteErrorMessage"),
+    "delivery-warning": t("deliveryWarningMessage"),
     "not-authorized": t("notAuthorizedMessage"),
   };
 
@@ -414,7 +415,8 @@ async function GameDetailContent({
 
   const participants = (participantRows ?? []) as ParticipantDetail[];
   const waitlist = (waitlistRows ?? []) as WaitlistDetail[];
-  const { data: profileRows, error: profilesError } = isAdmin
+  const canManageRoster = isAdmin && !isCancelled;
+  const { data: profileRows, error: profilesError } = canManageRoster
     ? await supabase
         .from("profiles")
         .select(
@@ -504,6 +506,7 @@ async function GameDetailContent({
     "remove-player-error": t("removePlayerErrorMessage"),
     "cancel-error": t("cancelErrorMessage"),
     "delete-error": t("deleteErrorMessage"),
+    "delivery-warning": t("deliveryWarningMessage"),
     "not-authorized": t("notAuthorizedMessage"),
   };
 
@@ -574,7 +577,7 @@ async function GameDetailContent({
               <h2 className="font-matchday text-[26px] leading-7 font-bold text-[#061b6b]">
                 {t("participantsTitle")}
               </h2>
-              {isAdmin ? (
+              {canManageRoster ? (
                 <AdminAddPlayer
                   action={addParticipantToGame.bind(null, game.id)}
                   candidates={addPlayerCandidates}
@@ -600,7 +603,7 @@ async function GameDetailContent({
                   const name = getDisplayName(participant);
                   const avatarUrl = getAvatarUrl(supabase, participant);
 
-                  return isAdmin ? (
+                  return canManageRoster ? (
                     <AdminParticipantListItem
                       actionsLabel={t("playerActionsLabel", { name })}
                       avatarUrl={avatarUrl}
@@ -658,7 +661,7 @@ async function GameDetailContent({
               <p className="mt-4 text-sm leading-6 text-[#667085]">
                 {t("emptyWaitlist")}
               </p>
-            ) : isAdmin ? (
+            ) : canManageRoster ? (
               <AdminWaitlistSortableList
                 action={reorderWaitlist.bind(null, game.id)}
                 dragHandleLabel={t("dragWaitlistPlayerLabel")}

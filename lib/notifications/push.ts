@@ -7,13 +7,13 @@ import webPush, {
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export type PushNotificationKind =
+  | "admin_added_to_game"
   | "game_cancelled"
   | "game_deleted"
   | "game_reminder_4h"
+  | "game_uncancelled"
   | "game_updated"
-  | "payment_marked_paid"
   | "payment_proof_requested"
-  | "test"
   | "waitlist_promoted";
 
 export type PushPayload = {
@@ -40,30 +40,17 @@ type PushOutboxRow = {
 
 type GameNotificationAudience = {
   gameId: string;
-  userIds: string[];
+  recipients: {
+    participantId: string;
+    userId: string;
+  }[];
 };
 
 type GameAudienceRow = {
   game_event_id: string;
+  id: string;
   user_id: string;
 };
-
-type GameLifecycleNotificationKind = "game_cancelled" | "game_deleted" | "game_updated";
-
-function getGameLifecycleNotificationPayload(kind: GameLifecycleNotificationKind) {
-  if (kind === "game_updated") {
-    return {
-      body: "Um jogo em que estás inscrito foi alterado. Vê as novas informações no painel.",
-      title: "Jogo atualizado",
-      url: "/dashboard",
-    };
-  }
-  return {
-    body: "Este jogo já não vai avançar. Vê os próximos jogos no painel.",
-    title: "Jogo sem efeito",
-    url: "/dashboard",
-  };
-}
 
 let webPushConfigured = false;
 
@@ -127,7 +114,7 @@ export async function enqueueNotification({
 }) {
   const supabase = createAdminClient();
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("push_notification_outbox")
     .upsert(
       {
@@ -139,14 +126,36 @@ export async function enqueueNotification({
         user_id: userId,
       },
       dedupeKey ? { onConflict: "dedupe_key", ignoreDuplicates: true } : {},
-    );
+    )
+    .select("id")
+    .maybeSingle<{ id: string }>();
 
   if (error) {
     throw error;
   }
+
+  if (data) {
+    return data.id;
+  }
+
+  if (dedupeKey) {
+    const { data: existing, error: existingError } = await supabase
+      .from("push_notification_outbox")
+      .select("id")
+      .eq("dedupe_key", dedupeKey)
+      .single<{ id: string }>();
+
+    if (existingError) {
+      throw existingError;
+    }
+
+    return existing.id;
+  }
+
+  throw new Error("Push notification was not queued.");
 }
 
-export async function getGameNotificationAudiences(
+export async function getGameParticipantAudiences(
   gameIds: string[],
 ): Promise<GameNotificationAudience[]> {
   if (gameIds.length === 0) {
@@ -154,90 +163,59 @@ export async function getGameNotificationAudiences(
   }
 
   const supabase = createAdminClient();
-  const audienceByGameId = new Map<string, Set<string>>();
+  const audienceByGameId = new Map<
+    string,
+    Map<string, { participantId: string; userId: string }>
+  >();
 
   for (const gameId of gameIds) {
-    audienceByGameId.set(gameId, new Set<string>());
+    audienceByGameId.set(gameId, new Map());
   }
 
-  const [
-    { data: participants, error: participantsError },
-    { data: waitlist, error: waitlistError },
-  ] = await Promise.all([
-    supabase
-      .from("game_participants")
-      .select("game_event_id, user_id")
-      .in("game_event_id", gameIds)
-      .returns<GameAudienceRow[]>(),
-    supabase
-      .from("game_waitlist_entries")
-      .select("game_event_id, user_id")
-      .in("game_event_id", gameIds)
-      .eq("status", "active")
-      .returns<GameAudienceRow[]>(),
-  ]);
+  const { data: participants, error: participantsError } = await supabase
+    .from("game_participants")
+    .select("id, game_event_id, user_id")
+    .in("game_event_id", gameIds)
+    .returns<GameAudienceRow[]>();
 
   if (participantsError) {
     throw participantsError;
   }
 
-  if (waitlistError) {
-    throw waitlistError;
+  for (const row of participants ?? []) {
+    audienceByGameId.get(row.game_event_id)?.set(row.user_id, {
+      participantId: row.id,
+      userId: row.user_id,
+    });
   }
 
-  for (const row of [...(participants ?? []), ...(waitlist ?? [])]) {
-    audienceByGameId.get(row.game_event_id)?.add(row.user_id);
-  }
-
-  return [...audienceByGameId.entries()].map(([gameId, userIds]) => ({
+  return [...audienceByGameId.entries()].map(([gameId, recipients]) => ({
     gameId,
-    userIds: [...userIds],
+    recipients: [...recipients.values()],
   }));
 }
 
-export async function enqueueGameLifecycleNotifications({
-  audiences,
-  includeGameEventId = true,
-  kind,
-}: {
-  audiences: GameNotificationAudience[];
-  includeGameEventId?: boolean;
-  kind: GameLifecycleNotificationKind;
-}) {
-  const tagPrefix =
-    kind === "game_cancelled"
-      ? "game-cancelled"
-      : kind === "game_updated"
-        ? "game-updated"
-        : "game-deleted";
-
-  for (const audience of audiences) {
-    for (const userId of audience.userIds) {
-      await enqueueNotification({
-        dedupeKey: `${kind}:${audience.gameId}:${userId}`,
-        gameEventId: includeGameEventId ? audience.gameId : undefined,
-        kind,
-        payload: {
-          ...getGameLifecycleNotificationPayload(kind),
-          tag: `${tagPrefix}-${audience.gameId}`,
-        },
-        userId,
-      });
-    }
-  }
-}
-
-export async function processPendingNotifications(limit = 25) {
-  configureWebPush();
-
+export async function processPendingNotifications(
+  limit = 25,
+  notificationIds?: string[],
+) {
   const supabase = createAdminClient();
-  const { data: notifications, error } = await supabase
+  let query = supabase
     .from("push_notification_outbox")
     .select("id, attempts, payload, user_id")
     .eq("status", "pending")
     .order("created_at", { ascending: true })
-    .limit(limit)
-    .returns<PushOutboxRow[]>();
+    .limit(limit);
+
+  if (notificationIds) {
+    if (notificationIds.length === 0) {
+      return { failed: 0, sent: 0, skipped: 0 };
+    }
+    query = query.in("id", notificationIds);
+  }
+
+  const { data: notifications, error } =
+    await query.returns<PushOutboxRow[]>();
 
   if (error) {
     throw error;
@@ -246,6 +224,7 @@ export async function processPendingNotifications(limit = 25) {
   const results = {
     failed: 0,
     sent: 0,
+    skipped: 0,
   };
 
   for (const notification of notifications ?? []) {
@@ -274,13 +253,14 @@ export async function processPendingNotifications(limit = 25) {
         .update({
           attempts: notification.attempts + 1,
           last_error: "No push subscriptions for user.",
-          status: "failed",
+          status: "skipped",
         })
         .eq("id", notification.id);
-      results.failed += 1;
+      results.skipped += 1;
       continue;
     }
 
+    configureWebPush();
     let sentCount = 0;
     const errors: string[] = [];
     const payload = JSON.stringify(notification.payload);
@@ -333,20 +313,4 @@ export async function processPendingNotifications(limit = 25) {
   }
 
   return results;
-}
-
-export async function sendTestNotification(userId: string) {
-  await enqueueNotification({
-    dedupeKey: `test:${userId}:${Date.now()}`,
-    kind: "test",
-    payload: {
-      body: "As notificações do Voley Lisboa estão a funcionar.",
-      tag: "test-notification",
-      title: "Teste de notificações",
-      url: "/dashboard",
-    },
-    userId,
-  });
-
-  return processPendingNotifications(10);
 }

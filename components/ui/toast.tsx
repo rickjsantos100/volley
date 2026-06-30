@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { alertClassName } from "./alert";
 import { cx } from "./class-name";
 
-type ToastVariant = "error" | "success";
+type ToastVariant = "error" | "success" | "warning";
 
 export function Toast({
   className,

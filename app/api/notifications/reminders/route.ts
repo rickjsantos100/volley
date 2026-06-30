@@ -1,14 +1,12 @@
 import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import {
-  enqueueNotification,
-  processPendingNotifications,
-} from "@/lib/notifications/push";
+import { dispatchGameNotification } from "@/lib/notifications/game";
 
 export const dynamic = "force-dynamic";
 
 type ReminderParticipantRow = {
   game_event_id: string;
+  id: string;
   user_id: string;
   game_events: {
     id: string;
@@ -31,7 +29,7 @@ export async function GET(request: NextRequest) {
   const supabase = createAdminClient();
   const { data: participants, error } = await supabase
     .from("game_participants")
-    .select("game_event_id, user_id, game_events!inner(id, starts_at, status)")
+    .select("id, game_event_id, user_id, game_events!inner(id, starts_at, status)")
     .eq("game_events.status", "scheduled")
     .gte("game_events.starts_at", windowStart.toISOString())
     .lt("game_events.starts_at", windowEnd.toISOString())
@@ -41,34 +39,41 @@ export async function GET(request: NextRequest) {
     return Response.json({ error: error.message }, { status: 500 });
   }
 
-  let enqueued = 0;
+  const eligibleParticipants = (participants ?? []).filter(
+    (participant) => participant.game_events?.status === "scheduled",
+  );
+  const results = await Promise.allSettled(
+    eligibleParticipants.map((participant) => {
+      const game = participant.game_events!;
+      return dispatchGameNotification({
+        deliveryVersion: game.starts_at,
+        gameId: participant.game_event_id,
+        kind: "game_reminder_4h",
+        recipients: [
+          {
+            participantId: participant.id,
+            userId: participant.user_id,
+          },
+        ],
+        startsAt: game.starts_at,
+      });
+    }),
+  );
+  const delivery = {
+    emailFailed: 0,
+    pushFailed: 0,
+    recipients: eligibleParticipants.length,
+  };
 
-  for (const participant of participants ?? []) {
-    const game = participant.game_events;
-
-    if (!game || game.status !== "scheduled") {
-      continue;
+  for (const result of results) {
+    if (result.status === "fulfilled") {
+      delivery.emailFailed += result.value.email.failed;
+      delivery.pushFailed += result.value.push.failed;
+    } else {
+      delivery.emailFailed += 1;
+      delivery.pushFailed += 1;
     }
-
-    await enqueueNotification({
-      dedupeKey: `game_reminder_4h:${participant.game_event_id}:${participant.user_id}`,
-      gameEventId: participant.game_event_id,
-      kind: "game_reminder_4h",
-      payload: {
-        body: "O jogo começa dentro de 4 horas. Confirma se continuas dentro.",
-        tag: `game-reminder-${participant.game_event_id}`,
-        title: "Ainda vens jogar?",
-        url: `/dashboard/games/${participant.game_event_id}`,
-      },
-      userId: participant.user_id,
-    });
-    enqueued += 1;
   }
 
-  const processed = await processPendingNotifications(50);
-
-  return Response.json({
-    enqueued,
-    processed,
-  });
+  return Response.json({ delivery });
 }

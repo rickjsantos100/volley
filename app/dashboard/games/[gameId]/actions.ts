@@ -4,16 +4,10 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getCurrentProfile, getCurrentUser } from "@/lib/auth/server";
 import {
-  enqueueNotification,
-  enqueueGameLifecycleNotifications,
-  getGameNotificationAudiences,
-  processPendingNotifications,
-} from "@/lib/notifications/push";
-import {
-  sendAdminAddedToGameEmail,
-  sendGameUpdatedEmail,
-  sendPaymentProofRequestEmail,
-} from "@/lib/notifications/email";
+  dispatchGameNotification,
+  type GameNotificationKind,
+} from "@/lib/notifications/game";
+import { getGameParticipantAudiences } from "@/lib/notifications/push";
 import { getPaymentProofRequestAvailableAt } from "@/lib/payment-proof-policy";
 import {
   getGamePaymentProofPaths,
@@ -52,9 +46,11 @@ export type GameActionStatus =
   | "remove-player-error"
   | "cancel-error"
   | "delete-error"
+  | "delivery-warning"
   | "not-authorized";
 
 export type GameActionState = {
+  deliveryWarning?: boolean;
   proofRequestedAt?: string;
   status?: GameActionStatus;
 };
@@ -62,6 +58,8 @@ export type GameActionState = {
 type AdminGameRow = {
   id: string;
   starts_at: string;
+  status: "scheduled" | "cancelled" | "completed" | "deleted";
+  updated_at: string;
   recurring_series_id: string | null;
   recurring_starts_at: string | null;
 };
@@ -78,12 +76,13 @@ type PaymentProofRow = {
   proof_requested_at: string | null;
 };
 
-type GameIdRow = {
+type GameSnapshot = {
   id: string;
+  starts_at: string;
+  updated_at: string;
 };
 
 type AddPlayerProfileRow = {
-  email: string | null;
   id: string;
 };
 
@@ -91,6 +90,12 @@ type AddPlayerGameRow = {
   id: string;
   starts_at: string;
   status: "scheduled" | "cancelled" | "completed" | "deleted";
+};
+
+type RemoveParticipantResult = {
+  promoted_participant_id: string | null;
+  promoted_user_id: string | null;
+  removed_user_id: string;
 };
 
 function getRecurrenceScope(formData: FormData): RecurrenceScope {
@@ -164,36 +169,101 @@ function getDurationMinutes(startsAt: Date, endsAt: Date) {
   return durationMinutes;
 }
 
-async function processNotificationsAfterMutation() {
-  try {
-    await processPendingNotifications();
-  } catch (error) {
-    console.error("Failed to process push notifications", error);
+async function notifyGameLifecycleChange({
+  audiences,
+  games,
+  kind,
+}: {
+  audiences: Awaited<ReturnType<typeof getGameParticipantAudiences>>;
+  games: GameSnapshot[];
+  kind: Extract<
+    GameNotificationKind,
+    "game_cancelled" | "game_deleted" | "game_uncancelled" | "game_updated"
+  >;
+}) {
+  let hasFailures = false;
+
+  for (const game of games) {
+    const recipients =
+      audiences.find((audience) => audience.gameId === game.id)?.recipients ??
+      [];
+    try {
+      const summary = await dispatchGameNotification({
+        deliveryVersion: game.updated_at,
+        gameId: game.id,
+        kind,
+        recipients,
+        startsAt: game.starts_at,
+      });
+      hasFailures ||= summary.hasFailures;
+    } catch (error) {
+      hasFailures = true;
+      console.error("Failed to dispatch game lifecycle notifications", {
+        error,
+        gameId: game.id,
+        kind,
+      });
+    }
   }
+
+  return hasFailures;
 }
 
-async function notifyGameLifecycleChange({
-  gameIds,
-  includeGameEventId = true,
-  kind,
-  preparedAudiences,
+async function getGameSnapshots(gameIds: string[]) {
+  if (gameIds.length === 0) {
+    return [];
+  }
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
+    .from("game_events")
+    .select("id, starts_at, updated_at")
+    .in("id", gameIds)
+    .returns<GameSnapshot[]>();
+  if (error) {
+    throw error;
+  }
+  return data ?? [];
+}
+
+async function notifyPromotedPlayer({
+  gameId,
+  promotedParticipantId,
+  promotedUserId,
 }: {
-  gameIds: string[];
-  includeGameEventId?: boolean;
-  kind: "game_cancelled" | "game_deleted";
-  preparedAudiences?: Awaited<ReturnType<typeof getGameNotificationAudiences>>;
+  gameId: string;
+  promotedParticipantId: string | null;
+  promotedUserId: string | null;
 }) {
+  if (!promotedParticipantId || !promotedUserId) {
+    return false;
+  }
+
   try {
-    const audiences =
-      preparedAudiences ?? (await getGameNotificationAudiences(gameIds));
-    await enqueueGameLifecycleNotifications({
-      audiences,
-      includeGameEventId,
-      kind,
+    const supabase = createAdminClient();
+    const { data: game } = await supabase
+      .from("game_events")
+      .select("starts_at")
+      .eq("id", gameId)
+      .single<{ starts_at: string }>();
+    if (!game) {
+      return true;
+    }
+    const summary = await dispatchGameNotification({
+      deliveryVersion: promotedParticipantId,
+      gameId,
+      kind: "waitlist_promoted",
+      recipients: [
+        {
+          participantId: promotedParticipantId,
+          userId: promotedUserId,
+        },
+      ],
+      startsAt: game.starts_at,
     });
-    await processPendingNotifications();
+    return summary.hasFailures;
   } catch (error) {
-    console.error("Failed to send game lifecycle push notifications", error);
+    console.error("Failed to notify promoted waitlist player", error);
+    return true;
   }
 }
 
@@ -210,7 +280,9 @@ async function getAdminGame(gameId: string) {
 
   const { data: game, error } = await supabase
     .from("game_events")
-    .select("id, starts_at, recurring_series_id, recurring_starts_at")
+    .select(
+      "id, starts_at, status, updated_at, recurring_series_id, recurring_starts_at",
+    )
     .eq("id", gameId)
     .maybeSingle<AdminGameRow>();
 
@@ -282,7 +354,7 @@ export async function addParticipantToGame(
   ] = await Promise.all([
     supabase
       .from("profiles")
-      .select("id, email")
+      .select("id")
       .eq("id", userId)
       .maybeSingle<AddPlayerProfileRow>(),
     supabase
@@ -294,7 +366,7 @@ export async function addParticipantToGame(
 
   if (
     profileError ||
-    !selectedProfile?.email ||
+    !selectedProfile ||
     gameError ||
     !game ||
     game.status !== "scheduled" ||
@@ -319,24 +391,32 @@ export async function addParticipantToGame(
     return { status: "add-player-error" };
   }
 
+  let deliveryWarning = false;
   try {
-    await sendAdminAddedToGameEmail({
-      email: selectedProfile.email,
+    const summary = await dispatchGameNotification({
+      deliveryVersion: participant.id,
       gameId,
-      participantId: participant.id,
+      kind: "admin_added_to_game",
+      recipients: [
+        {
+          participantId: participant.id,
+          userId: selectedProfile.id,
+        },
+      ],
       startsAt: game.starts_at,
     });
-  } catch (emailError) {
-    console.error("Failed to email admin-added participant", {
-      emailError,
+    deliveryWarning = summary.hasFailures;
+  } catch (notificationError) {
+    deliveryWarning = true;
+    console.error("Failed to notify admin-added participant", {
       gameId,
+      notificationError,
       participantId: participant.id,
       userId: selectedProfile.id,
     });
-    return { status: "added-player-email-error" };
   }
 
-  return { status: "added-player" };
+  return { deliveryWarning, status: "added-player" };
 }
 
 export async function joinWaitlist(
@@ -388,11 +468,12 @@ export async function leaveGame(
     redirect("/");
   }
 
-  const { error } = await supabase
-    .from("game_participants")
-    .delete()
-    .eq("game_event_id", gameId)
-    .eq("user_id", user.id);
+  const { data: removal, error } = await supabase
+    .rpc("remove_game_participant", {
+      target_game_id: gameId,
+      target_participant_id: null,
+    })
+    .single<RemoveParticipantResult>();
 
   revalidatePath("/dashboard");
   revalidatePath(`/dashboard/games/${gameId}`);
@@ -411,9 +492,15 @@ export async function leaveGame(
     });
   }
 
-  await processNotificationsAfterMutation();
+  const deliveryWarning = removal
+    ? await notifyPromotedPlayer({
+        gameId,
+        promotedParticipantId: removal.promoted_participant_id,
+        promotedUserId: removal.promoted_user_id,
+      })
+    : false;
 
-  return { status: "left-game" };
+  return { deliveryWarning, status: "left-game" };
 }
 
 export async function finalizePaymentProof(
@@ -533,14 +620,16 @@ export async function requestPaymentProof(
   void previousState;
   void formData;
 
-  const { role, user } = await getUserRole();
+  const { game, status } = await getAdminGame(gameId);
 
-  if (!user) {
-    redirect("/");
+  if (status) {
+    return {
+      status: status === "not-authorized" ? status : "proof-request-error",
+    };
   }
 
-  if (role !== "admin") {
-    return { status: "not-authorized" };
+  if (game.status !== "scheduled") {
+    return { status: "proof-request-error" };
   }
 
   const supabase = createAdminClient();
@@ -576,49 +665,6 @@ export async function requestPaymentProof(
     };
   }
 
-  const requestVersion = proof?.proof_requested_at ?? "initial";
-  const [{ data: profile }, { data: game }] = await Promise.all([
-    supabase
-      .from("profiles")
-      .select("email")
-      .eq("id", participant.user_id)
-      .maybeSingle<{ email: string | null }>(),
-    supabase
-      .from("game_events")
-      .select("starts_at")
-      .eq("id", gameId)
-      .maybeSingle<{ starts_at: string }>(),
-  ]);
-
-  if (!profile?.email || !game) {
-    return { status: "proof-request-error" };
-  }
-
-  try {
-    await sendPaymentProofRequestEmail({
-      email: profile.email,
-      gameId,
-      participantId: participant.id,
-      requestVersion,
-      startsAt: game.starts_at,
-    });
-    await enqueueNotification({
-      dedupeKey: `payment_proof_requested:${participant.id}:${requestVersion}`,
-      gameEventId: gameId,
-      kind: "payment_proof_requested",
-      payload: {
-        body: "Adiciona o comprovativo de pagamento na página do jogo.",
-        tag: `payment-proof-requested-${gameId}`,
-        title: "Comprovativo em falta",
-        url: `/dashboard/games/${gameId}`,
-      },
-      userId: participant.user_id,
-    });
-  } catch (notificationError) {
-    console.error("Failed to request payment proof", notificationError);
-    return { status: "proof-request-error" };
-  }
-
   const proofRequestedAt = new Date().toISOString();
   const { error: updateError } = await supabase
     .from("game_payment_proofs")
@@ -637,9 +683,36 @@ export async function requestPaymentProof(
   }
 
   revalidatePath(`/dashboard/games/${gameId}`);
-  await processNotificationsAfterMutation();
 
-  return { proofRequestedAt, status: "proof-requested" };
+  let deliveryWarning = false;
+  try {
+    const summary = await dispatchGameNotification({
+      deliveryVersion: proofRequestedAt,
+      gameId,
+      kind: "payment_proof_requested",
+      recipients: [
+        {
+          participantId: participant.id,
+          userId: participant.user_id,
+        },
+      ],
+      startsAt: game.starts_at,
+    });
+    deliveryWarning = summary.hasFailures;
+  } catch (notificationError) {
+    deliveryWarning = true;
+    console.error("Failed to send payment proof request notifications", {
+      gameId,
+      notificationError,
+      participantId,
+    });
+  }
+
+  return {
+    deliveryWarning,
+    proofRequestedAt,
+    status: "proof-requested",
+  };
 }
 
 export async function reorderWaitlist(
@@ -649,14 +722,16 @@ export async function reorderWaitlist(
 ): Promise<GameActionState> {
   void previousState;
 
-  const { role, supabase, user } = await getUserRole();
+  const { game, supabase, status } = await getAdminGame(gameId);
 
-  if (!user) {
-    redirect("/");
+  if (status) {
+    return {
+      status: status === "not-authorized" ? status : "waitlist-reorder-error",
+    };
   }
 
-  if (role !== "admin") {
-    return { status: "not-authorized" };
+  if (game.status !== "scheduled") {
+    return { status: "waitlist-reorder-error" };
   }
 
   const rawEntryIds = formData.get("orderedEntryIds");
@@ -702,28 +777,24 @@ export async function removeParticipantFromGame(
   void previousState;
   void formData;
 
-  const { role, supabase, user } = await getUserRole();
+  const { game, supabase, status } = await getAdminGame(gameId);
 
-  if (!user) {
-    redirect("/");
+  if (status) {
+    return {
+      status: status === "not-authorized" ? status : "remove-player-error",
+    };
   }
 
-  if (role !== "admin") {
-    return { status: "not-authorized" };
+  if (game.status !== "scheduled") {
+    return { status: "remove-player-error" };
   }
 
-  const { data: participant } = await supabase
-    .from("game_participants")
-    .select("user_id")
-    .eq("id", participantId)
-    .eq("game_event_id", gameId)
-    .maybeSingle<{ user_id: string }>();
-
-  const { error } = await supabase
-    .from("game_participants")
-    .delete()
-    .eq("id", participantId)
-    .eq("game_event_id", gameId);
+  const { data: removal, error } = await supabase
+    .rpc("remove_game_participant", {
+      target_game_id: gameId,
+      target_participant_id: participantId,
+    })
+    .single<RemoveParticipantResult>();
 
   revalidatePath("/dashboard");
   revalidatePath(`/dashboard/games/${gameId}`);
@@ -732,23 +803,29 @@ export async function removeParticipantFromGame(
     return { status: "remove-player-error" };
   }
 
-  if (participant) {
+  if (removal) {
     try {
       await removePaymentProofs([
-        getPaymentProofPath(gameId, participant.user_id),
+        getPaymentProofPath(gameId, removal.removed_user_id),
       ]);
     } catch (proofError) {
       console.error("Failed to delete removed participant payment proof", {
         gameId,
         proofError,
-        userId: participant.user_id,
+        userId: removal.removed_user_id,
       });
     }
   }
 
-  await processNotificationsAfterMutation();
+  const deliveryWarning = removal
+    ? await notifyPromotedPlayer({
+        gameId,
+        promotedParticipantId: removal.promoted_participant_id,
+        promotedUserId: removal.promoted_user_id,
+      })
+    : false;
 
-  return { status: "removed-player" };
+  return { deliveryWarning, status: "removed-player" };
 }
 
 export async function removeWaitlistEntryFromGame(
@@ -760,14 +837,16 @@ export async function removeWaitlistEntryFromGame(
   void previousState;
   void formData;
 
-  const { role, supabase, user } = await getUserRole();
+  const { game, supabase, status } = await getAdminGame(gameId);
 
-  if (!user) {
-    redirect("/");
+  if (status) {
+    return {
+      status: status === "not-authorized" ? status : "remove-player-error",
+    };
   }
 
-  if (role !== "admin") {
-    return { status: "not-authorized" };
+  if (game.status !== "scheduled") {
+    return { status: "remove-player-error" };
   }
 
   const { error } = await supabase
@@ -799,6 +878,10 @@ export async function cancelGame(
     return { status: status === "delete-error" ? "cancel-error" : status };
   }
 
+  if (game.status !== "scheduled") {
+    return { status: "cancel-error" };
+  }
+
   const scope = getRecurrenceScope(formData);
   const isSeriesAction =
     scope === "series" && game.recurring_series_id && game.recurring_starts_at;
@@ -812,7 +895,7 @@ export async function cancelGame(
       .eq("recurring_series_id", game.recurring_series_id)
       .gte("recurring_starts_at", game.recurring_starts_at)
       .eq("status", "scheduled")
-      .returns<GameIdRow[]>();
+      .returns<{ id: string }[]>();
 
     if (affectedGamesError) {
       return { status: "cancel-error" };
@@ -855,12 +938,29 @@ export async function cancelGame(
     return { status: "cancel-error" };
   }
 
-  await notifyGameLifecycleChange({
-    gameIds: affectedGameIds,
-    kind: "game_cancelled",
-  });
+  let deliveryWarning = false;
+  try {
+    const [audiences, games] = await Promise.all([
+      getGameParticipantAudiences(affectedGameIds),
+      getGameSnapshots(affectedGameIds),
+    ]);
+    deliveryWarning = await notifyGameLifecycleChange({
+      audiences,
+      games,
+      kind: "game_cancelled",
+    });
+  } catch (notificationError) {
+    deliveryWarning = true;
+    console.error("Failed to prepare game cancellation notifications", {
+      affectedGameIds,
+      notificationError,
+    });
+  }
 
-  return { status: isSeriesAction ? "cancelled-series" : "cancelled-game" };
+  return {
+    deliveryWarning,
+    status: isSeriesAction ? "cancelled-series" : "cancelled-game",
+  };
 }
 
 export async function uncancelGame(
@@ -877,6 +977,17 @@ export async function uncancelGame(
     return { status: status === "delete-error" ? "cancel-error" : status };
   }
 
+  let audiences:
+    | Awaited<ReturnType<typeof getGameParticipantAudiences>>
+    | undefined;
+  try {
+    audiences = await getGameParticipantAudiences([game.id]);
+  } catch (notificationError) {
+    console.error("Failed to prepare game uncancellation audience", {
+      gameId,
+      notificationError,
+    });
+  }
   const { error } = await supabase
     .from("game_events")
     .update({ status: "scheduled" })
@@ -890,7 +1001,25 @@ export async function uncancelGame(
     return { status: "cancel-error" };
   }
 
-  return { status: "uncancelled-game" };
+  let deliveryWarning = !audiences;
+  try {
+    if (!audiences) {
+      throw new Error("Game uncancellation audience is unavailable.");
+    }
+    deliveryWarning = await notifyGameLifecycleChange({
+      audiences,
+      games: await getGameSnapshots([game.id]),
+      kind: "game_uncancelled",
+    });
+  } catch (notificationError) {
+    deliveryWarning = true;
+    console.error("Failed to send game uncancellation notifications", {
+      gameId,
+      notificationError,
+    });
+  }
+
+  return { deliveryWarning, status: "uncancelled-game" };
 }
 
 export async function deleteGame(
@@ -912,9 +1041,6 @@ export async function deleteGame(
   );
   const isSeriesAction = scope === "series" && isRecurringGame;
   let affectedGameIds = [game.id];
-  let physicalDeleteAudiences:
-    | Awaited<ReturnType<typeof getGameNotificationAudiences>>
-    | undefined;
   let paymentProofPaths: string[] = [];
 
   if (isSeriesAction) {
@@ -924,7 +1050,7 @@ export async function deleteGame(
       .eq("recurring_series_id", game.recurring_series_id)
       .gte("recurring_starts_at", game.recurring_starts_at)
       .neq("status", "deleted")
-      .returns<GameIdRow[]>();
+      .returns<{ id: string }[]>();
 
     if (affectedGamesError) {
       return { status: "delete-error" };
@@ -933,14 +1059,23 @@ export async function deleteGame(
     affectedGameIds = (affectedGames ?? []).map(
       (affectedGame) => affectedGame.id,
     );
-  } else if (!isRecurringGame) {
-    try {
-      physicalDeleteAudiences = await getGameNotificationAudiences([game.id]);
-    } catch (error) {
-      console.error("Failed to prepare game delete push notifications", error);
-    }
   }
 
+  let deletionAudiences:
+    | Awaited<ReturnType<typeof getGameParticipantAudiences>>
+    | undefined;
+  let deletionSnapshots: GameSnapshot[] = [];
+  try {
+    [deletionAudiences, deletionSnapshots] = await Promise.all([
+      getGameParticipantAudiences(affectedGameIds),
+      getGameSnapshots(affectedGameIds),
+    ]);
+  } catch (preparationError) {
+    console.error(
+      "Failed to prepare game deletion notifications",
+      preparationError,
+    );
+  }
   try {
     paymentProofPaths = await getGamePaymentProofPaths(affectedGameIds);
   } catch (proofError) {
@@ -986,14 +1121,20 @@ export async function deleteGame(
     console.error("Failed to delete game payment proofs", proofError);
   }
 
-  await notifyGameLifecycleChange({
-    gameIds: affectedGameIds,
-    includeGameEventId: isRecurringGame,
-    kind: "game_deleted",
-    preparedAudiences: physicalDeleteAudiences,
-  });
+  let deliveryWarning = !deletionAudiences;
+  if (deletionAudiences) {
+    deliveryWarning = await notifyGameLifecycleChange({
+      audiences: deletionAudiences,
+      games: deletionSnapshots,
+      kind: "game_deleted",
+    });
+  }
 
-  redirect("/dashboard");
+  redirect(
+    deliveryWarning
+      ? "/dashboard?notificationWarning=1"
+      : "/dashboard",
+  );
 }
 
 export async function editGame(
@@ -1006,6 +1147,10 @@ export async function editGame(
   const { game, supabase, status } = await getAdminGame(gameId);
   if (status) {
     return { status: status === "delete-error" ? "edit-error" : status };
+  }
+
+  if (game.status !== "scheduled") {
+    return { status: "edit-error" };
   }
 
   const scope = getRecurrenceScope(formData);
@@ -1095,64 +1240,27 @@ export async function editGame(
   revalidatePath("/dashboard");
   revalidatePath(`/dashboard/games/${gameId}`);
 
-  // Send email + push notifications to all participants
+  let deliveryWarning = false;
   try {
-    const audiences = await getGameNotificationAudiences(affectedGameIds);
-    await enqueueGameLifecycleNotifications({
+    const [audiences, games] = await Promise.all([
+      getGameParticipantAudiences(affectedGameIds),
+      getGameSnapshots(affectedGameIds),
+    ]);
+    deliveryWarning = await notifyGameLifecycleChange({
       audiences,
-      includeGameEventId: true,
+      games,
       kind: "game_updated",
     });
-    await processPendingNotifications();
-  } catch (pushError) {
-    console.error("Failed to send game update push notifications", pushError);
+  } catch (notificationError) {
+    deliveryWarning = true;
+    console.error("Failed to prepare game update notifications", {
+      affectedGameIds,
+      notificationError,
+    });
   }
 
-  // Send emails to all participants
-  try {
-    const adminClient = createAdminClient();
-    for (const gameIdToNotify of affectedGameIds) {
-      const { data: participants } = await adminClient
-        .from("game_participants")
-        .select("id, user_id")
-        .eq("game_event_id", gameIdToNotify);
-
-      const { data: gameData } = await adminClient
-        .from("game_events")
-        .select("starts_at")
-        .eq("id", gameIdToNotify)
-        .maybeSingle<{ starts_at: string }>();
-
-      if (!gameData || !participants) continue;
-
-      for (const participant of participants ?? []) {
-        const { data: profile } = await adminClient
-          .from("profiles")
-          .select("email")
-          .eq("id", participant.user_id)
-          .maybeSingle<{ email: string }>();
-
-        if (!profile?.email) continue;
-
-        try {
-          await sendGameUpdatedEmail({
-            email: profile.email,
-            gameId: gameIdToNotify,
-            participantId: participant.id,
-            startsAt: gameData.starts_at,
-          });
-        } catch (emailError) {
-          console.error("Failed to send game updated email", {
-            emailError,
-            gameId: gameIdToNotify,
-            participantId: participant.id,
-          });
-        }
-      }
-    }
-  } catch (emailError) {
-    console.error("Failed to send game update emails", emailError);
-  }
-
-  return { status: isSeriesAction ? "edited-series" : "edited-game" };
+  return {
+    deliveryWarning,
+    status: isSeriesAction ? "edited-series" : "edited-game",
+  };
 }

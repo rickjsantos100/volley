@@ -70,6 +70,7 @@
     "emptyGamesTitle": "Sem jogos marcados, por agora.",
     "emptyGamesIntro": "Assim que houver uma nova data, aparece aqui. Fica atento!",
     "gamesLoadError": "Não conseguimos carregar os próximos jogos. Tenta outra vez.",
+    "notificationWarning": "O jogo foi apagado, mas não conseguimos entregar algumas notificações.",
     "durationLabel": "Duração",
     "slotsLabel": "Vagas",
     "slotsValue": "{occupied}/{capacity}",
@@ -164,6 +165,7 @@
     "waitlistReorderErrorMessage": "Não conseguimos reordenar a lista de espera. Tenta outra vez.",
     "cancelErrorMessage": "Não conseguimos cancelar este jogo. Tenta outra vez.",
     "deleteErrorMessage": "Não conseguimos apagar este jogo. Tenta outra vez.",
+    "deliveryWarningMessage": "A alteração ficou guardada, mas não conseguimos entregar algumas notificações.",
     "notAuthorizedMessage": "Só os organizadores podem gerir jogos.",
     "listLoadError": "Não conseguimos carregar os jogadores. Tenta outra vez.",
     "participantsTitle": "Jogadores",
@@ -275,6 +277,13 @@
       "notAuthenticated": "Inicia sessão novamente para atualizares o perfil.",
       "updateFailed": "Não conseguimos atualizar o teu perfil. Tenta outra vez.",
       "uploadFailed": "Não conseguimos guardar a foto. Tenta outra vez."
-    }
+    },
+    "emailNotificationsTitle": "Emails",
+    "emailNotificationsEnabled": "Estás a receber emails sobre jogos e comprovativos.",
+    "emailNotificationsDisabled": "Não estás a receber emails neste momento.",
+    "emailNotificationsEnable": "Ativar emails",
+    "emailNotificationsDisable": "Desativar emails",
+    "emailNotificationsSaved": "Preferência de email atualizada.",
+    "emailNotificationsError": "Não conseguimos atualizar as preferências de email."
   }
 }

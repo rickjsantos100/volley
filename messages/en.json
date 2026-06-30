@@ -70,6 +70,7 @@
     "emptyGamesTitle": "No upcoming games yet.",
     "emptyGamesIntro": "New games will appear here when they are scheduled.",
     "gamesLoadError": "We could not load upcoming games. Please try again.",
+    "notificationWarning": "The game was deleted, but some notifications could not be delivered.",
     "durationLabel": "Duration",
     "slotsLabel": "Slots",
     "slotsValue": "{occupied}/{capacity}",
@@ -164,6 +165,7 @@
     "waitlistReorderErrorMessage": "We could not reorder the waitlist. Please try again.",
     "cancelErrorMessage": "We could not cancel this game. Please try again.",
     "deleteErrorMessage": "We could not delete this game. Please try again.",
+    "deliveryWarningMessage": "The change was saved, but some notifications could not be delivered.",
     "notAuthorizedMessage": "Only admins can manage games.",
     "listLoadError": "We could not load the roster. Please try again.",
     "notFoundTitle": "Game not found",
@@ -275,6 +277,13 @@
       "notAuthenticated": "Log in again to update your profile.",
       "updateFailed": "We could not update your profile. Please try again.",
       "uploadFailed": "We could not upload your photo. Please try again."
-    }
+    },
+    "emailNotificationsTitle": "Emails",
+    "emailNotificationsEnabled": "You are receiving emails about games and payment proofs.",
+    "emailNotificationsDisabled": "You are not receiving emails right now.",
+    "emailNotificationsEnable": "Enable emails",
+    "emailNotificationsDisable": "Disable emails",
+    "emailNotificationsSaved": "Email preference updated.",
+    "emailNotificationsError": "Could not update your email preferences."
   }
 }

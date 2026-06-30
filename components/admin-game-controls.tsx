@@ -268,6 +268,11 @@ export function AdminGameControls({
     uncancelState.status ??
     cancelState.status ??
     editState.status;
+  const deliveryWarning =
+    deleteState.deliveryWarning ??
+    uncancelState.deliveryWarning ??
+    cancelState.deliveryWarning ??
+    editState.deliveryWarning;
 
   const computedStartsAt = `${editSchedule.date}T${editSchedule.startTime}`;
   const computedEndsAt = `${editSchedule.date}T${editSchedule.endTime}`;
@@ -276,6 +281,11 @@ export function AdminGameControls({
     <Card>
       {status && errorStatuses.has(status) && statusLabels[status] ? (
         <Toast variant="error">{statusLabels[status]}</Toast>
+      ) : null}
+      {deliveryWarning && statusLabels["delivery-warning"] ? (
+        <Toast variant="warning">
+          {statusLabels["delivery-warning"]}
+        </Toast>
       ) : null}
 
       <div className="grid gap-3">

@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { logOut } from "@/app/dashboard/actions";
 import { ProfileForm } from "@/components/profile-form";
 import { PushNotificationControls } from "@/components/push-notification-controls";
+import { EmailNotificationControls } from "@/components/email-notification-controls";
 import { Button, SubmitButton } from "@/components/ui/button";
 import { cx, pressedSurfaceClassName } from "@/components/ui/class-name";
 import { Modal, ModalActions } from "@/components/ui/modal";
@@ -12,6 +13,7 @@ import { Modal, ModalActions } from "@/components/ui/modal";
 type AccountMenuProps = {
   avatarPath: string;
   avatarUrl: string;
+  emailNotificationsEnabled: boolean;
   firstName: string;
   initials: string;
   label: string;
@@ -25,6 +27,7 @@ type PendingProfileExit = "close" | "signOut" | null;
 export function AccountMenu({
   avatarPath,
   avatarUrl,
+  emailNotificationsEnabled,
   firstName,
   initials,
   label,
@@ -167,6 +170,18 @@ export function AccountMenu({
               title: profileT("notificationsTitle"),
             }}
             publicKey={publicVapidKey}
+          />
+          <EmailNotificationControls
+            enabled={emailNotificationsEnabled}
+            labels={{
+              disable: profileT("emailNotificationsDisable"),
+              disabled: profileT("emailNotificationsDisabled"),
+              enable: profileT("emailNotificationsEnable"),
+              enabled: profileT("emailNotificationsEnabled"),
+              error: profileT("emailNotificationsError"),
+              saved: profileT("emailNotificationsSaved"),
+              title: profileT("emailNotificationsTitle"),
+            }}
           />
           <Button
             fullWidth

@@ -78,6 +78,7 @@ export async function GlobalHeader() {
             <AccountMenu
               avatarPath={profile?.avatar_path ?? ""}
               avatarUrl={avatarUrl}
+              emailNotificationsEnabled={profile?.email_notifications_enabled ?? true}
               firstName={profile?.first_name ?? ""}
               initials={getInitials(profile, user.email)}
               label={getLabel(profile, user.email)}

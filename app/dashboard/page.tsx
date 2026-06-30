@@ -5,6 +5,7 @@ import { StartupPrompts } from "@/components/startup-prompts";
 import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Card, cardClassName } from "@/components/ui/card";
+import { Toast } from "@/components/ui/toast";
 import { cx, pressedSurfaceClassName } from "@/components/ui/class-name";
 import { getTranslations } from "next-intl/server";
 import { formatGameDateTitle } from "@/lib/format-game-date-title";
@@ -26,12 +27,17 @@ type GameParticipantCountRow = {
   game_event_id: string;
 };
 
-export default async function DashboardPage() {
-  const [t, supabase, user, profile] = await Promise.all([
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ notificationWarning?: string }>;
+}) {
+  const [t, supabase, user, profile, query] = await Promise.all([
     getTranslations("DashboardPage"),
     createClient(),
     getCurrentUser(),
     getCurrentProfile(),
+    searchParams,
   ]);
 
   if (!user) {
@@ -185,6 +191,9 @@ export default async function DashboardPage() {
   return (
     <main className="min-h-screen bg-[#f5f7fa] px-4 pt-24 pb-32 text-[#101828] sm:px-6 lg:px-8">
       <section className="mx-auto w-full max-w-[1120px]">
+        {query.notificationWarning === "1" ? (
+          <Toast variant="warning">{t("notificationWarning")}</Toast>
+        ) : null}
         {hasGamesError ? (
           <Alert>{t("gamesLoadError")}</Alert>
         ) : null}

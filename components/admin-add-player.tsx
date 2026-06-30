@@ -102,7 +102,11 @@ export function AdminAddPlayer({
       .slice(0, resultLimit);
   }, [candidates, normalizedQuery]);
   const status = state.status;
-  const statusLabel = status ? statusLabels[status] : null;
+  const statusLabel = state.deliveryWarning
+    ? statusLabels["delivery-warning"]
+    : status
+      ? statusLabels[status]
+      : null;
   const isSuccess = status === "added-player";
 
   useEffect(() => {
@@ -183,7 +187,7 @@ export function AdminAddPlayer({
         {statusLabel ? (
           <Toast
             className={compactToastClassName}
-            variant={isSuccess ? "success" : "error"}
+            variant={state.deliveryWarning ? "warning" : isSuccess ? "success" : "error"}
           >
             {statusLabel}
           </Toast>
@@ -197,7 +201,7 @@ export function AdminAddPlayer({
       {statusLabel ? (
         <Toast
           className={compactToastClassName}
-          variant={isSuccess ? "success" : "error"}
+          variant={state.deliveryWarning ? "warning" : isSuccess ? "success" : "error"}
         >
           {statusLabel}
         </Toast>
