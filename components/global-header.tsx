@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { AccountMenu } from "@/components/account-menu";
 import { LanguageToggle } from "@/components/language-toggle";
+import { TutorialLink } from "@/components/tutorial-link";
 import { cx, pressedSurfaceClassName } from "@/components/ui/class-name";
 import { getCurrentProfile, getCurrentUser } from "@/lib/auth/server";
 import { createClient } from "@/lib/supabase/server";
@@ -86,7 +87,9 @@ export async function GlobalHeader() {
               publicVapidKey={process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? ""}
               userId={user.id}
             />
-          ) : null}
+          ) : (
+            <TutorialLink />
+          )}
         </div>
 
         <Link

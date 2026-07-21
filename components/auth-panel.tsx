@@ -336,7 +336,7 @@ export function AuthPanel({ nextPath }: { nextPath?: string }) {
               variant="ghost"
               className="border-transparent px-4 py-3 text-[#475467] data-[active=true]:border-[#ffd21a] data-[active=true]:bg-[#ffd21a] data-[active=true]:text-[#061b6b]"
             >
-              {t("loginButton")}
+              {t("loginTab")}
             </Button>
             <Button
               type="button"
@@ -345,7 +345,7 @@ export function AuthPanel({ nextPath }: { nextPath?: string }) {
               variant="ghost"
               className="border-transparent px-4 py-3 text-[#475467] data-[active=true]:border-[#ffd21a] data-[active=true]:bg-[#ffd21a] data-[active=true]:text-[#061b6b]"
             >
-              {t("signupButton")}
+              {t("signupTab")}
             </Button>
           </div>
 

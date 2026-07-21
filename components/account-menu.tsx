@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { logOut } from "@/app/dashboard/actions";
 import { ProfileForm } from "@/components/profile-form";
@@ -183,6 +184,31 @@ export function AccountMenu({
               title: profileT("emailNotificationsTitle"),
             }}
           />
+          <details className="group rounded-xl border border-[#dde2ea] px-4 py-2">
+            <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-4 text-sm font-bold text-[#101828] focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-inset focus-visible:ring-[#0737a8]/20">
+              <span>{profileT("helpTitle")}</span>
+              <span
+                aria-hidden="true"
+                className="text-xl leading-none text-[#0737a8] transition-transform group-open:rotate-45"
+              >
+                +
+              </span>
+            </summary>
+            <div className="mt-3 flex items-end justify-between gap-4">
+              <div className="min-w-0">
+                <p className="text-sm leading-6 text-[#667085]">
+                  {profileT("helpIntro")}
+                </p>
+              </div>
+              <Link
+                className="flex min-h-11 shrink-0 items-center justify-center rounded-[10px] border border-[#0737a8] bg-white px-4 py-2 text-sm font-bold text-[#0737a8] transition-[background-color,border-color,box-shadow,transform] hover:bg-[#eef3ff] focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-[#0737a8]/20 active:translate-y-px"
+                href="/tutorial"
+                onClick={() => setIsOpen(false)}
+              >
+                {profileT("helpLink")}
+              </Link>
+            </div>
+          </details>
           <Button
             fullWidth
             onClick={requestSignOut}
