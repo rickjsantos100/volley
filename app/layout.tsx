@@ -3,6 +3,7 @@ import { Barlow_Condensed, Inter } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale } from "next-intl/server";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import { Analytics } from "@vercel/analytics/next";
 import { GlobalHeader } from "@/components/global-header";
 import { PwaServiceWorker } from "@/components/pwa-service-worker";
 import "./globals.css";
@@ -72,6 +73,7 @@ export default async function RootLayout({
           {children}
         </NextIntlClientProvider>
         <SpeedInsights />
+        <Analytics />
       </body>
     </html>
   );
