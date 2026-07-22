@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { logOut } from "@/app/dashboard/actions";
 import { ProfileForm } from "@/components/profile-form";
@@ -36,6 +36,7 @@ export function AccountMenu({
   publicVapidKey,
   userId,
 }: AccountMenuProps) {
+  const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
   const [isProfileDirty, setIsProfileDirty] = useState(false);
@@ -109,6 +110,16 @@ export function AccountMenu({
     setIsProfileDirty(false);
     setPendingProfileExit(null);
     setIsOpen(false);
+  }
+
+  function openTutorial() {
+    if (!requestProfileClose()) {
+      return;
+    }
+
+    window.setTimeout(() => {
+      router.push("/tutorial");
+    }, 0);
   }
 
   return (
@@ -200,13 +211,14 @@ export function AccountMenu({
                   {profileT("helpIntro")}
                 </p>
               </div>
-              <Link
+              <Button
                 className="flex min-h-11 shrink-0 items-center justify-center rounded-[10px] border border-[#0737a8] bg-white px-4 py-2 text-sm font-bold text-[#0737a8] transition-[background-color,border-color,box-shadow,transform] hover:bg-[#eef3ff] focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-[#0737a8]/20 active:translate-y-px"
-                href="/tutorial"
-                onClick={() => setIsOpen(false)}
+                onClick={openTutorial}
+                type="button"
+                variant="outline"
               >
                 {profileT("helpLink")}
-              </Link>
+              </Button>
             </div>
           </details>
           <Button
