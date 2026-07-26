@@ -12,6 +12,8 @@ export type CurrentProfile = {
   display_name: string | null;
   first_name: string | null;
   last_name: string | null;
+  phone_country_code: string;
+  phone_number: string;
   email_notifications_enabled: boolean;
 };
 
@@ -36,7 +38,7 @@ export const getCurrentProfile = cache(
     const { data: profile } = await supabase
       .from("profiles")
       .select(
-        "role, avatar_path, avatar_updated_at, display_name, first_name, last_name, email_notifications_enabled",
+        "role, avatar_path, avatar_updated_at, display_name, first_name, last_name, phone_country_code, phone_number, email_notifications_enabled",
       )
       .eq("id", user.id)
       .maybeSingle<CurrentProfile>();

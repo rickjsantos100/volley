@@ -1,9 +1,19 @@
 "use client";
 
-import { useRef, type InputHTMLAttributes, type ReactNode } from "react";
+import {
+  useRef,
+  type InputHTMLAttributes,
+  type ReactNode,
+  type SelectHTMLAttributes,
+} from "react";
 import { cx } from "./class-name";
 
 type FieldProps = InputHTMLAttributes<HTMLInputElement> & {
+  error?: ReactNode;
+  label: ReactNode;
+};
+
+type SelectFieldProps = SelectHTMLAttributes<HTMLSelectElement> & {
   error?: ReactNode;
   label: ReactNode;
 };
@@ -47,6 +57,40 @@ export function Field({ className, error, id, label, ...props }: FieldProps) {
       {error ? (
         <p id={errorId} className="text-[13px] font-semibold text-[#c73a3a]">
           <span className="sr-only">Error: </span>{error}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+export function SelectField({
+  children,
+  className,
+  error,
+  id,
+  label,
+  ...props
+}: SelectFieldProps) {
+  const errorId = error && id ? `${id}-error` : undefined;
+
+  return (
+    <div className="space-y-2">
+      <label htmlFor={id} className="block text-sm font-semibold text-[#101828]">
+        {label}
+      </label>
+      <select
+        aria-describedby={errorId}
+        aria-invalid={Boolean(error)}
+        className={inputClassName(Boolean(error), className)}
+        id={id}
+        {...props}
+      >
+        {children}
+      </select>
+      {error ? (
+        <p id={errorId} className="text-[13px] font-semibold text-[#c73a3a]">
+          <span className="sr-only">Error: </span>
+          {error}
         </p>
       ) : null}
     </div>

@@ -95,6 +95,9 @@
     "firstNamePlaceholder": "Primeiro nome",
     "lastNameLabel": "Último nome",
     "lastNamePlaceholder": "Último nome",
+    "phoneCountryCodeLabel": "Código do país",
+    "phoneNumberLabel": "Número de telemóvel",
+    "phoneNumberPlaceholder": "912 345 678",
     "emailLabel": "Email",
     "emailPlaceholder": "tu@exemplo.com",
     "loginTab": "Entrar",
@@ -110,6 +113,8 @@
     "validation": {
       "firstNameRequired": "Introduz o teu primeiro nome.",
       "lastNameRequired": "Introduz o teu último nome.",
+      "phoneCountryCodeRequired": "Escolhe o código do país.",
+      "phoneNumberInvalid": "Introduz um número de telemóvel válido.",
       "emailInvalid": "Introduz um email válido.",
       "otpInvalid": "Introduz o código de 6 dígitos."
     },
@@ -117,6 +122,7 @@
       "invalid-email": "Introduz um email válido.",
       "invalid-otp": "Introduz o código de 6 dígitos.",
       "missing-name": "Introduz o primeiro e o último nome para criares conta.",
+      "missing-phone": "Introduz o código do país e um número de telemóvel válido.",
       "otp-send-failed": "Não conseguimos enviar o código. Confirma o email e tenta outra vez.",
       "otp-verification-failed": "O código está errado ou expirou. Confirma o email e tenta outra vez.",
       "signup-failed": "Não conseguimos criar a tua conta. Confirma os dados e tenta outra vez."
@@ -317,6 +323,12 @@
     "firstNamePlaceholder": "Primeiro nome",
     "lastNameLabel": "Último nome",
     "lastNamePlaceholder": "Último nome",
+    "phoneCountryCodeLabel": "Código do país",
+    "phoneNumberLabel": "Número de telemóvel",
+    "phoneNumberPlaceholder": "912 345 678",
+    "phoneRequiredTitle": "Falta o teu contacto",
+    "phoneRequiredMessage": "Precisamos do teu número de telemóvel para que os organizadores te possam contactar caso seja necessário.",
+    "phoneRequiredSaveButton": "Guardar contacto",
     "saveButton": "Guardar alterações",
     "backToDashboard": "Voltar",
     "unsavedChangesTitle": "Descartar alterações?",
@@ -333,7 +345,9 @@
     "notificationsSaveError": "Não conseguimos ativar as notificações. Tenta outra vez.",
     "validation": {
       "firstNameRequired": "Introduz o teu primeiro nome.",
-      "lastNameRequired": "Introduz o teu último nome."
+      "lastNameRequired": "Introduz o teu último nome.",
+      "phoneCountryCodeRequired": "Escolhe o código do país.",
+      "phoneNumberInvalid": "Introduz um número de telemóvel válido."
     },
     "errors": {
       "invalidImage": "Escolhe um ficheiro de imagem.",

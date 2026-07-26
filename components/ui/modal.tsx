@@ -5,6 +5,7 @@ import {
   useEffectEvent,
   useId,
   useRef,
+  useSyncExternalStore,
   type MouseEvent,
   type ReactNode,
 } from "react";
@@ -13,6 +14,7 @@ import { cx } from "./class-name";
 
 type ModalProps = {
   children: ReactNode;
+  dismissible?: boolean;
   onClose: () => boolean | void;
   open: boolean;
   title: string;
@@ -35,6 +37,18 @@ type ScrollLockState = {
 
 let openModalCount = 0;
 let scrollLockState: ScrollLockState | null = null;
+
+function subscribeToMount() {
+  return () => {};
+}
+
+function getBrowserSnapshot() {
+  return true;
+}
+
+function getServerSnapshot() {
+  return false;
+}
 
 export function ModalActions({
   children,
@@ -97,6 +111,7 @@ function lockPageScroll() {
 
 export function Modal({
   children,
+  dismissible = true,
   onClose,
   open,
   title,
@@ -105,6 +120,11 @@ export function Modal({
   const closeModal = useEffectEvent(onClose);
   const pushedHistoryRef = useRef(false);
   const closingFromPopstateRef = useRef(false);
+  const isMounted = useSyncExternalStore(
+    subscribeToMount,
+    getBrowserSnapshot,
+    getServerSnapshot,
+  );
 
   useEffect(() => {
     if (!open) {
@@ -163,12 +183,12 @@ export function Modal({
     return lockPageScroll();
   }, [open]);
 
-  if (!open || typeof document === "undefined") {
+  if (!open || !isMounted) {
     return null;
   }
 
   function handleBackdropClick(event: MouseEvent<HTMLDivElement>) {
-    if (event.target === event.currentTarget) {
+    if (dismissible && event.target === event.currentTarget) {
       onClose();
     }
   }
@@ -188,27 +208,29 @@ export function Modal({
         role="dialog"
         className="relative max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto rounded-xl border border-[#dde2ea] bg-white p-5 shadow-[0_16px_40px_rgba(16,24,40,0.18)] sm:p-6"
       >
-        <button
-          aria-label="Fechar"
-          className="absolute right-3 top-3 flex size-11 items-center justify-center rounded-[10px] border-0 bg-transparent text-[#667085] transition-[background-color,color,box-shadow,transform] hover:bg-[#eef1f5] hover:text-[#101828] focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-[#0737a8]/20 active:translate-y-px"
-          onClick={handleCloseClick}
-          type="button"
-        >
-          <svg
-            aria-hidden="true"
-            className="size-5"
-            fill="none"
-            stroke="currentColor"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="2.25"
-            viewBox="0 0 24 24"
+        {dismissible ? (
+          <button
+            aria-label="Fechar"
+            className="absolute right-3 top-3 flex size-11 items-center justify-center rounded-[10px] border-0 bg-transparent text-[#667085] transition-[background-color,color,box-shadow,transform] hover:bg-[#eef1f5] hover:text-[#101828] focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-[#0737a8]/20 active:translate-y-px"
+            onClick={handleCloseClick}
+            type="button"
           >
-            <path d="M18 6 6 18" />
-            <path d="m6 6 12 12" />
-          </svg>
-        </button>
-        <div className="pr-12">
+            <svg
+              aria-hidden="true"
+              className="size-5"
+              fill="none"
+              stroke="currentColor"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2.25"
+              viewBox="0 0 24 24"
+            >
+              <path d="M18 6 6 18" />
+              <path d="m6 6 12 12" />
+            </svg>
+          </button>
+        ) : null}
+        <div className={dismissible ? "pr-12" : undefined}>
           <h2 className="font-matchday text-[26px] leading-7 font-bold text-[#061b6b]">
             {title}
           </h2>

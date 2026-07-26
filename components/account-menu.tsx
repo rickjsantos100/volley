@@ -19,6 +19,8 @@ type AccountMenuProps = {
   initials: string;
   label: string;
   lastName: string;
+  phoneCountryCode: string;
+  phoneNumber: string;
   publicVapidKey: string;
   userId: string;
 };
@@ -33,6 +35,8 @@ export function AccountMenu({
   initials,
   label,
   lastName,
+  phoneCountryCode,
+  phoneNumber,
   publicVapidKey,
   userId,
 }: AccountMenuProps) {
@@ -166,6 +170,8 @@ export function AccountMenu({
             firstName={firstName}
             key={profileFormVersion}
             lastName={lastName}
+            phoneCountryCode={phoneCountryCode}
+            phoneNumber={phoneNumber}
             onDirtyChange={setIsProfileDirty}
             onSaved={handleProfileSaved}
             userId={userId}

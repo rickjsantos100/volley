@@ -12,7 +12,13 @@ import { signIn, signUp, verifyEmailOtp } from "@/app/auth/actions";
 import { Alert } from "@/components/ui/alert";
 import { Button, SubmitButton } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Field } from "@/components/ui/field";
+import { Field, SelectField } from "@/components/ui/field";
+import {
+  countryCallingCodes,
+  isPhoneCountryCode,
+  isPhoneNumber,
+  normalizePhoneNumber,
+} from "@/lib/phone";
 
 type LoginField = "email";
 
@@ -20,7 +26,12 @@ type LoginValues = Record<LoginField, string>;
 
 type LoginTouched = Record<LoginField, boolean>;
 
-type SignupField = "firstName" | "lastName" | "email";
+type SignupField =
+  | "firstName"
+  | "lastName"
+  | "phoneCountryCode"
+  | "phoneNumber"
+  | "email";
 
 type SignupValues = Record<SignupField, string>;
 
@@ -57,12 +68,16 @@ const emptyLoginTouched: LoginTouched = {
 const emptySignupValues: SignupValues = {
   firstName: "",
   lastName: "",
+  phoneCountryCode: "+351",
+  phoneNumber: "",
   email: "",
 };
 
 const emptySignupTouched: SignupTouched = {
   firstName: false,
   lastName: false,
+  phoneCountryCode: false,
+  phoneNumber: false,
   email: false,
 };
 
@@ -185,6 +200,12 @@ export function AuthPanel({ nextPath }: { nextPath?: string }) {
     lastName: signupValues.lastName.trim()
       ? null
       : t("validation.lastNameRequired"),
+    phoneCountryCode: isPhoneCountryCode(signupValues.phoneCountryCode)
+      ? null
+      : t("validation.phoneCountryCodeRequired"),
+    phoneNumber: isPhoneNumber(normalizePhoneNumber(signupValues.phoneNumber))
+      ? null
+      : t("validation.phoneNumberInvalid"),
     email: EMAIL_PATTERN.test(signupValues.email.trim())
       ? null
       : t("validation.emailInvalid"),
@@ -287,6 +308,8 @@ export function AuthPanel({ nextPath }: { nextPath?: string }) {
     setSignupTouched({
       firstName: true,
       lastName: true,
+      phoneCountryCode: true,
+      phoneNumber: true,
       email: true,
     });
   }
@@ -445,6 +468,45 @@ export function AuthPanel({ nextPath }: { nextPath?: string }) {
               type="email"
               value={signupValues.email}
             />
+
+            <div className="grid gap-4 sm:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+              <SelectField
+                autoComplete="tel-country-code"
+                error={getSignupError("phoneCountryCode")}
+                id="home-phone-country-code"
+                label={t("phoneCountryCodeLabel")}
+                name="phoneCountryCode"
+                onBlur={() => markSignupFieldTouched("phoneCountryCode")}
+                onChange={(event) =>
+                  updateSignupField("phoneCountryCode", event.target.value)
+                }
+                required
+                value={signupValues.phoneCountryCode}
+              >
+                {countryCallingCodes.map(({ code, country, flag }) => (
+                  <option key={country} value={code}>
+                    {flag} {code}
+                  </option>
+                ))}
+              </SelectField>
+
+              <Field
+                autoComplete="tel-national"
+                error={getSignupError("phoneNumber")}
+                id="home-phone-number"
+                inputMode="tel"
+                label={t("phoneNumberLabel")}
+                name="phoneNumber"
+                onBlur={() => markSignupFieldTouched("phoneNumber")}
+                onChange={(event) =>
+                  updateSignupField("phoneNumber", event.target.value)
+                }
+                placeholder={t("phoneNumberPlaceholder")}
+                required
+                type="tel"
+                value={signupValues.phoneNumber}
+              />
+            </div>
 
             <SubmitButton disabled={!isSignupValid}>
               {t("signupButton")}

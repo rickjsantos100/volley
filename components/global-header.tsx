@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { AccountMenu } from "@/components/account-menu";
 import { LanguageToggle } from "@/components/language-toggle";
+import { RequiredPhoneNumberModal } from "@/components/required-phone-number-modal";
 import { TutorialLink } from "@/components/tutorial-link";
 import { cx, pressedSurfaceClassName } from "@/components/ui/class-name";
 import { getCurrentProfile, getCurrentUser } from "@/lib/auth/server";
@@ -76,17 +77,28 @@ export async function GlobalHeader() {
       <div className="relative mx-auto grid h-16 w-full max-w-[1120px] grid-cols-[1fr_auto_1fr] items-center gap-3 px-4 sm:px-6 lg:px-8">
         <div className="justify-self-start">
           {user ? (
-            <AccountMenu
-              avatarPath={profile?.avatar_path ?? ""}
-              avatarUrl={avatarUrl}
-              emailNotificationsEnabled={profile?.email_notifications_enabled ?? true}
-              firstName={profile?.first_name ?? ""}
-              initials={getInitials(profile, user.email)}
-              label={getLabel(profile, user.email)}
-              lastName={profile?.last_name ?? ""}
-              publicVapidKey={process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? ""}
-              userId={user.id}
-            />
+            <>
+              <AccountMenu
+                avatarPath={profile?.avatar_path ?? ""}
+                avatarUrl={avatarUrl}
+                emailNotificationsEnabled={profile?.email_notifications_enabled ?? true}
+                firstName={profile?.first_name ?? ""}
+                initials={getInitials(profile, user.email)}
+                label={getLabel(profile, user.email)}
+                lastName={profile?.last_name ?? ""}
+                phoneCountryCode={profile?.phone_country_code ?? "0"}
+                phoneNumber={profile?.phone_number ?? "0"}
+                publicVapidKey={process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? ""}
+                userId={user.id}
+              />
+              {profile?.phone_country_code === "0" ||
+              profile?.phone_number === "0" ? (
+                <RequiredPhoneNumberModal
+                  phoneCountryCode={profile.phone_country_code}
+                  phoneNumber={profile.phone_number}
+                />
+              ) : null}
+            </>
           ) : (
             <TutorialLink />
           )}

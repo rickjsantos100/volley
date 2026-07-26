@@ -13,9 +13,15 @@ import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { updateProfile } from "@/app/profile/actions";
 import { Button } from "@/components/ui/button";
-import { Field } from "@/components/ui/field";
+import { Field, SelectField } from "@/components/ui/field";
 import { Modal, ModalActions } from "@/components/ui/modal";
 import { Toast } from "@/components/ui/toast";
+import {
+  countryCallingCodes,
+  isPhoneCountryCode,
+  isPhoneNumber,
+  normalizePhoneNumber,
+} from "@/lib/phone";
 import { createClient } from "@/lib/supabase/client";
 
 type ProfileFormProps = {
@@ -23,6 +29,8 @@ type ProfileFormProps = {
   avatarUrl: string;
   firstName: string;
   lastName: string;
+  phoneCountryCode: string;
+  phoneNumber: string;
   onDirtyChange?: (isDirty: boolean) => void;
   onSaved?: () => void;
   userId: string;
@@ -32,12 +40,16 @@ type ProfileFormState = {
   errors?: {
     firstName?: string;
     lastName?: string;
+    phoneCountryCode?: string;
+    phoneNumber?: string;
     form?: string;
   };
   success?: boolean;
   profile?: {
     firstName: string;
     lastName: string;
+    phoneCountryCode: string;
+    phoneNumber: string;
   };
 };
 
@@ -258,6 +270,8 @@ export function ProfileForm({
   avatarUrl,
   firstName,
   lastName,
+  phoneCountryCode,
+  phoneNumber,
   onDirtyChange,
   onSaved,
   userId,
@@ -287,12 +301,20 @@ export function ProfileForm({
     offsetY: number;
     zoom: number;
   } | null>(null);
+  const initialPhoneNumber = phoneNumber === "0" ? "" : phoneNumber;
   const [state, setState] = useState<ProfileFormState>({});
   const [values, setValues] = useState({
     firstName,
     lastName,
+    phoneCountryCode,
+    phoneNumber: initialPhoneNumber,
   });
-  const [savedValues, setSavedValues] = useState({ firstName, lastName });
+  const [savedValues, setSavedValues] = useState({
+    firstName,
+    lastName,
+    phoneCountryCode,
+    phoneNumber: initialPhoneNumber,
+  });
   const [currentAvatarPath, setCurrentAvatarPath] = useState(avatarPath);
   const [currentAvatarUrl, setCurrentAvatarUrl] = useState(avatarUrl);
   const [draftAvatar, setDraftAvatar] = useState<DraftAvatar | null>(null);
@@ -307,6 +329,8 @@ export function ProfileForm({
   const [touched, setTouched] = useState({
     firstName: false,
     lastName: false,
+    phoneCountryCode: false,
+    phoneNumber: false,
   });
   const t = useTranslations("ProfilePage");
 
@@ -356,12 +380,24 @@ export function ProfileForm({
     lastName: values.lastName.trim()
       ? null
       : t("validation.lastNameRequired"),
+    phoneCountryCode: isPhoneCountryCode(values.phoneCountryCode)
+      ? null
+      : t("validation.phoneCountryCodeRequired"),
+    phoneNumber: isPhoneNumber(normalizePhoneNumber(values.phoneNumber))
+      ? null
+      : t("validation.phoneNumberInvalid"),
   };
-  const isValid = !clientErrors.firstName && !clientErrors.lastName;
-  const isNameChanged =
+  const isValid =
+    !clientErrors.firstName &&
+    !clientErrors.lastName &&
+    !clientErrors.phoneCountryCode &&
+    !clientErrors.phoneNumber;
+  const isProfileChanged =
     values.firstName.trim() !== savedValues.firstName ||
-    values.lastName.trim() !== savedValues.lastName;
-  const isChanged = isNameChanged || Boolean(draftAvatar);
+    values.lastName.trim() !== savedValues.lastName ||
+    values.phoneCountryCode !== savedValues.phoneCountryCode ||
+    normalizePhoneNumber(values.phoneNumber) !== savedValues.phoneNumber;
+  const isChanged = isProfileChanged || Boolean(draftAvatar);
 
   useEffect(() => {
     onDirtyChange?.(isChanged);
@@ -375,6 +411,16 @@ export function ProfileForm({
   const lastNameError =
     (touched.lastName && clientErrors.lastName) ||
     (state.errors?.lastName ? t(`validation.${state.errors.lastName}`) : null);
+  const phoneCountryCodeError =
+    (touched.phoneCountryCode && clientErrors.phoneCountryCode) ||
+    (state.errors?.phoneCountryCode
+      ? t(`validation.${state.errors.phoneCountryCode}`)
+      : null);
+  const phoneNumberError =
+    (touched.phoneNumber && clientErrors.phoneNumber) ||
+    (state.errors?.phoneNumber
+      ? t(`validation.${state.errors.phoneNumber}`)
+      : null);
 
   async function handleAvatarFile(file: File | undefined) {
     if (!file) {
@@ -818,7 +864,12 @@ export function ProfileForm({
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setTouched({ firstName: true, lastName: true });
+    setTouched({
+      firstName: true,
+      lastName: true,
+      phoneCountryCode: true,
+      phoneNumber: true,
+    });
 
     if (!isValid || !isChanged) {
       return;
@@ -842,6 +893,8 @@ export function ProfileForm({
       setSavedValues({
         firstName: values.firstName.trim(),
         lastName: values.lastName.trim(),
+        phoneCountryCode: values.phoneCountryCode,
+        phoneNumber: normalizePhoneNumber(values.phoneNumber),
       });
       setState(nextState);
 
@@ -1110,6 +1163,66 @@ export function ProfileForm({
         type="text"
         value={values.lastName}
       />
+
+      <div className="grid gap-4 sm:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+        <SelectField
+          autoComplete="tel-country-code"
+          disabled={isSaving}
+          error={phoneCountryCodeError}
+          id="profile-phone-country-code"
+          label={t("phoneCountryCodeLabel")}
+          name="phoneCountryCode"
+          onBlur={() =>
+            setTouched((currentTouched) => ({
+              ...currentTouched,
+              phoneCountryCode: true,
+            }))
+          }
+          onChange={(event) =>
+            setValues((currentValues) => ({
+              ...currentValues,
+              phoneCountryCode: event.target.value,
+            }))
+          }
+          required
+          value={values.phoneCountryCode}
+        >
+          {!isPhoneCountryCode(values.phoneCountryCode) ? (
+            <option value={values.phoneCountryCode}>—</option>
+          ) : null}
+          {countryCallingCodes.map(({ code, country, flag }) => (
+            <option key={country} value={code}>
+              {flag} {code}
+            </option>
+          ))}
+        </SelectField>
+
+        <Field
+          autoComplete="tel-national"
+          disabled={isSaving}
+          error={phoneNumberError}
+          id="profile-phone-number"
+          inputMode="tel"
+          label={t("phoneNumberLabel")}
+          name="phoneNumber"
+          onBlur={() =>
+            setTouched((currentTouched) => ({
+              ...currentTouched,
+              phoneNumber: true,
+            }))
+          }
+          onChange={(event) =>
+            setValues((currentValues) => ({
+              ...currentValues,
+              phoneNumber: event.target.value,
+            }))
+          }
+          placeholder={t("phoneNumberPlaceholder")}
+          required
+          type="tel"
+          value={values.phoneNumber}
+        />
+      </div>
 
       <Button disabled={!isValid || !isChanged || isSaving} fullWidth loading={isSaving}>
         {t("saveButton")}

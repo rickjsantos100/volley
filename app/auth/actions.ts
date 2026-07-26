@@ -3,12 +3,18 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getSafeAuthRedirectPath } from "@/lib/safe-auth-redirect";
+import {
+  isPhoneCountryCode,
+  isPhoneNumber,
+  normalizePhoneNumber,
+} from "@/lib/phone";
 import { createClient } from "@/lib/supabase/server";
 
 export type AuthErrorKey =
   | "invalid-email"
   | "otp-send-failed"
   | "missing-name"
+  | "missing-phone"
   | "signup-failed";
 
 export type AuthActionState = {
@@ -95,6 +101,9 @@ export async function signUp(
   const email = getEmail(formData);
   const firstName = getRequiredText(formData, "firstName");
   const lastName = getRequiredText(formData, "lastName");
+  const phoneCountryCode = getRequiredText(formData, "phoneCountryCode");
+  const rawPhoneNumber = getRequiredText(formData, "phoneNumber");
+  const phoneNumber = rawPhoneNumber ? normalizePhoneNumber(rawPhoneNumber) : null;
 
   if (!email) {
     return { error: "invalid-email" };
@@ -102,6 +111,15 @@ export async function signUp(
 
   if (!firstName || !lastName) {
     return { error: "missing-name" };
+  }
+
+  if (
+    !phoneCountryCode ||
+    !phoneNumber ||
+    !isPhoneCountryCode(phoneCountryCode) ||
+    !isPhoneNumber(phoneNumber)
+  ) {
+    return { error: "missing-phone" };
   }
 
   const displayName = `${firstName} ${lastName}`;
@@ -115,6 +133,8 @@ export async function signUp(
         first_name: firstName,
         full_name: displayName,
         last_name: lastName,
+        phone_country_code: phoneCountryCode,
+        phone_number: phoneNumber,
       },
     },
   });
