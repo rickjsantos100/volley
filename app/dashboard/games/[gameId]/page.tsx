@@ -8,6 +8,7 @@ import {
 } from "@/components/admin-add-player";
 import { AdminGameControls } from "@/components/admin-game-controls";
 import { AdminParticipantListItem } from "@/components/admin-participant-list-item";
+import { AdminUserProfileModal } from "@/components/admin-user-profile-modal";
 import { AdminWaitlistSortableList } from "@/components/admin-waitlist-sortable-list";
 import { GameParticipationActions } from "@/components/game-participation-actions";
 import { Alert } from "@/components/ui/alert";
@@ -88,6 +89,9 @@ type ProfileCandidate = {
   last_name: string | null;
   avatar_path: string | null;
   avatar_updated_at: string | null;
+  email: string | null;
+  phone_country_code: string;
+  phone_number: string;
 };
 
 type GameDetailPageProps = {
@@ -416,11 +420,12 @@ async function GameDetailContent({
   const participants = (participantRows ?? []) as ParticipantDetail[];
   const waitlist = (waitlistRows ?? []) as WaitlistDetail[];
   const canManageRoster = isAdmin && !isCancelled;
-  const { data: profileRows, error: profilesError } = canManageRoster
+  const canViewContactDetails = isAdmin;
+  const { data: profileRows, error: profilesError } = canViewContactDetails
     ? await supabase
         .from("profiles")
         .select(
-          "id, display_name, first_name, last_name, avatar_path, avatar_updated_at",
+          "id, email, display_name, first_name, last_name, avatar_path, avatar_updated_at, phone_country_code, phone_number",
         )
         .order("first_name", { ascending: true })
         .returns<ProfileCandidate[]>()
@@ -468,6 +473,15 @@ async function GameDetailContent({
         .filter(Boolean)
         .join(" "),
     }));
+  const adminContactsByUserId = new Map(
+    (profileRows ?? []).map((candidate) => [candidate.id, candidate]),
+  );
+  const contactLabels = {
+    copied: t("contactCopiedTooltip"),
+    copyEmail: t("copyEmailLabel"),
+    copyPhone: t("copyPhoneLabel"),
+    openProfile: t("openPlayerProfileLabel"),
+  };
   // Server-rendered availability must reflect the request time.
   // eslint-disable-next-line react-hooks/purity
   const isPast = new Date(game.starts_at).getTime() <= Date.now();
@@ -602,15 +616,20 @@ async function GameDetailContent({
                 {participants.map((participant) => {
                   const name = getDisplayName(participant);
                   const avatarUrl = getAvatarUrl(supabase, participant);
+                  const contact = adminContactsByUserId.get(participant.user_id);
 
                   return canManageRoster ? (
                     <AdminParticipantListItem
                       actionsLabel={t("playerActionsLabel", { name })}
                       avatarUrl={avatarUrl}
+                      contactLabels={contactLabels}
+                      email={contact?.email ?? null}
                       key={participant.id}
                       name={name}
                       paidLabel={t("paidLabel")}
                       participantId={participant.id}
+                      phoneCountryCode={contact?.phone_country_code ?? "0"}
+                      phoneNumber={contact?.phone_number ?? "0"}
                       proofAction={requestPaymentProof.bind(
                         null,
                         game.id,
@@ -641,10 +660,25 @@ async function GameDetailContent({
                       key={participant.id}
                       className="flex min-h-14 items-center gap-3 border-b border-[#dde2ea] py-3 last:border-b-0"
                     >
-                      <InitialsAvatar avatarUrl={avatarUrl} name={name} />
-                      <p className="min-w-0 text-sm font-semibold text-[#101828] break-words">
-                        {name}
-                      </p>
+                      {canViewContactDetails ? (
+                        <AdminUserProfileModal
+                          avatarUrl={avatarUrl}
+                          email={contact?.email ?? null}
+                          labels={contactLabels}
+                          name={name}
+                          phoneCountryCode={
+                            contact?.phone_country_code ?? "0"
+                          }
+                          phoneNumber={contact?.phone_number ?? "0"}
+                        />
+                      ) : (
+                        <>
+                          <InitialsAvatar avatarUrl={avatarUrl} name={name} />
+                          <p className="min-w-0 text-sm font-semibold text-[#101828] break-words">
+                            {name}
+                          </p>
+                        </>
+                      )}
                     </li>
                   );
                 })}
@@ -664,11 +698,19 @@ async function GameDetailContent({
             ) : canManageRoster ? (
               <AdminWaitlistSortableList
                 action={reorderWaitlist.bind(null, game.id)}
+                contactLabels={contactLabels}
                 dragHandleLabel={t("dragWaitlistPlayerLabel")}
                 items={waitlist.map((entry) => ({
                   avatarUrl: getAvatarUrl(supabase, entry),
+                  email: adminContactsByUserId.get(entry.user_id)?.email ?? null,
                   id: entry.id,
                   name: getDisplayName(entry),
+                  phoneCountryCode:
+                    adminContactsByUserId.get(entry.user_id)
+                      ?.phone_country_code ?? "0",
+                  phoneNumber:
+                    adminContactsByUserId.get(entry.user_id)?.phone_number ??
+                    "0",
                 }))}
                 key={waitlist.map((entry) => entry.id).join(":")}
                 removeAction={removeWaitlistEntryFromGame.bind(null, game.id)}
@@ -686,12 +728,32 @@ async function GameDetailContent({
                       key={entry.id}
                       className="flex min-h-14 items-center justify-between gap-3 border-b border-[#dde2ea] py-3 last:border-b-0"
                     >
-                      <div className="flex min-w-0 items-center gap-3">
-                        <InitialsAvatar avatarUrl={avatarUrl} name={name} />
-                        <p className="min-w-0 text-sm font-semibold text-[#101828] break-words">
-                          {name}
-                        </p>
-                      </div>
+                      {canViewContactDetails ? (
+                        <AdminUserProfileModal
+                          avatarUrl={avatarUrl}
+                          email={
+                            adminContactsByUserId.get(entry.user_id)?.email ??
+                            null
+                          }
+                          labels={contactLabels}
+                          name={name}
+                          phoneCountryCode={
+                            adminContactsByUserId.get(entry.user_id)
+                              ?.phone_country_code ?? "0"
+                          }
+                          phoneNumber={
+                            adminContactsByUserId.get(entry.user_id)
+                              ?.phone_number ?? "0"
+                          }
+                        />
+                      ) : (
+                        <div className="flex min-w-0 items-center gap-3">
+                          <InitialsAvatar avatarUrl={avatarUrl} name={name} />
+                          <p className="min-w-0 text-sm font-semibold text-[#101828] break-words">
+                            {name}
+                          </p>
+                        </div>
+                      )}
                     </li>
                   );
                 })}

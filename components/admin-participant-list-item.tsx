@@ -6,16 +6,25 @@ import type {
   GameActionStatus,
 } from "@/app/dashboard/games/[gameId]/actions";
 import { AdminParticipantMenu } from "@/components/admin-participant-menu";
+import { AdminUserProfileModal } from "@/components/admin-user-profile-modal";
 import { Badge } from "@/components/ui/badge";
-import { InitialsAvatar } from "@/components/ui/initials-avatar";
 import { cx } from "@/components/ui/class-name";
 
 type AdminParticipantListItemProps = {
   actionsLabel: string;
   avatarUrl: string;
+  email: string | null;
+  contactLabels: {
+    copied: string;
+    copyEmail: string;
+    copyPhone: string;
+    openProfile: string;
+  };
   name: string;
   paidLabel: string;
   participantId: string;
+  phoneCountryCode: string;
+  phoneNumber: string;
   proofAction: (
     previousState: GameActionState,
     formData: FormData,
@@ -41,9 +50,13 @@ type AdminParticipantListItemProps = {
 export function AdminParticipantListItem({
   actionsLabel,
   avatarUrl,
+  contactLabels,
+  email,
   name,
   paidLabel,
   participantId,
+  phoneCountryCode,
+  phoneNumber,
   proofAction,
   proofDeletedAt,
   proofLabels,
@@ -64,10 +77,14 @@ export function AdminParticipantListItem({
         isDeleting && "pointer-events-none opacity-60",
       )}
     >
-      <div className="flex min-w-0 items-center gap-3">
-        <InitialsAvatar avatarUrl={avatarUrl} name={name} />
-        <p className="min-w-0 text-sm font-semibold text-[#101828] break-words">{name}</p>
-      </div>
+      <AdminUserProfileModal
+        avatarUrl={avatarUrl}
+        email={email}
+        labels={contactLabels}
+        name={name}
+        phoneCountryCode={phoneCountryCode}
+        phoneNumber={phoneNumber}
+      />
 
       <div className="flex shrink-0 items-center gap-2">
         {proofPath ? <Badge variant="success">{paidLabel}</Badge> : null}

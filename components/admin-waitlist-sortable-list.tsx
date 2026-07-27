@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useRef, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import {
   closestCenter,
   DndContext,
@@ -28,14 +28,17 @@ import type {
   GameActionStatus,
 } from "@/app/dashboard/games/[gameId]/actions";
 import { AdminRemovePlayerButton } from "@/components/admin-remove-player-button";
-import { InitialsAvatar } from "@/components/ui/initials-avatar";
+import { AdminUserProfileModal } from "@/components/admin-user-profile-modal";
 import { Toast } from "@/components/ui/toast";
 import { cx } from "@/components/ui/class-name";
 
 type WaitlistItem = {
   avatarUrl: string;
+  email: string | null;
   id: string;
   name: string;
+  phoneCountryCode: string;
+  phoneNumber: string;
 };
 
 type AdminWaitlistSortableListProps = {
@@ -43,6 +46,12 @@ type AdminWaitlistSortableListProps = {
     previousState: GameActionState,
     formData: FormData,
   ) => Promise<GameActionState>;
+  contactLabels: {
+    copied: string;
+    copyEmail: string;
+    copyPhone: string;
+    openProfile: string;
+  };
   dragHandleLabel: string;
   items: WaitlistItem[];
   removeLabel: string;
@@ -58,6 +67,7 @@ const initialState: GameActionState = {};
 
 export function AdminWaitlistSortableList({
   action,
+  contactLabels,
   dragHandleLabel,
   items,
   removeAction,
@@ -68,6 +78,8 @@ export function AdminWaitlistSortableList({
   const [state, formAction] = useActionState(action, initialState);
   const formRef = useRef<HTMLFormElement>(null);
   const orderedEntryIdsRef = useRef<HTMLInputElement>(null);
+  const suppressProfileOpenRef = useRef(false);
+  const suppressProfileOpenTimeoutRef = useRef<number | null>(null);
   const sensors = useSensors(
     useSensor(MouseSensor, {
       activationConstraint: {
@@ -113,6 +125,27 @@ export function AdminWaitlistSortableList({
     });
   }
 
+  function suppressProfileOpen() {
+    suppressProfileOpenRef.current = true;
+
+    if (suppressProfileOpenTimeoutRef.current !== null) {
+      window.clearTimeout(suppressProfileOpenTimeoutRef.current);
+    }
+
+    suppressProfileOpenTimeoutRef.current = window.setTimeout(() => {
+      suppressProfileOpenRef.current = false;
+    }, 250);
+  }
+
+  useEffect(
+    () => () => {
+      if (suppressProfileOpenTimeoutRef.current !== null) {
+        window.clearTimeout(suppressProfileOpenTimeoutRef.current);
+      }
+    },
+    [],
+  );
+
   return (
     <>
       {state.status && statusLabels[state.status] ? (
@@ -133,7 +166,14 @@ export function AdminWaitlistSortableList({
         collisionDetection={closestCenter}
         id="game-waitlist-sortable"
         modifiers={[restrictToVerticalAxis, restrictToParentElement]}
-        onDragEnd={handleDragEnd}
+        onDragCancel={suppressProfileOpen}
+        onDragEnd={(event) => {
+          suppressProfileOpen();
+          handleDragEnd(event);
+        }}
+        onDragStart={() => {
+          suppressProfileOpenRef.current = true;
+        }}
         sensors={sensors}
       >
         <SortableContext
@@ -143,9 +183,11 @@ export function AdminWaitlistSortableList({
           <ul className="mt-4 grid gap-3">
             {orderedItems.map((item) => (
               <SortableWaitlistItem
+                contactLabels={contactLabels}
                 dragHandleLabel={dragHandleLabel}
                 item={item}
                 key={item.id}
+                canOpenProfile={() => !suppressProfileOpenRef.current}
                 removeAction={removeAction.bind(null, item.id)}
                 removeLabel={removeLabel}
                 statusLabels={statusLabels}
@@ -159,12 +201,16 @@ export function AdminWaitlistSortableList({
 }
 
 function SortableWaitlistItem({
+  canOpenProfile,
+  contactLabels,
   dragHandleLabel,
   item,
   removeAction,
   removeLabel,
   statusLabels,
 }: {
+  canOpenProfile: () => boolean;
+  contactLabels: AdminWaitlistSortableListProps["contactLabels"];
   dragHandleLabel: string;
   item: WaitlistItem;
   removeAction: (
@@ -205,12 +251,15 @@ function SortableWaitlistItem({
         {...attributes}
         {...listeners}
       >
-        <div className="flex min-w-0 flex-1 items-center gap-3">
-          <InitialsAvatar avatarUrl={item.avatarUrl} name={item.name} />
-          <p className="min-w-0 text-sm font-semibold text-[#101828] break-words">
-            {item.name}
-          </p>
-        </div>
+        <AdminUserProfileModal
+          avatarUrl={item.avatarUrl}
+          canOpen={canOpenProfile}
+          email={item.email}
+          labels={contactLabels}
+          name={item.name}
+          phoneCountryCode={item.phoneCountryCode}
+          phoneNumber={item.phoneNumber}
+        />
 
         <span
           aria-hidden="true"
