@@ -8,6 +8,7 @@ import {
   useSyncExternalStore,
   type MouseEvent,
   type ReactNode,
+  type RefObject,
 } from "react";
 import { createPortal } from "react-dom";
 import { cx } from "./class-name";
@@ -15,6 +16,9 @@ import { cx } from "./class-name";
 type ModalProps = {
   children: ReactNode;
   dismissible?: boolean;
+  // Read when the modal closes, so a caller that closes in order to navigate can
+  // keep the pushed entry and replace it instead of racing the traversal.
+  keepHistoryEntryOnCloseRef?: RefObject<boolean>;
   onClose: () => boolean | void;
   open: boolean;
   title: string;
@@ -112,6 +116,7 @@ function lockPageScroll() {
 export function Modal({
   children,
   dismissible = true,
+  keepHistoryEntryOnCloseRef,
   onClose,
   open,
   title,
@@ -167,13 +172,15 @@ export function Modal({
       if (
         pushedHistoryRef.current &&
         !closingFromPopstateRef.current &&
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- reading the value at close time is the contract
+        !keepHistoryEntryOnCloseRef?.current &&
         window.history.state?.__volleyModalId === modalId
       ) {
         pushedHistoryRef.current = false;
         window.history.back();
       }
     };
-  }, [modalId, open]);
+  }, [keepHistoryEntryOnCloseRef, modalId, open]);
 
   useEffect(() => {
     if (!open) {

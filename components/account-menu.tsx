@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { logOut } from "@/app/dashboard/actions";
@@ -47,6 +47,7 @@ export function AccountMenu({
   const [pendingProfileExit, setPendingProfileExit] =
     useState<PendingProfileExit>(null);
   const [profileFormVersion, setProfileFormVersion] = useState(0);
+  const keepModalHistoryEntryRef = useRef(false);
   const accountT = useTranslations("AccountMenu");
   const profileT = useTranslations("ProfilePage");
 
@@ -121,9 +122,10 @@ export function AccountMenu({
       return;
     }
 
-    window.setTimeout(() => {
-      router.push("/tutorial");
-    }, 0);
+    // Replace the modal's own history entry instead of letting the modal pop it,
+    // so an in-flight traversal cannot discard this navigation.
+    keepModalHistoryEntryRef.current = true;
+    router.replace("/tutorial");
   }
 
   return (
@@ -134,6 +136,7 @@ export function AccountMenu({
         aria-haspopup="dialog"
         aria-label={accountT("openProfile", { name: label })}
         onClick={() => {
+          keepModalHistoryEntryRef.current = false;
           setPendingProfileExit(null);
           setIsOpen(true);
         }}
@@ -155,6 +158,7 @@ export function AccountMenu({
       </button>
 
       <Modal
+        keepHistoryEntryOnCloseRef={keepModalHistoryEntryRef}
         onClose={requestProfileClose}
         open={isOpen}
         title={
