@@ -14,11 +14,7 @@ export function PwaServiceWorker() {
       async function clearDevelopmentPwaState() {
         const registrations = await navigator.serviceWorker.getRegistrations();
         await Promise.all(
-          registrations
-            .filter((registration) =>
-              registration.active?.scriptURL.endsWith("/sw.js"),
-            )
-            .map((registration) => registration.unregister()),
+          registrations.map((registration) => registration.unregister()),
         );
 
         if ("caches" in window) {

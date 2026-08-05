@@ -1,5 +1,8 @@
-const CACHE_NAME = "voley-lisboa-static-v5";
+const CACHE_NAME = "voley-lisboa-static-v6";
 const CACHE_PREFIX = "voley-lisboa-static-";
+const IS_LOCAL_DEVELOPMENT = ["localhost", "127.0.0.1"].includes(
+  self.location.hostname,
+);
 const PRECACHE_URLS = [
   "/offline.html",
   "/ball.png",
@@ -11,6 +14,11 @@ const PRECACHE_URLS = [
 ];
 
 self.addEventListener("install", (event) => {
+  if (IS_LOCAL_DEVELOPMENT) {
+    event.waitUntil(self.skipWaiting());
+    return;
+  }
+
   event.waitUntil(
     caches
       .open(CACHE_NAME)
@@ -33,7 +41,11 @@ self.addEventListener("activate", (event) => {
             .map((cacheName) => caches.delete(cacheName)),
         ),
       )
-      .then(() => self.clients.claim()),
+      .then(() =>
+        IS_LOCAL_DEVELOPMENT
+          ? self.registration.unregister()
+          : self.clients.claim(),
+      ),
   );
 });
 
@@ -41,6 +53,10 @@ self.addEventListener("fetch", (event) => {
   const request = event.request;
 
   if (request.method !== "GET") {
+    return;
+  }
+
+  if (IS_LOCAL_DEVELOPMENT) {
     return;
   }
 
@@ -57,10 +73,9 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  const isNextStaticAsset = url.pathname.startsWith("/_next/static/");
   const isBrandAsset = PRECACHE_URLS.includes(url.pathname);
 
-  if (!isNextStaticAsset && !isBrandAsset) {
+  if (!isBrandAsset) {
     return;
   }
 
