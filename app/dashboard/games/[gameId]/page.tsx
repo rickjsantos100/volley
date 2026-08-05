@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { cx, pressedSurfaceClassName } from "@/components/ui/class-name";
 import { InitialsAvatar } from "@/components/ui/initials-avatar";
+import { RosterCopyButton } from "@/components/roster-copy-button";
 import {
   formatGameDateParts,
   formatGameDateTitle,
@@ -588,9 +589,24 @@ async function GameDetailContent({
         <div className="grid gap-5 lg:grid-cols-2">
           <Card>
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-              <h2 className="font-matchday text-[26px] leading-7 font-bold text-[#061b6b]">
-                {t("participantsTitle")}
-              </h2>
+              <div className="flex items-center gap-1">
+                <h2 className="font-matchday text-[26px] leading-7 font-bold text-[#061b6b]">
+                  {t("participantsTitle")}
+                </h2>
+                {isAdmin ? (
+                  <RosterCopyButton
+                    labels={{
+                      button: t("copyRosterButton"),
+                      copied: t("rosterCopiedMessage"),
+                      error: t("rosterCopyErrorMessage"),
+                      participants: t("participantsTitle"),
+                      waitlist: t("waitlistTitle"),
+                    }}
+                    participants={participants.map(getDisplayName)}
+                    waitlist={waitlist.map(getDisplayName)}
+                  />
+                ) : null}
+              </div>
               {canManageRoster ? (
                 <AdminAddPlayer
                   action={addParticipantToGame.bind(null, game.id)}
