@@ -163,12 +163,17 @@ function OtpPanel({ email, labels, nextPath, onBack }: OtpPanelProps) {
         />
 
         <div className="grid gap-3 sm:grid-cols-2">
+          <Button
+            fullWidth
+            onClick={onBack}
+            type="button"
+            variant="outline"
+          >
+            {labels.back}
+          </Button>
           <SubmitButton disabled={!isOtpValid} fullWidth>
             {labels.submit}
           </SubmitButton>
-          <Button fullWidth onClick={onBack} type="button" variant="outline">
-            {labels.back}
-          </Button>
         </div>
       </PendingFieldset>
     </form>

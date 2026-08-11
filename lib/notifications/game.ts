@@ -100,7 +100,19 @@ export async function dispatchGameNotification({
       email[outcome] += 1;
     }),
   ).then((results) => {
-    email.failed += results.filter((result) => result.status === "rejected").length;
+    results.forEach((result, index) => {
+      if (result.status !== "rejected") {
+        return;
+      }
+
+      email.failed += 1;
+      console.error("Failed to send game notification email", {
+        error: result.reason,
+        gameId,
+        kind,
+        userId: uniqueRecipients[index].userId,
+      });
+    });
   });
 
   const pushWork = Promise.allSettled(
@@ -140,6 +152,11 @@ export async function dispatchGameNotification({
   const channelResults = await Promise.allSettled([emailWork, pushWork]);
   if (channelResults[0].status === "rejected") {
     email.failed += 1;
+    console.error("Failed to dispatch game notification emails", {
+      error: channelResults[0].reason,
+      gameId,
+      kind,
+    });
   }
   if (channelResults[1].status === "rejected") {
     push.failed += 1;
