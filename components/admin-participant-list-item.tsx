@@ -20,16 +20,25 @@ type AdminParticipantListItemProps = {
     copyPhone: string;
     openProfile: string;
   };
+  manualPaidAt: string | null;
   name: string;
   paidLabel: string;
   participantId: string;
+  paymentAction: (
+    previousState: GameActionState,
+    formData: FormData,
+  ) => Promise<GameActionState>;
+  paymentIsPaid: boolean;
+  paymentLabels: {
+    markPaid: string;
+    markUnpaid: string;
+  };
   phoneCountryCode: string;
   phoneNumber: string;
   proofAction: (
     previousState: GameActionState,
     formData: FormData,
   ) => Promise<GameActionState>;
-  proofDeletedAt: string | null;
   proofLabels: {
     expired: string;
     request: string;
@@ -52,13 +61,16 @@ export function AdminParticipantListItem({
   avatarUrl,
   contactLabels,
   email,
+  manualPaidAt,
   name,
   paidLabel,
   participantId,
+  paymentAction,
+  paymentIsPaid,
+  paymentLabels,
   phoneCountryCode,
   phoneNumber,
   proofAction,
-  proofDeletedAt,
   proofLabels,
   proofPath,
   proofRequestedAt,
@@ -87,14 +99,16 @@ export function AdminParticipantListItem({
       />
 
       <div className="flex shrink-0 items-center gap-2">
-        {proofPath ? <Badge variant="success">{paidLabel}</Badge> : null}
+        {paymentIsPaid ? <Badge variant="success">{paidLabel}</Badge> : null}
         <AdminParticipantMenu
           actionsLabel={actionsLabel}
           disabled={isDeleting}
+          manualPaidAt={manualPaidAt}
           onPendingChange={setIsDeleting}
           participantId={participantId}
+          paymentAction={paymentAction}
+          paymentLabels={paymentLabels}
           proofAction={proofAction}
-          proofDeletedAt={proofDeletedAt}
           proofLabels={proofLabels}
           proofPath={proofPath}
           proofRequestedAt={proofRequestedAt}

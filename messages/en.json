@@ -302,7 +302,13 @@
     "dragWaitlistPlayerLabel": "Drag waitlist player",
     "removePlayerLabel": "Remove player",
     "removeWaitlistPlayerLabel": "Remove waitlist player",
-    "emptyWaitlist": "The waitlist is empty."
+    "emptyWaitlist": "The waitlist is empty.",
+    "markPaidLabel": "Mark as paid",
+    "markUnpaidLabel": "Mark as unpaid",
+    "paymentMarkedPaidMessage": "Participant marked as paid.",
+    "paymentMarkedUnpaidMessage": "Participant marked as unpaid.",
+    "paymentProofConflictMessage": "This player submitted a payment proof, so their status cannot be changed manually.",
+    "paymentUpdateErrorMessage": "Could not update the participant payment status."
   },
   "ProfilePage": {
     "eyebrow": "Profile",

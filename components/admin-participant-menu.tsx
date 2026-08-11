@@ -15,13 +15,21 @@ import { isInstalledPwaDisplayMode } from "@/lib/pwa/display-mode";
 type AdminParticipantMenuProps = {
   actionsLabel: string;
   disabled?: boolean;
+  manualPaidAt: string | null;
   onPendingChange?: (pending: boolean) => void;
   participantId: string;
+  paymentAction: (
+    previousState: GameActionState,
+    formData: FormData,
+  ) => Promise<GameActionState>;
+  paymentLabels: {
+    markPaid: string;
+    markUnpaid: string;
+  };
   proofAction: (
     previousState: GameActionState,
     formData: FormData,
   ) => Promise<GameActionState>;
-  proofDeletedAt: string | null;
   proofLabels: {
     expired: string;
     request: string;
@@ -48,10 +56,12 @@ const menuItemClassName = cx(
 export function AdminParticipantMenu({
   actionsLabel,
   disabled = false,
+  manualPaidAt,
   onPendingChange,
   participantId,
+  paymentAction,
+  paymentLabels,
   proofAction,
-  proofDeletedAt,
   proofLabels,
   proofPath,
   proofRequestedAt,
@@ -87,6 +97,10 @@ export function AdminParticipantMenu({
     runAction.bind(null, proofAction),
     initialState,
   );
+  const [paymentState, paymentFormAction] = useActionState(
+    runAction.bind(null, paymentAction),
+    initialState,
+  );
   const [removeState, removeFormAction] = useActionState(
     runAction.bind(null, removeAction),
     initialState,
@@ -94,6 +108,17 @@ export function AdminParticipantMenu({
   const proofError =
     proofState.status === "proof-request-error"
       ? statusLabels["proof-request-error"]
+      : null;
+  const paymentSuccess =
+    paymentState.status === "payment-marked-paid" ||
+    paymentState.status === "payment-marked-unpaid"
+      ? statusLabels[paymentState.status]
+      : null;
+  const paymentError =
+    paymentState.status === "payment-proof-conflict" ||
+    paymentState.status === "payment-update-error" ||
+    paymentState.status === "not-authorized"
+      ? statusLabels[paymentState.status]
       : null;
   const removeError =
     removeState.status === "remove-player-error"
@@ -103,7 +128,6 @@ export function AdminParticipantMenu({
     proofState.deliveryWarning || removeState.deliveryWarning
       ? statusLabels["delivery-warning"]
       : null;
-  const isExpired = Boolean(proofDeletedAt && proofUploadedAt && !proofPath);
   const effectiveProofRequestedAt =
     proofState.proofRequestedAt ?? proofRequestedAt;
   const requestAvailableAt = getPaymentProofRequestAvailableAt(
@@ -159,6 +183,12 @@ export function AdminParticipantMenu({
   return (
     <>
       {proofError ? <Toast variant="error">{proofError}</Toast> : null}
+      {paymentSuccess ? (
+        <Toast variant="success">{paymentSuccess}</Toast>
+      ) : null}
+      {paymentError ? (
+        <Toast variant="error">{paymentError}</Toast>
+      ) : null}
       {removeError ? <Toast variant="error">{removeError}</Toast> : null}
       {deliveryWarning ? (
         <Toast variant="warning">{deliveryWarning}</Toast>
@@ -199,46 +229,63 @@ export function AdminParticipantMenu({
             className="absolute right-0 bottom-full z-20 mb-2 grid min-w-56 gap-1 rounded-xl border border-[#dde2ea] bg-white p-2 shadow-[0_12px_30px_rgba(16,24,40,0.16)]"
             role="menu"
           >
-            {proofPath ? (
-              <a
-                className={menuItemClassName}
-                href={`/api/payment-proofs/${participantId}`}
-                onClick={(event) => {
-                  setIsOpen(false);
+            {proofUploadedAt ? (
+              <>
+                {proofPath ? (
+                  <a
+                    className={menuItemClassName}
+                    href={`/api/payment-proofs/${participantId}`}
+                    onClick={(event) => {
+                      setIsOpen(false);
 
-                  if (isInstalledPwaDisplayMode()) {
-                    event.preventDefault();
-                    window.location.assign(event.currentTarget.href);
-                  }
-                }}
-                rel="noreferrer"
-                role="menuitem"
-                target="_blank"
-              >
-                {proofLabels.view}
-              </a>
-            ) : isExpired ? (
-              <button
-                className={menuItemClassName}
-                disabled
-                role="menuitem"
-                type="button"
-              >
-                {proofLabels.expired}
-              </button>
-            ) : isRequested ? (
-              <button
-                className={menuItemClassName}
-                disabled
-                role="menuitem"
-                type="button"
-              >
-                {proofLabels.requested}
-              </button>
-            ) : (
-              <form action={proofFormAction}>
-                <MenuSubmitButton>{proofLabels.request}</MenuSubmitButton>
+                      if (isInstalledPwaDisplayMode()) {
+                        event.preventDefault();
+                        window.location.assign(event.currentTarget.href);
+                      }
+                    }}
+                    rel="noreferrer"
+                    role="menuitem"
+                    target="_blank"
+                  >
+                    {proofLabels.view}
+                  </a>
+                ) : (
+                  <button
+                    className={menuItemClassName}
+                    disabled
+                    role="menuitem"
+                    type="button"
+                  >
+                    {proofLabels.expired}
+                  </button>
+                )}
+              </>
+            ) : manualPaidAt ? (
+              <form action={paymentFormAction}>
+                <input name="paid" type="hidden" value="false" />
+                <MenuSubmitButton>{paymentLabels.markUnpaid}</MenuSubmitButton>
               </form>
+            ) : (
+              <>
+                {isRequested ? (
+                  <button
+                    className={menuItemClassName}
+                    disabled
+                    role="menuitem"
+                    type="button"
+                  >
+                    {proofLabels.requested}
+                  </button>
+                ) : (
+                  <form action={proofFormAction}>
+                    <MenuSubmitButton>{proofLabels.request}</MenuSubmitButton>
+                  </form>
+                )}
+                <form action={paymentFormAction}>
+                  <input name="paid" type="hidden" value="true" />
+                  <MenuSubmitButton>{paymentLabels.markPaid}</MenuSubmitButton>
+                </form>
+              </>
             )}
 
             <div

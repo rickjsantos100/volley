@@ -47,7 +47,11 @@ export type GameActionStatus =
   | "cancel-error"
   | "delete-error"
   | "delivery-warning"
-  | "not-authorized";
+  | "not-authorized"
+  | "payment-marked-paid"
+  | "payment-marked-unpaid"
+  | "payment-proof-conflict"
+  | "payment-update-error";
 
 export type GameActionState = {
   deliveryWarning?: boolean;
@@ -74,6 +78,8 @@ type ParticipantProofRow = {
 type PaymentProofRow = {
   proof_path: string | null;
   proof_requested_at: string | null;
+  proof_uploaded_at: string | null;
+  manual_paid_at: string | null;
 };
 
 type GameSnapshot = {
@@ -646,11 +652,11 @@ export async function requestPaymentProof(
 
   const { data: proof, error: proofError } = await supabase
     .from("game_payment_proofs")
-    .select("proof_path, proof_requested_at")
+    .select("proof_path, proof_requested_at, proof_uploaded_at, manual_paid_at")
     .eq("participant_id", participant.id)
     .maybeSingle<PaymentProofRow>();
 
-  if (proofError || proof?.proof_path) {
+  if (proofError || proof?.proof_uploaded_at || proof?.manual_paid_at) {
     return { status: "proof-request-error" };
   }
 
@@ -713,6 +719,67 @@ export async function requestPaymentProof(
     proofRequestedAt,
     status: "proof-requested",
   };
+}
+
+export async function setParticipantManualPaid(
+  gameId: string,
+  participantId: string,
+  previousState: GameActionState,
+  formData: FormData,
+): Promise<GameActionState> {
+  void previousState;
+
+  const { game, status, supabase } = await getAdminGame(gameId);
+
+  if (status) {
+    return {
+      status: status === "not-authorized" ? status : "payment-update-error",
+    };
+  }
+
+  if (game.status !== "scheduled") {
+    return { status: "payment-update-error" };
+  }
+
+  const paidValue = formData.get("paid");
+
+  if (paidValue !== "true" && paidValue !== "false") {
+    return { status: "payment-update-error" };
+  }
+
+  const isPaid = paidValue === "true";
+
+  const { data: rpcResult, error } = await supabase.rpc(
+    "set_game_participant_manual_paid",
+    {
+      target_game_id: gameId,
+      target_participant_id: participantId,
+      paid: isPaid,
+    },
+  );
+
+  if (error) {
+    return { status: "payment-update-error" };
+  }
+
+  const resultText = typeof rpcResult === "string" ? rpcResult : "";
+
+  if (resultText === "proof-exists") {
+    revalidatePath(`/dashboard/games/${gameId}`);
+    return { status: "payment-proof-conflict" };
+  }
+
+  if (resultText === "marked-paid") {
+    revalidatePath(`/dashboard/games/${gameId}`);
+    return { status: "payment-marked-paid" };
+  }
+
+  if (resultText === "marked-unpaid") {
+    revalidatePath(`/dashboard/games/${gameId}`);
+    return { status: "payment-marked-unpaid" };
+  }
+
+  return { status: "payment-update-error" };
 }
 
 export async function reorderWaitlist(

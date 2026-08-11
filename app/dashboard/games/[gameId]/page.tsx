@@ -39,6 +39,7 @@ import {
   removeWaitlistEntryFromGame,
   reorderWaitlist,
   requestPaymentProof,
+  setParticipantManualPaid,
   uncancelGame,
 } from "./actions";
 
@@ -68,6 +69,8 @@ type ParticipantDetail = {
   last_name: string | null;
   avatar_path: string | null;
   avatar_updated_at: string | null;
+  payment_is_paid: boolean;
+  manual_paid_at: string | null;
 };
 
 type WaitlistDetail = {
@@ -245,6 +248,10 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
     "delete-error": t("deleteErrorMessage"),
     "delivery-warning": t("deliveryWarningMessage"),
     "not-authorized": t("notAuthorizedMessage"),
+    "payment-marked-paid": t("paymentMarkedPaidMessage"),
+    "payment-marked-unpaid": t("paymentMarkedUnpaidMessage"),
+    "payment-proof-conflict": t("paymentProofConflictMessage"),
+    "payment-update-error": t("paymentUpdateErrorMessage"),
   };
 
   return (
@@ -405,7 +412,7 @@ async function GameDetailContent({
     supabase
       .from("game_participant_details")
       .select(
-        "id, game_event_id, user_id, joined_at, payment_proof_path, payment_proof_filename, payment_proof_mime_type, payment_proof_uploaded_at, payment_proof_requested_at, payment_proof_deleted_at, display_name, first_name, last_name, avatar_path, avatar_updated_at",
+        "id, game_event_id, user_id, joined_at, payment_proof_path, payment_proof_filename, payment_proof_mime_type, payment_proof_uploaded_at, payment_proof_requested_at, payment_proof_deleted_at, display_name, first_name, last_name, avatar_path, avatar_updated_at, payment_is_paid, manual_paid_at",
       )
       .eq("game_event_id", game.id)
       .order("joined_at", { ascending: true }),
@@ -523,6 +530,10 @@ async function GameDetailContent({
     "delete-error": t("deleteErrorMessage"),
     "delivery-warning": t("deliveryWarningMessage"),
     "not-authorized": t("notAuthorizedMessage"),
+    "payment-marked-paid": t("paymentMarkedPaidMessage"),
+    "payment-marked-unpaid": t("paymentMarkedUnpaidMessage"),
+    "payment-proof-conflict": t("paymentProofConflictMessage"),
+    "payment-update-error": t("paymentUpdateErrorMessage"),
   };
 
   return (
@@ -641,9 +652,20 @@ async function GameDetailContent({
                       contactLabels={contactLabels}
                       email={contact?.email ?? null}
                       key={participant.id}
+                      manualPaidAt={participant.manual_paid_at}
                       name={name}
                       paidLabel={t("paidLabel")}
                       participantId={participant.id}
+                      paymentAction={setParticipantManualPaid.bind(
+                        null,
+                        game.id,
+                        participant.id,
+                      )}
+                      paymentIsPaid={participant.payment_is_paid}
+                      paymentLabels={{
+                        markPaid: t("markPaidLabel"),
+                        markUnpaid: t("markUnpaidLabel"),
+                      }}
                       phoneCountryCode={contact?.phone_country_code ?? "0"}
                       phoneNumber={contact?.phone_number ?? "0"}
                       proofAction={requestPaymentProof.bind(
@@ -651,7 +673,6 @@ async function GameDetailContent({
                         game.id,
                         participant.id,
                       )}
-                      proofDeletedAt={participant.payment_proof_deleted_at}
                       proofLabels={{
                         expired: t("proofExpiredLabel"),
                         request: t("requestProofButton"),
