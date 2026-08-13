@@ -145,6 +145,8 @@
     "slotsValue": "{occupied}/{capacity}",
     "fullLabel": "Cheio",
     "availableLabel": "Há vagas",
+    "playingLabel": "A jogar",
+    "waitlistLabel": "Em espera",
     "viewGameLabel": "Ver detalhes",
     "cancelledLabel": "Cancelado",
     "createGameButton": "Novo jogo",

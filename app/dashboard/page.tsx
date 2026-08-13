@@ -25,6 +25,11 @@ type GameEvent = {
 
 type GameParticipantCountRow = {
   game_event_id: string;
+  user_id: string;
+};
+
+type GameWaitlistRow = {
+  game_event_id: string;
 };
 
 export default async function DashboardPage({
@@ -60,13 +65,28 @@ export default async function DashboardPage({
   const games = (gameRows ?? []) as GameEvent[];
   const isAdmin = profile?.role === "admin";
   const gameIds = games.map((game) => game.id);
-  const { data: participantRows, error: participantsError } = gameIds.length
-    ? await supabase
-        .from("game_participants")
-        .select("game_event_id")
-        .in("game_event_id", gameIds)
-    : { data: [], error: null };
-  const hasGamesError = Boolean(gamesError || participantsError);
+  const [participantsResult, waitlistResult] = gameIds.length
+    ? await Promise.all([
+        supabase
+          .from("game_participants")
+          .select("game_event_id, user_id")
+          .in("game_event_id", gameIds),
+        supabase
+          .from("game_waitlist_entries")
+          .select("game_event_id")
+          .in("game_event_id", gameIds)
+          .eq("user_id", user.id)
+          .eq("status", "active"),
+      ])
+    : [
+        { data: [], error: null },
+        { data: [], error: null },
+      ];
+  const participantRows = participantsResult.data;
+  const waitlistRows = waitlistResult.data;
+  const hasGamesError = Boolean(
+    gamesError || participantsResult.error || waitlistResult.error,
+  );
   const participantCounts = (
     (participantRows ?? []) as GameParticipantCountRow[]
   ).reduce<Record<string, number>>((counts, participant) => {
@@ -74,63 +94,63 @@ export default async function DashboardPage({
       (counts[participant.game_event_id] ?? 0) + 1;
     return counts;
   }, {});
-  const featuredGame = games.find((game) => game.status === "scheduled");
-  const remainingGames = featuredGame
-    ? games.filter((game) => game.id !== featuredGame.id)
-    : games;
-
+  const participatingGameIds = new Set(
+    ((participantRows ?? []) as GameParticipantCountRow[])
+      .filter((participant) => participant.user_id === user.id)
+      .map((participant) => participant.game_event_id),
+  );
+  const waitlistedGameIds = new Set(
+    ((waitlistRows ?? []) as GameWaitlistRow[]).map(
+      (entry) => entry.game_event_id,
+    ),
+  );
   function renderGameCard(
     game: GameEvent,
-    featured = false,
-    headingLevel: "h2" | "h3" = "h2",
   ) {
     const occupiedSlots = participantCounts[game.id] ?? 0;
     const isFull = occupiedSlots >= game.max_participants;
     const isCancelled = game.status === "cancelled";
+    const isParticipating = participatingGameIds.has(game.id);
+    const isWaitlisted = waitlistedGameIds.has(game.id);
     const statusLabel = isCancelled
       ? t("cancelledLabel")
+      : isParticipating
+        ? t("playingLabel")
+        : isWaitlisted
+          ? t("waitlistLabel")
       : isFull
         ? t("fullLabel")
         : t("availableLabel");
-    const variant = featured
-      ? "featured"
-      : isCancelled
-        ? "cancelled"
-        : "default";
+    const badgeVariant = isCancelled
+      ? "danger"
+      : isParticipating
+        ? "playing"
+        : isWaitlisted
+          ? "warning"
+          : isFull
+            ? "soft"
+            : "success";
+    const variant = isCancelled ? "cancelled" : "default";
     const statusEdge =
-      featured || isCancelled
+      isCancelled
         ? ""
         : isFull
           ? "border-l-4 border-l-[#ffd21a]"
           : "border-l-4 border-l-[#138a5b]";
-    const GameHeading = headingLevel;
     const content = (
       <>
         <div className="flex items-start justify-between gap-4">
-          <GameHeading
-            className={
-              featured
-                ? "font-matchday text-4xl leading-[38px] font-bold text-white sm:text-5xl sm:leading-none"
-                : "font-matchday text-[26px] leading-7 font-bold text-[#061b6b]"
-            }
-          >
+          <h2 className="font-matchday text-[26px] leading-7 font-bold text-[#061b6b]">
             {formatGameDateTitle(new Date(game.starts_at))}
-          </GameHeading>
-          <Badge
-            className={
-              featured && !isCancelled
-                ? "border-white/20 bg-white/10 text-white"
-                : undefined
-            }
-            variant={isCancelled ? "danger" : isFull ? "soft" : "success"}
-          >
+          </h2>
+          <Badge variant={badgeVariant}>
             {statusLabel}
           </Badge>
         </div>
         <dl className="mt-5 grid grid-cols-2 gap-4">
           <div>
             <dt
-              className={`text-xs font-bold tracking-[0.08em] uppercase ${featured ? "text-white/70" : "text-[#667085]"}`}
+              className="text-xs font-bold tracking-[0.08em] text-[#667085] uppercase"
             >
               {t("durationLabel")}
             </dt>
@@ -140,7 +160,7 @@ export default async function DashboardPage({
           </div>
           <div>
             <dt
-              className={`text-xs font-bold tracking-[0.08em] uppercase ${featured ? "text-white/70" : "text-[#667085]"}`}
+              className="text-xs font-bold tracking-[0.08em] text-[#667085] uppercase"
             >
               {t("slotsLabel")}
             </dt>
@@ -152,11 +172,6 @@ export default async function DashboardPage({
             </dd>
           </div>
         </dl>
-        {featured ? (
-          <span className="mt-6 flex min-h-11 items-center justify-center rounded-[10px] border border-[#ffd21a] bg-[#ffd21a] px-5 py-3 text-sm font-bold text-[#061b6b] sm:w-fit">
-            {t("viewGameLabel")}
-          </span>
-        ) : null}
       </>
     );
 
@@ -210,43 +225,17 @@ export default async function DashboardPage({
         ) : null}
 
         {!hasGamesError && games.length > 0 ? (
-          <div className="grid gap-6">
-            {featuredGame ? (
-              <section aria-labelledby="next-game-heading">
-                <h1
-                  className="font-matchday mb-3 text-3xl font-bold text-[#061b6b]"
-                  id="next-game-heading"
-                >
-                  {t("nextGameTitle")}
-                </h1>
-                {renderGameCard(featuredGame, true)}
-              </section>
-            ) : null}
-            {remainingGames.length > 0 ? (
-              <section aria-labelledby="more-games-heading">
-                {featuredGame ? (
-                  <h2
-                    className="font-matchday mb-3 text-3xl font-bold text-[#061b6b]"
-                    id="more-games-heading"
-                  >
-                    {t("moreGamesTitle")}
-                  </h2>
-                ) : (
-                  <h1
-                    className="font-matchday mb-3 text-3xl font-bold text-[#061b6b]"
-                    id="more-games-heading"
-                  >
-                    {t("moreGamesTitle")}
-                  </h1>
-                )}
-                <div className="grid gap-4 md:grid-cols-2">
-                  {remainingGames.map((game) =>
-                    renderGameCard(game, false, featuredGame ? "h3" : "h2"),
-                  )}
-                </div>
-              </section>
-            ) : null}
-          </div>
+          <section aria-labelledby="upcoming-games-heading">
+            <h1
+              className="font-matchday mb-3 text-3xl font-bold text-[#061b6b]"
+              id="upcoming-games-heading"
+            >
+              {t("upcomingTitle")}
+            </h1>
+            <div className="grid gap-4 md:grid-cols-2">
+              {games.map((game) => renderGameCard(game))}
+            </div>
+          </section>
         ) : null}
       </section>
 
