@@ -35,6 +35,7 @@ import {
   joinGame,
   joinWaitlist,
   leaveGame,
+  leaveWaitlist,
   removeParticipantFromGame,
   removeWaitlistEntryFromGame,
   reorderWaitlist,
@@ -227,6 +228,7 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
     "joined-game": t("joinedGameMessage"),
     "joined-waitlist": t("joinedWaitlistMessage"),
     "left-game": t("leftGameMessage"),
+    "left-waitlist": t("leftWaitlistMessage"),
     "cancelled-game": t("cancelledGameMessage"),
     "cancelled-series": t("cancelledSeriesMessage"),
     "uncancelled-game": t("uncancelledGameMessage"),
@@ -243,6 +245,7 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
     "waitlist-error": t("waitlistErrorMessage"),
     "waitlist-reorder-error": t("waitlistReorderErrorMessage"),
     "leave-error": t("leaveErrorMessage"),
+    "leave-waitlist-error": t("leaveWaitlistErrorMessage"),
     "remove-player-error": t("removePlayerErrorMessage"),
     "cancel-error": t("cancelErrorMessage"),
     "delete-error": t("deleteErrorMessage"),
@@ -462,6 +465,7 @@ async function GameDetailContent({
   const joinGameAction = joinGame.bind(null, game.id);
   const joinWaitlistAction = joinWaitlist.bind(null, game.id);
   const leaveGameAction = leaveGame.bind(null, game.id);
+  const leaveWaitlistAction = leaveWaitlist.bind(null, game.id);
   const gameDateTitle = formatGameDateTitle(new Date(game.starts_at));
   const excludedUserIds = new Set([
     ...participants.map((participant) => participant.user_id),
@@ -509,6 +513,7 @@ async function GameDetailContent({
     "joined-game": t("joinedGameMessage"),
     "joined-waitlist": t("joinedWaitlistMessage"),
     "left-game": t("leftGameMessage"),
+    "left-waitlist": t("leftWaitlistMessage"),
     "cancelled-game": t("cancelledGameMessage"),
     "cancelled-series": t("cancelledSeriesMessage"),
     "uncancelled-game": t("uncancelledGameMessage"),
@@ -525,6 +530,7 @@ async function GameDetailContent({
     "waitlist-error": t("waitlistErrorMessage"),
     "waitlist-reorder-error": t("waitlistReorderErrorMessage"),
     "leave-error": t("leaveErrorMessage"),
+    "leave-waitlist-error": t("leaveWaitlistErrorMessage"),
     "remove-player-error": t("removePlayerErrorMessage"),
     "cancel-error": t("cancelErrorMessage"),
     "delete-error": t("deleteErrorMessage"),
@@ -540,12 +546,12 @@ async function GameDetailContent({
     <>
       {!isCancelled ? (
         <GameParticipationActions
-          alreadyWaitlistedLabel={t("alreadyWaitlistedButton")}
           calendar={{
             googleCalendarUrl: getGoogleCalendarUrl(game),
             label: t("addToCalendarButton"),
           }}
           confirmLeaveMessage={t("leaveGameConfirmMessage")}
+          confirmLeaveWaitlistMessage={t("leaveWaitlistConfirmMessage")}
           finalizePaymentProofAction={finalizePaymentProof.bind(null, game.id)}
           isFull={isFull}
           isParticipant={isParticipant}
@@ -556,6 +562,8 @@ async function GameDetailContent({
           joinWaitlistLabel={t("joinWaitlistButton")}
           leaveGameAction={leaveGameAction}
           leaveGameLabel={t("leaveGameButton")}
+          leaveWaitlistAction={leaveWaitlistAction}
+          leaveWaitlistLabel={t("leaveWaitlistButton")}
           paymentProof={{
             deletedAt: currentParticipant?.payment_proof_deleted_at ?? null,
             path: currentParticipant?.payment_proof_path ?? null,

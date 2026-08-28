@@ -18,12 +18,12 @@ import { Toast } from "@/components/ui/toast";
 import { createClient } from "@/lib/supabase/client";
 
 type GameParticipationActionsProps = {
-  alreadyWaitlistedLabel: string;
   calendar: {
     googleCalendarUrl: string;
     label: string;
   };
   confirmLeaveMessage: string;
+  confirmLeaveWaitlistMessage: string;
   finalizePaymentProofAction: (
     previousState: GameActionState,
     formData: FormData,
@@ -46,6 +46,11 @@ type GameParticipationActionsProps = {
     formData: FormData,
   ) => Promise<GameActionState>;
   leaveGameLabel: string;
+  leaveWaitlistAction: (
+    previousState: GameActionState,
+    formData: FormData,
+  ) => Promise<GameActionState>;
+  leaveWaitlistLabel: string;
   paymentProof: {
     deletedAt: string | null;
     path: string | null;
@@ -75,8 +80,10 @@ const errorStatuses = new Set<GameActionStatus>([
   "join-error",
   "waitlist-error",
   "leave-error",
+  "leave-waitlist-error",
   "proof-upload-error",
 ]);
+const successStatuses = new Set<GameActionStatus>(["left-waitlist"]);
 const allowedProofTypes = new Set([
   "application/pdf",
   "image/jpeg",
@@ -102,9 +109,9 @@ function getProofMimeType(file: File) {
 }
 
 export function GameParticipationActions({
-  alreadyWaitlistedLabel,
   calendar,
   confirmLeaveMessage,
+  confirmLeaveWaitlistMessage,
   finalizePaymentProofAction,
   isFull,
   isParticipant,
@@ -115,6 +122,8 @@ export function GameParticipationActions({
   joinWaitlistLabel,
   leaveGameAction,
   leaveGameLabel,
+  leaveWaitlistAction,
+  leaveWaitlistLabel,
   paymentProof,
   proofLabels,
   share,
@@ -122,6 +131,8 @@ export function GameParticipationActions({
 }: GameParticipationActionsProps) {
   const router = useRouter();
   const [leaveConfirmOpen, setLeaveConfirmOpen] = useState(false);
+  const [leaveWaitlistConfirmOpen, setLeaveWaitlistConfirmOpen] =
+    useState(false);
   const [proofModalOpen, setProofModalOpen] = useState(false);
   const [proofFile, setProofFile] = useState<File | null>(null);
   const [proofFileError, setProofFileError] = useState<string | null>(null);
@@ -165,8 +176,29 @@ export function GameParticipationActions({
     return nextState;
   }
 
+  async function handleLeaveWaitlist(
+    previousState: GameActionState,
+    formData: FormData,
+  ) {
+    const nextState = await handleAction(
+      leaveWaitlistAction,
+      previousState,
+      formData,
+    );
+    // Only close the confirmation modal on a confirmed leave. Keeping it open
+    // on failure preserves the error toast feedback for the player.
+    if (nextState.status === "left-waitlist") {
+      setLeaveWaitlistConfirmOpen(false);
+    }
+    return nextState;
+  }
+
   const [actionState, submitAction] = useActionState(
-    isParticipant ? handleLeaveGame : handleJoinWaitlist,
+    isParticipant
+      ? handleLeaveGame
+      : isWaitlisted
+        ? handleLeaveWaitlist
+        : handleJoinWaitlist,
     initialState,
   );
   const status = localState.status ?? actionState.status;
@@ -281,6 +313,9 @@ export function GameParticipationActions({
       {status && errorStatuses.has(status) ? (
         <Toast variant="error">{statusLabels[status]}</Toast>
       ) : null}
+      {status && successStatuses.has(status) ? (
+        <Toast variant="success">{statusLabels[status]}</Toast>
+      ) : null}
       {(localState.deliveryWarning || actionState.deliveryWarning) ? (
         <Toast variant="warning">{statusLabels["delivery-warning"]}</Toast>
       ) : null}
@@ -301,13 +336,15 @@ export function GameParticipationActions({
             </Button>
           ) : isWaitlisted ? (
             <Button
-              disabled
               fullWidth
+              variant="dangerOutline"
+              className="sm:w-auto"
               type="button"
-              variant="outline"
-              className="border-[#dde2ea] bg-[#eef1f5] text-[#475467] sm:w-auto"
+              onClick={() => {
+                setLeaveWaitlistConfirmOpen(true);
+              }}
             >
-              {alreadyWaitlistedLabel}
+              {leaveWaitlistLabel}
             </Button>
           ) : isFull ? (
             <form action={submitAction}>
@@ -386,6 +423,27 @@ export function GameParticipationActions({
             <form action={submitAction}>
               <SubmitButton variant="dangerOutline">
                 {leaveGameLabel}
+              </SubmitButton>
+            </form>
+          </ModalActions>
+        </div>
+      </Modal>
+
+      <Modal
+        onClose={() => {
+          setLeaveWaitlistConfirmOpen(false);
+        }}
+        open={leaveWaitlistConfirmOpen}
+        title={leaveWaitlistLabel}
+      >
+        <div className="mt-5 grid gap-4">
+          <p className="text-sm leading-6 text-[#667085]">
+            {confirmLeaveWaitlistMessage}
+          </p>
+          <ModalActions>
+            <form action={submitAction}>
+              <SubmitButton variant="dangerOutline">
+                {leaveWaitlistLabel}
               </SubmitButton>
             </form>
           </ModalActions>

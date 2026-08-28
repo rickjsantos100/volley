@@ -27,6 +27,7 @@ export type GameActionStatus =
   | "joined-game"
   | "joined-waitlist"
   | "left-game"
+  | "left-waitlist"
   | "cancelled-game"
   | "cancelled-series"
   | "uncancelled-game"
@@ -43,6 +44,7 @@ export type GameActionStatus =
   | "waitlist-error"
   | "waitlist-reorder-error"
   | "leave-error"
+  | "leave-waitlist-error"
   | "remove-player-error"
   | "cancel-error"
   | "delete-error"
@@ -455,6 +457,48 @@ export async function joinWaitlist(
   }
 
   return { status: "joined-waitlist" };
+}
+
+export async function leaveWaitlist(
+  gameId: string,
+  previousState: GameActionState,
+  formData: FormData,
+): Promise<GameActionState> {
+  void previousState;
+  void formData;
+
+  const [supabase, user] = await Promise.all([
+    createClient(),
+    getCurrentUser(),
+  ]);
+
+  if (!user) {
+    redirect("/");
+  }
+
+  const { count, error } = await supabase
+    .from("game_waitlist_entries")
+    .delete({ count: "exact" })
+    .eq("game_event_id", gameId)
+    .eq("user_id", user.id)
+    .eq("status", "active");
+
+  revalidatePath("/dashboard");
+  revalidatePath(`/dashboard/games/${gameId}`);
+
+  if (error) {
+    return { status: "leave-waitlist-error" };
+  }
+
+  // RLS silently filters rows that do not satisfy the policy, so a delete
+  // over a row the caller does not own (or that no longer exists) reports a
+  // null error but zero affected rows. Treat that as a failure rather than a
+  // false success so the UI keeps surfacing feedback.
+  if (count !== 1) {
+    return { status: "leave-waitlist-error" };
+  }
+
+  return { status: "left-waitlist" };
 }
 
 export async function leaveGame(
