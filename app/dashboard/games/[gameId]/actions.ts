@@ -22,6 +22,7 @@ import { createClient } from "@/lib/supabase/server";
 
 export type GameActionStatus =
   | "added-player"
+  | "added-waitlist-player"
   | "added-player-email-error"
   | "add-player-error"
   | "joined-game"
@@ -383,31 +384,40 @@ export async function addParticipantToGame(
     return { status: "add-player-error" };
   }
 
-  const { data: participant, error: insertError } = await supabase
-    .from("game_participants")
-    .insert({
-      game_event_id: gameId,
-      user_id: selectedProfile.id,
+  const { data: placement, error: insertError } = await supabase
+    .rpc("admin_add_game_player", {
+      target_game_id: gameId,
+      target_user_id: selectedProfile.id,
     })
-    .select("id")
-    .single<{ id: string }>();
+    .single<{
+      destination: "participant" | "waitlist";
+      participant_id: string | null;
+      waitlist_entry_id: string | null;
+    }>();
 
   revalidatePath("/dashboard");
   revalidatePath(`/dashboard/games/${gameId}`);
 
-  if (insertError || !participant) {
+  const recordId = placement?.destination === "participant"
+    ? placement.participant_id
+    : placement?.destination === "waitlist"
+      ? placement.waitlist_entry_id
+      : null;
+  if (insertError || !placement || !recordId) {
     return { status: "add-player-error" };
   }
 
   let deliveryWarning = false;
   try {
     const summary = await dispatchGameNotification({
-      deliveryVersion: participant.id,
+      deliveryVersion: recordId,
       gameId,
-      kind: "admin_added_to_game",
+      kind: placement.destination === "participant"
+        ? "admin_added_to_game"
+        : "admin_added_to_waitlist",
       recipients: [
         {
-          participantId: participant.id,
+          participantId: recordId,
           userId: selectedProfile.id,
         },
       ],
@@ -416,15 +426,20 @@ export async function addParticipantToGame(
     deliveryWarning = summary.hasFailures;
   } catch (notificationError) {
     deliveryWarning = true;
-    console.error("Failed to notify admin-added participant", {
+    console.error("Failed to notify admin-added player", {
       gameId,
       notificationError,
-      participantId: participant.id,
+      recordId,
       userId: selectedProfile.id,
     });
   }
 
-  return { deliveryWarning, status: "added-player" };
+  return {
+    deliveryWarning,
+    status: placement.destination === "participant"
+      ? "added-player"
+      : "added-waitlist-player",
+  };
 }
 
 export async function joinWaitlist(

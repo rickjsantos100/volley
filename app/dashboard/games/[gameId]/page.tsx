@@ -223,6 +223,7 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
   const deleteGameAction = deleteGame.bind(null, game.id);
   const statusLabels: Record<GameActionStatus, string> = {
     "added-player": t("addedPlayerMessage"),
+    "added-waitlist-player": t("addedWaitlistPlayerMessage"),
     "added-player-email-error": t("addedPlayerEmailErrorMessage"),
     "add-player-error": t("addPlayerErrorMessage"),
     "joined-game": t("joinedGameMessage"),
@@ -501,13 +502,12 @@ async function GameDetailContent({
     ? t("addPlayerCancelledReason")
     : isPast
       ? t("addPlayerPastReason")
-      : isFull
-        ? t("addPlayerFullReason")
-        : profilesError
-          ? t("addPlayerUnavailableReason")
-          : undefined;
+      : profilesError || hasListError
+        ? t("addPlayerUnavailableReason")
+        : undefined;
   const statusLabels: Record<GameActionStatus, string> = {
     "added-player": t("addedPlayerMessage"),
+    "added-waitlist-player": t("addedWaitlistPlayerMessage"),
     "added-player-email-error": t("addedPlayerEmailErrorMessage"),
     "add-player-error": t("addPlayerErrorMessage"),
     "joined-game": t("joinedGameMessage"),

@@ -8,6 +8,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 export type PushNotificationKind =
   | "admin_added_to_game"
+  | "admin_added_to_waitlist"
   | "game_cancelled"
   | "game_deleted"
   | "game_reminder_4h"

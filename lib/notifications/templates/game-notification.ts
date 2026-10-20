@@ -1,5 +1,6 @@
 export type GameEmailKind =
   | "admin_added_to_game"
+  | "admin_added_to_waitlist"
   | "game_cancelled"
   | "game_deleted"
   | "game_reminder_4h"
@@ -12,6 +13,12 @@ const copy: Record<
   GameEmailKind,
   { action: string; heading: string; intro: string; subject: string }
 > = {
+  admin_added_to_waitlist: {
+    action: "Ver jogo",
+    heading: "Estás na lista de espera",
+    intro: "Um organizador adicionou-te à lista de espera deste jogo. Avisamos-te se houver vaga.",
+    subject: "Foste adicionado à lista de espera",
+  },
   admin_added_to_game: {
     action: "Ver jogo",
     heading: "Estás dentro",

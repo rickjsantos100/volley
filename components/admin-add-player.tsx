@@ -72,6 +72,7 @@ export function AdminAddPlayer({
 
     if (
       nextState.status === "added-player" ||
+      nextState.status === "added-waitlist-player" ||
       nextState.status === "added-player-email-error"
     ) {
       setIsOpen(false);
@@ -103,11 +104,11 @@ export function AdminAddPlayer({
   }, [candidates, normalizedQuery]);
   const status = state.status;
   const statusLabel = state.deliveryWarning
-    ? statusLabels["delivery-warning"]
+    ? [status ? statusLabels[status] : null, statusLabels["delivery-warning"]].filter(Boolean).join(" ")
     : status
       ? statusLabels[status]
       : null;
-  const isSuccess = status === "added-player";
+  const isSuccess = status === "added-player" || status === "added-waitlist-player";
 
   useEffect(() => {
     if (!isOpen) {

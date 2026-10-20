@@ -31,6 +31,10 @@ const pushPayloads: Record<
   GameNotificationKind,
   Omit<PushPayload, "tag" | "url">
 > = {
+  admin_added_to_waitlist: {
+    body: "Um organizador adicionou-te à lista de espera. Avisamos-te se houver vaga.",
+    title: "Estás na lista de espera",
+  },
   admin_added_to_game: {
     body: "Um organizador adicionou-te ao jogo. Vê os detalhes e adiciona o comprovativo.",
     title: "Estás dentro",
