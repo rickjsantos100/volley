@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getCurrentProfile, getCurrentUser } from "@/lib/auth/server";
 import { createClient } from "@/lib/supabase/server";
+import { parseGameSchedule } from "@/lib/game-schedule";
 
 export type CreateGameActionStatus =
   | "created"
@@ -20,56 +21,13 @@ function parsePositiveInteger(value: FormDataEntryValue | null) {
     return null;
   }
 
-  const parsed = Number.parseInt(value, 10);
+  const parsed = /^\d+$/.test(value) ? Number(value) : NaN;
 
   if (!Number.isInteger(parsed) || parsed <= 0) {
     return null;
   }
 
   return parsed;
-}
-
-function parseLocalDateTime(value: FormDataEntryValue | null, offset: number) {
-  if (typeof value !== "string") {
-    return null;
-  }
-
-  const match = value.match(
-    /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/,
-  );
-
-  if (!match) {
-    return null;
-  }
-
-  const [, year, month, day, hour, minute] = match;
-  const utcMilliseconds =
-    Date.UTC(
-      Number(year),
-      Number(month) - 1,
-      Number(day),
-      Number(hour),
-      Number(minute),
-    ) +
-    offset * 60 * 1000;
-  const date = new Date(utcMilliseconds);
-
-  if (Number.isNaN(date.getTime())) {
-    return null;
-  }
-
-  return date;
-}
-
-function getDurationMinutes(startsAt: Date, endsAt: Date) {
-  const durationMilliseconds = endsAt.getTime() - startsAt.getTime();
-  const durationMinutes = Math.round(durationMilliseconds / 60000);
-
-  if (!Number.isInteger(durationMinutes) || durationMinutes <= 0) {
-    return null;
-  }
-
-  return durationMinutes;
 }
 
 async function getUserRole() {
@@ -101,21 +59,8 @@ export async function createGame(
   const maxParticipants = parsePositiveInteger(
     formData.get("maxParticipants"),
   );
-  const offset = Number.parseInt(
-    String(formData.get("timezoneOffsetMinutes") ?? "0"),
-    10,
-  );
-  const startsAt = parseLocalDateTime(
-    formData.get("startsAt"),
-    Number.isFinite(offset) ? offset : 0,
-  );
-  const endsAt = parseLocalDateTime(
-    formData.get("endsAt"),
-    Number.isFinite(offset) ? offset : 0,
-  );
-  const durationMinutes = startsAt && endsAt
-    ? getDurationMinutes(startsAt, endsAt)
-    : null;
+  const schedule = parseGameSchedule(formData.get("startsAt"), formData.get("endsAt"));
+  const { startsAt, endsAt, durationMinutes } = schedule ?? {};
   const isRepeatable = formData.get("isRepeatable") === "on";
 
   if (
@@ -125,6 +70,7 @@ export async function createGame(
     !endsAt ||
     startsAt.getTime() < Date.now()
   ) {
+    console.warn("game_mutation_rejected", { operation: "create", reason: "invalid_schedule_or_capacity" });
     return { status: "invalid" };
   }
 
@@ -153,6 +99,7 @@ export async function createGame(
   revalidatePath("/dashboard");
 
   if (error) {
+    console.error("game_mutation_failed", { operation: "create", target: isRepeatable ? "series" : "game", code: error.code });
     return { status: "create-error" };
   }
 

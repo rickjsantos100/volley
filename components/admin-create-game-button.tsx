@@ -10,6 +10,7 @@ import { Button, SubmitButton } from "@/components/ui/button";
 import { Field, inputClassName } from "@/components/ui/field";
 import { Modal, ModalActions } from "@/components/ui/modal";
 import { Toast } from "@/components/ui/toast";
+import { defaultGameSchedule as getDefaultSchedule, lisbonDateValue as getLocalDateValue } from "@/lib/game-schedule";
 
 type AdminCreateGameButtonProps = {
   action: (
@@ -49,39 +50,6 @@ const timeOptions = Array.from({ length: 24 * 4 }, (_, index) => {
 
   return `${padNumber(hours)}:${padNumber(minutes)}`;
 });
-
-function getLocalDateValue(date: Date) {
-  return [
-    date.getFullYear(),
-    padNumber(date.getMonth() + 1),
-    padNumber(date.getDate()),
-  ].join("-");
-}
-
-function getLocalTimeValue(date: Date) {
-  return [padNumber(date.getHours()), padNumber(date.getMinutes())].join(":");
-}
-
-function getDefaultSchedule() {
-  const start = new Date();
-  start.setMinutes(start.getMinutes() + (30 - (start.getMinutes() % 30)), 0, 0);
-
-  const end = new Date(start);
-  end.setHours(end.getHours() + 2);
-
-  if (end.getDate() !== start.getDate()) {
-    start.setDate(start.getDate() + 1);
-    start.setHours(19, 0, 0, 0);
-    end.setTime(start.getTime());
-    end.setHours(21, 0, 0, 0);
-  }
-
-  return {
-    date: getLocalDateValue(start),
-    endTime: getLocalTimeValue(end),
-    startTime: getLocalTimeValue(start),
-  };
-}
 
 function TimeSelect({
   label,
@@ -200,11 +168,6 @@ export function AdminCreateGameButton({
         title={labels.title}
       >
         <form action={formAction} className="mt-6 grid gap-4">
-          <input
-            name="timezoneOffsetMinutes"
-            type="hidden"
-            value={new Date().getTimezoneOffset()}
-          />
           <input name="startsAt" type="hidden" value={startsAt} />
           <input name="endsAt" type="hidden" value={endsAt} />
 

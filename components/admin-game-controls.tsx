@@ -11,6 +11,7 @@ import { Card } from "@/components/ui/card";
 import { Field, inputClassName } from "@/components/ui/field";
 import { Modal, ModalActions } from "@/components/ui/modal";
 import { Toast } from "@/components/ui/toast";
+import { lisbonDateValue as getLocalDateValue, lisbonTimeValue as getLocalTimeValue } from "@/lib/game-schedule";
 
 type AdminGameControlsProps = {
   cancelAction: (
@@ -93,18 +94,6 @@ const timeOptions = Array.from({ length: 24 * 4 }, (_, index) => {
   const minutes = (index % 4) * 15;
   return `${padNumber(hours)}:${padNumber(minutes)}`;
 });
-
-function getLocalDateValue(date: Date) {
-  return [
-    date.getFullYear(),
-    padNumber(date.getMonth() + 1),
-    padNumber(date.getDate()),
-  ].join("-");
-}
-
-function getLocalTimeValue(date: Date) {
-  return [padNumber(date.getHours()), padNumber(date.getMinutes())].join(":");
-}
 
 function getInitialSchedule(startsAt: string, durationMinutes: number) {
   const start = new Date(startsAt);
@@ -401,11 +390,6 @@ export function AdminGameControls({
         title={editLabels.title}
       >
         <form action={editFormAction} className="mt-6 grid gap-4">
-          <input
-            name="timezoneOffsetMinutes"
-            type="hidden"
-            value={new Date().getTimezoneOffset()}
-          />
           <input name="startsAt" type="hidden" value={computedStartsAt} />
           <input name="endsAt" type="hidden" value={computedEndsAt} />
           <input name="scope" type="hidden" value={editScope} />

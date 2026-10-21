@@ -1,4 +1,5 @@
 "use server";
+import { parseGameSchedule } from "@/lib/game-schedule";
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -126,56 +127,13 @@ function parsePositiveInteger(value: FormDataEntryValue | null) {
     return null;
   }
 
-  const parsed = Number.parseInt(value, 10);
+  const parsed = /^\d+$/.test(value) ? Number(value) : NaN;
 
   if (!Number.isInteger(parsed) || parsed <= 0) {
     return null;
   }
 
   return parsed;
-}
-
-function parseLocalDateTime(value: FormDataEntryValue | null, offset: number) {
-  if (typeof value !== "string") {
-    return null;
-  }
-
-  const match = value.match(
-    /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/,
-  );
-
-  if (!match) {
-    return null;
-  }
-
-  const [, year, month, day, hour, minute] = match;
-  const utcMilliseconds =
-    Date.UTC(
-      Number(year),
-      Number(month) - 1,
-      Number(day),
-      Number(hour),
-      Number(minute),
-    ) +
-    offset * 60 * 1000;
-  const date = new Date(utcMilliseconds);
-
-  if (Number.isNaN(date.getTime())) {
-    return null;
-  }
-
-  return date;
-}
-
-function getDurationMinutes(startsAt: Date, endsAt: Date) {
-  const durationMilliseconds = endsAt.getTime() - startsAt.getTime();
-  const durationMinutes = Math.round(durationMilliseconds / 60000);
-
-  if (!Number.isInteger(durationMinutes) || durationMinutes <= 0) {
-    return null;
-  }
-
-  return durationMinutes;
 }
 
 async function notifyGameLifecycleChange({
@@ -1285,70 +1243,34 @@ export async function editGame(
 
   // Parse form fields
   const maxParticipants = parsePositiveInteger(formData.get("maxParticipants"));
-  const offset = Number.parseInt(String(formData.get("timezoneOffsetMinutes") ?? "0"), 10);
-  const newStartsAt = parseLocalDateTime(formData.get("startsAt"), Number.isFinite(offset) ? offset : 0);
-  const newEndsAt = parseLocalDateTime(formData.get("endsAt"), Number.isFinite(offset) ? offset : 0);
-  const durationMinutes = newStartsAt && newEndsAt ? getDurationMinutes(newStartsAt, newEndsAt) : null;
+  const schedule = parseGameSchedule(formData.get("startsAt"), formData.get("endsAt"));
+  const { startsAt: newStartsAt, endsAt: newEndsAt, durationMinutes } = schedule ?? {};
 
   if (!durationMinutes || !maxParticipants || !newStartsAt || !newEndsAt || newStartsAt.getTime() < Date.now()) {
+    console.warn("game_mutation_rejected", { operation: "edit", gameId, reason: "invalid_schedule_or_capacity" });
     return { status: "edit-error" };
   }
 
-  const oldStartsAt = new Date(game.starts_at);
   let affectedGameIds = [game.id];
 
   if (isSeriesAction) {
-    // Update the series template
-    const delta = newStartsAt.getTime() - oldStartsAt.getTime();
-    const { error: seriesError } = await supabase
-      .from("recurring_game_series")
-      .update({
-        duration_minutes: durationMinutes,
-        max_participants: maxParticipants,
-        starts_at: newStartsAt.toISOString(),
-      })
-      .eq("id", game.recurring_series_id);
+    const { data: affectedGames, error: seriesError } = await supabase
+      .rpc("edit_game_series_schedule", {
+        target_game_id: gameId,
+        new_starts_at: newStartsAt.toISOString(),
+        new_ends_at: newEndsAt.toISOString(),
+        new_max_participants: maxParticipants,
+      });
 
     if (seriesError) {
+      console.error("game_mutation_failed", { operation: "edit_series", gameId, code: seriesError.code });
       return { status: "edit-error" };
     }
 
-    // Get all future occurrences to update
-    const { data: affectedGames, error: affectedGamesError } = await supabase
-      .from("game_events")
-      .select("id, starts_at")
-      .eq("recurring_series_id", game.recurring_series_id)
-      .gte("recurring_starts_at", game.recurring_starts_at)
-      .eq("status", "scheduled")
-      .returns<{ id: string; starts_at: string }[]>();
-
-    if (affectedGamesError) {
-      return { status: "edit-error" };
-    }
-
-    affectedGameIds = (affectedGames ?? []).map((g) => g.id);
-
-    // Update each future game_event - apply the time delta to starts_at
-    for (const affectedGame of affectedGames ?? []) {
-      const gameStartsAt = new Date(affectedGame.starts_at);
-      const updatedStartsAt = new Date(gameStartsAt.getTime() + delta);
-      
-      const { error: updateError } = await supabase
-        .from("game_events")
-        .update({
-          duration_minutes: durationMinutes,
-          max_participants: maxParticipants,
-          starts_at: updatedStartsAt.toISOString(),
-        })
-        .eq("id", affectedGame.id);
-
-      if (updateError) {
-        return { status: "edit-error" };
-      }
-    }
+    affectedGameIds = affectedGames ?? [];
   } else {
     // Update single game
-    const { error } = await supabase
+    const { data: updatedGame, error } = await supabase
       .from("game_events")
       .update({
         duration_minutes: durationMinutes,
@@ -1356,9 +1278,12 @@ export async function editGame(
         starts_at: newStartsAt.toISOString(),
       })
       .eq("id", gameId)
-      .eq("status", "scheduled");
+      .eq("status", "scheduled")
+      .select("id")
+      .single();
 
-    if (error) {
+    if (error || !updatedGame) {
+      console.error("game_mutation_failed", { operation: "edit_game", gameId, code: error?.code ?? "zero_rows" });
       return { status: "edit-error" };
     }
   }
