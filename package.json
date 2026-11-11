@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "test:avatars": "node --test lib/avatars.test.mjs",
     "test:scheduling": "node --test lib/game-schedule.test.mjs",
     "dev": "next dev --hostname 0.0.0.0",
     "build": "next build",

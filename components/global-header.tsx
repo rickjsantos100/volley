@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
+import { getAvatarUrl as avatarSourceUrl } from "@/lib/avatars";
 import { AccountMenu } from "@/components/account-menu";
 import { LanguageToggle } from "@/components/language-toggle";
 import { RequiredPhoneNumberModal } from "@/components/required-phone-number-modal";
@@ -19,11 +20,7 @@ function getAvatarUrl(
   const { data } = supabase.storage
     .from("avatars")
     .getPublicUrl(profile.avatar_path);
-  const version = profile.avatar_updated_at
-    ? `?v=${encodeURIComponent(profile.avatar_updated_at)}`
-    : "";
-
-  return `${data.publicUrl}${version}`;
+  return avatarSourceUrl(data.publicUrl, profile.avatar_path, profile.avatar_updated_at);
 }
 
 function getInitials(

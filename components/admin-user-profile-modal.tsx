@@ -112,6 +112,7 @@ export function AdminUserProfileModal({
             <InitialsAvatar
               avatarUrl={avatarUrl}
               className="size-20 text-xl"
+              size={80}
               name={name}
             />
             <p className="text-sm leading-6 text-[#667085]">{name}</p>

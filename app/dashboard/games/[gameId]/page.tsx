@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { cx, pressedSurfaceClassName } from "@/components/ui/class-name";
 import { InitialsAvatar } from "@/components/ui/initials-avatar";
+import { getAvatarUrl as avatarSourceUrl } from "@/lib/avatars";
 import { RosterCopyButton } from "@/components/roster-copy-button";
 import {
   formatGameDateParts,
@@ -133,11 +134,7 @@ function getAvatarUrl(
   const { data } = supabase.storage
     .from("avatars")
     .getPublicUrl(player.avatar_path);
-  const version = player.avatar_updated_at
-    ? `?v=${encodeURIComponent(player.avatar_updated_at)}`
-    : "";
-
-  return `${data.publicUrl}${version}`;
+  return avatarSourceUrl(data.publicUrl, player.avatar_path, player.avatar_updated_at);
 }
 
 function formatGoogleCalendarDate(date: Date) {

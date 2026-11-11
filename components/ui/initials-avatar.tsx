@@ -1,10 +1,12 @@
 import { cx } from "./class-name";
+import { AvatarImage } from "./avatar-image";
 
 type InitialsAvatarProps = {
   avatarUrl?: string | null;
   className?: string;
   email?: string | null;
   name?: string | null;
+  size?: number;
 };
 
 function getInitials(name?: string | null, email?: string | null) {
@@ -30,6 +32,7 @@ export function InitialsAvatar({
   className,
   email,
   name,
+  size = 44,
 }: InitialsAvatarProps) {
   return (
     <span
@@ -39,9 +42,8 @@ export function InitialsAvatar({
       )}
     >
       {avatarUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          alt=""
+        <AvatarImage
+          size={size}
           className="size-full rounded-full object-cover"
           src={avatarUrl}
         />

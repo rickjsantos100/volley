@@ -1,4 +1,5 @@
 "use client";
+import { AvatarImage } from "@/components/ui/avatar-image";
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -146,9 +147,8 @@ export function AccountMenu({
         )}
       >
         {avatarUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            alt=""
+          <AvatarImage
+            size={44}
             className="size-full rounded-full object-cover"
             src={avatarUrl}
           />

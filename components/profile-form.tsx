@@ -23,6 +23,8 @@ import {
   normalizePhoneNumber,
 } from "@/lib/phone";
 import { createClient } from "@/lib/supabase/client";
+import { avatarUploadOptions, getAvatarUrl, replaceAvatarWithRecovery } from "@/lib/avatars";
+import { AvatarImage } from "@/components/ui/avatar-image";
 
 type ProfileFormProps = {
   avatarPath: string;
@@ -64,7 +66,6 @@ type DraftAvatar = {
 
 type CameraStatus = "capturing" | "error" | "ready" | "requesting";
 
-const avatarFileName = "avatar.webp";
 const avatarCropSize = 280;
 const avatarOutputSize = 512;
 const avatarPreviewSize = 96;
@@ -266,7 +267,6 @@ function createCameraFrameBlob(video: HTMLVideoElement) {
 }
 
 export function ProfileForm({
-  avatarPath,
   avatarUrl,
   firstName,
   lastName,
@@ -277,6 +277,7 @@ export function ProfileForm({
   userId,
 }: ProfileFormProps) {
   const router = useRouter();
+  const savingRef = useRef(false);
   const chooseInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const cameraRequestIdRef = useRef(0);
@@ -315,7 +316,6 @@ export function ProfileForm({
     phoneCountryCode,
     phoneNumber: initialPhoneNumber,
   });
-  const [currentAvatarPath, setCurrentAvatarPath] = useState(avatarPath);
   const [currentAvatarUrl, setCurrentAvatarUrl] = useState(avatarUrl);
   const [draftAvatar, setDraftAvatar] = useState<DraftAvatar | null>(null);
   const [isCropModalOpen, setIsCropModalOpen] = useState(false);
@@ -810,56 +810,48 @@ export function ProfileForm({
 
     const compressedAvatar = await createCompressedAvatarBlob(draftAvatar);
     const supabase = createClient();
-    const newAvatarPath = `${userId}/${avatarFileName}`;
-    const { error: uploadError } = await supabase.storage
-      .from("avatars")
-      .upload(newAvatarPath, compressedAvatar, {
-        cacheControl: "3600",
-        contentType: compressedAvatar.type || "image/webp",
-        upsert: true,
-      });
-
-    if (uploadError) {
-      throw uploadError;
-    }
-
-    const avatarUpdatedAt = new Date().toISOString();
-    const { error: updateError } = await supabase
-      .from("profiles")
-      .update({
-        avatar_path: newAvatarPath,
-        avatar_updated_at: avatarUpdatedAt,
-      })
-      .eq("id", userId);
-
-    if (updateError) {
-      throw updateError;
-    }
-
-    const { data } = supabase.storage.from("avatars").getPublicUrl(newAvatarPath);
-    const nextAvatarUrl = `${data.publicUrl}?v=${encodeURIComponent(avatarUpdatedAt)}`;
-
-    const stalePaths = new Set<string>();
-
-    if (currentAvatarPath && currentAvatarPath !== newAvatarPath) {
-      stalePaths.add(currentAvatarPath);
-    }
-
-    const { data: userAvatarFiles } = await supabase.storage
-      .from("avatars")
-      .list(userId);
-
-    userAvatarFiles?.forEach((avatarFile) => {
-      if (avatarFile.name !== avatarFileName) {
-        stalePaths.add(`${userId}/${avatarFile.name}`);
-      }
+    const bucket = supabase.storage.from("avatars");
+    const newAvatarPath = await replaceAvatarWithRecovery({
+      userId,
+      blob: compressedAvatar,
+      async readCurrent() {
+        const { data, error } = await supabase.from("profiles")
+          .select("avatar_path, avatar_updated_at").eq("id", userId).single();
+        if (error) throw error;
+        return { path: data.avatar_path ?? "", updatedAt: data.avatar_updated_at };
+      },
+      onReconciled(current) {
+        const { data } = bucket.getPublicUrl(current.path);
+        setCurrentAvatarUrl(getAvatarUrl(data.publicUrl, current.path, current.updatedAt));
+      },
+      async upload(path, blob) {
+        const { error } = await bucket.upload(path, blob, avatarUploadOptions);
+        if (error) throw error;
+      },
+      async update(path, previousPath) {
+        const query = supabase.from("profiles").update({
+          avatar_path: path,
+          avatar_updated_at: new Date().toISOString(),
+        }).eq("id", userId);
+        // Compare-and-swap also protects simultaneous saves in different tabs.
+        const { data, error } = await (previousPath
+          ? query.eq("avatar_path", previousPath)
+          : query.is("avatar_path", null)).select("avatar_path");
+        if (error) {
+          // A PostgreSQL rejection confirms no pointer change; transport errors
+          // are ambiguous and must not trigger deletion of a possibly active file.
+          if (/^[0-9A-Z]{5}$/.test(error.code)) return false;
+          throw error;
+        }
+        return data?.length === 1;
+      },
+      async remove(path) {
+        const { error } = await bucket.remove([path]);
+        if (error) throw error;
+      },
     });
-
-    if (stalePaths.size > 0) {
-      await supabase.storage.from("avatars").remove([...stalePaths]);
-    }
-
-    return { path: newAvatarPath, url: nextAvatarUrl };
+    const { data } = bucket.getPublicUrl(newAvatarPath);
+    return { path: newAvatarPath, url: data.publicUrl };
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -871,23 +863,23 @@ export function ProfileForm({
       phoneNumber: true,
     });
 
-    if (!isValid || !isChanged) {
+    if (savingRef.current || !isValid || !isChanged) {
       return;
     }
 
     setAvatarError(null);
+    savingRef.current = true;
     setIsSaving(true);
 
-    const formData = new FormData(event.currentTarget);
-    const nextState = await updateProfile(state, formData);
-    setState(nextState);
-
-    if (nextState.errors) {
-      setIsSaving(false);
-      return;
-    }
-
     try {
+      const formData = new FormData(event.currentTarget);
+      const nextState = await updateProfile(state, formData);
+      setState(nextState);
+
+      if (nextState.errors) {
+        return;
+      }
+
       const avatarResult = await uploadAvatar();
 
       setSavedValues({
@@ -899,7 +891,6 @@ export function ProfileForm({
       setState(nextState);
 
       if (avatarResult) {
-        setCurrentAvatarPath(avatarResult.path);
         setCurrentAvatarUrl(avatarResult.url);
         setDraftAvatar((currentDraftAvatar) => {
           if (currentDraftAvatar) {
@@ -915,6 +906,7 @@ export function ProfileForm({
     } catch {
       setAvatarError("uploadFailed");
     } finally {
+      savingRef.current = false;
       setIsSaving(false);
     }
   }
@@ -948,9 +940,8 @@ export function ProfileForm({
                 style={getDraftImageStyle(draftAvatar, avatarPreviewSize)}
               />
             ) : currentAvatarUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                alt=""
+              <AvatarImage
+                size={96}
                 className="size-full object-cover"
                 src={currentAvatarUrl}
               />
